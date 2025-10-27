@@ -3,254 +3,512 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Moon Runner — Simple B/W Pixel Game</title>
+<title>MkhkAsg: MoonRunner — 1-bit Endless</title>
 <style>
-  /* Widescreen canvas with crisp pixels */
   :root { --w: 960; --h: 540; }
-  html, body { margin:0; height:100%; background:#000; color:#fff; font-family:system-ui, sans-serif; }
-  .wrap {
-    display:grid; place-items:center; height:100%;
-    gap:12px; padding:12px;
-  }
+  html, body { margin:0; height:100%; background:#000; color:#fff; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  body.invert { background:#fff; color:#000; }
+  .wrap { display:grid; place-items:center; height:100%; gap:10px; padding:12px; }
   canvas {
     width:min(96vw, 96vh * (16/9));
     height:calc(var(--h) * (min(96vw, 96vh * (16/9)) / var(--w)));
     image-rendering: pixelated; image-rendering: crisp-edges;
-    outline:1px solid #fff2;
-    background:#000;
+    background: transparent;
+    outline:1px solid #ffffff22;
   }
-  .hud { font-size:14px; opacity:.9; text-align:center; }
-  .hud b { color:#fff; }
+  .hud{
+    width:min(96vw, 96vh * (16/9));
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12px; opacity:.95;
+  }
+  .hud .left, .hud .right { display:flex; gap:12px; align-items:center; }
+  .btn { padding:4px 8px; border:1px solid currentColor; cursor:pointer; user-select:none; }
+  .btn:active{ transform: translateY(1px); }
+  .mobile {
+    position:fixed; inset:auto 0 10px 0; display:none; justify-content:space-between; pointer-events:none;
+    width:100%; padding:0 8px;
+  }
+  .mobile .pad{
+    pointer-events:auto;
+    background:#000; color:#fff; opacity:.7; border:1px solid #fff; border-radius:10px;
+    width:32vw; height:16vh; display:flex; align-items:center; justify-content:center; font-size:14px;
+    touch-action:none;
+  }
+  .mobile .jump{
+    width:32vw; height:16vh;
+  }
+  /* show mobile controls on small screens */
+  @media (max-width: 768px) {
+    .mobile{ display:flex; }
+  }
+
+  /* Tiny pixel UI inside canvas (drawn via JS). This CSS only handles outside elements. */
 </style>
 </head>
 <body>
 <div class="wrap">
   <canvas id="game" width="960" height="540"></canvas>
   <div class="hud">
-    <b>Controls:</b> A/D or ◀ ▶ to move, W or Space to jump. Reach the UFO. Avoid pits.<br/>
-    <b>Style:</b> 1-bit (black & white), crisp pixels, no anti-aliasing.
+    <div class="left">
+      <span id="status">Ready</span>
+      <span>•</span>
+      <span>Controls: ←/→ move, W/↑/Space jump, Esc pause</span>
+    </div>
+    <div class="right">
+      <div id="mute" class="btn" role="button" aria-label="Toggle sound">🔈 Sound</div>
+      <div id="invert" class="btn" role="button" aria-label="Invert colors">⬛/⬜ Contrast</div>
+      <div id="speeddown" class="btn" title="Speed -5%">–Speed</div>
+      <div id="speedup" class="btn" title="Speed +5%">+Speed</div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile on-screen controls -->
+<div class="mobile">
+  <div style="display:flex; gap:8px; padding-left:8px;">
+    <div id="btnLeft" class="pad">◀</div>
+    <div id="btnRight" class="pad">▶</div>
+  </div>
+  <div style="padding-right:8px;">
+    <div id="btnJump" class="pad jump">⤒</div>
   </div>
 </div>
 
 <script>
-/* ====== Minimal B/W Side-Scroller (Canvas) ====== */
-const c = document.getElementById('game');
-const ctx = c.getContext('2d', { alpha:false });
+/* ===========================================================
+   MkhkAsg: MoonRunner — endless 1-bit platformer (single file)
+   =========================================================== */
+
+const C = document.getElementById('game');
+const ctx = C.getContext('2d', { alpha:false });
 ctx.imageSmoothingEnabled = false;
 
-// ----- World settings (all units are "pixels") -----
-const W = c.width, H = c.height;
-const GRAV = 0.7, FRICTION = 0.82, MOVE = 0.9, JUMP = 12;
-const CAMERA_LAG = 0.1;
+const W = C.width, H = C.height;
 
-// Mono palette
-const BLACK = "#000";
-const WHITE = "#fff";
+// Colors obey body.invert
+function isInverted(){ return document.body.classList.contains('invert'); }
+function COL_WHITE(){ return isInverted() ? '#000' : '#fff'; }
+function COL_BLACK(){ return isInverted() ? '#fff' : '#000'; }
+const fillRect = (x,y,w,h,color)=>{ ctx.fillStyle=color; ctx.fillRect(x|0,y|0,w|0,h|0); };
 
-// Helper draw
-const fill = (x,y,w,h,color=WHITE)=>{ ctx.fillStyle=color; ctx.fillRect(Math.floor(x),Math.floor(y),Math.floor(w),Math.floor(h)); };
+// --------- Sound (simple bleeps) ----------
+let audioCtx = null, muted = false;
+function beep(type='jump', t=0){
+  if(muted) return;
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'square';
+  let f1=220, f2=120;
+  if(type==='jump'){ f1=440; f2=220; }
+  if(type==='coin'){ f1=660; f2=440; }
+  if(type==='hit'){ f1=110; f2=55; }
+  if(type==='win'){ f1=523; f2=659; }
+  o.frequency.setValueAtTime(f1, audioCtx.currentTime + t);
+  o.frequency.exponentialRampToValueAtTime(f2, audioCtx.currentTime + t + 0.12);
+  g.gain.setValueAtTime(0.06, audioCtx.currentTime + t);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + t + 0.13);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + 0.14);
+}
 
-// Simple RNG
-let seed = 42; const rand = () => (seed = (seed*1664525+1013904223)|0, ((seed>>>0)%1000)/1000);
+// --------- RNG ----------
+let seed = 1337;
+const rand = () => (seed = (seed*1664525 + 1013904223) >>> 0, (seed % 1000)/1000);
 
-// ----- Build a tiny level: platforms and gaps -----
-const platforms = [];
-(function makeLevel(){
-  // Ground segments across a long strip with occasional gaps (moon craters)
-  let x = 0;
-  const groundY = H - 80;
-  for (let i=0;i<30;i++){
-    const segW = 240 + Math.floor(rand()*160);
-    const gap = 50 + Math.floor(rand()*70); // gaps between segments
-    platforms.push({ x, y:groundY, w:segW, h:40, type:'ground' });
-    x += segW + gap;
+// --------- Game state ----------
+let state = 'menu'; // menu | playing | paused | gameover
+let score = 0, best = Number(localStorage.getItem('moonrunner_best')||0);
+let baseSpeed = 3.2; // adjustable via UI
+let speed = baseSpeed;
+let time = 0;
+
+const statusEl = document.getElementById('status');
+const muteBtn = document.getElementById('mute');
+const invertBtn = document.getElementById('invert');
+const speedUpBtn = document.getElementById('speedup');
+const speedDownBtn = document.getElementById('speeddown');
+
+muteBtn.onclick = ()=>{ muted = !muted; muteBtn.textContent = muted ? '🔇 Muted' : '🔈 Sound'; };
+invertBtn.onclick = ()=>{ document.body.classList.toggle('invert'); };
+speedUpBtn.onclick = ()=>{ baseSpeed = Math.min(baseSpeed*1.05, 8); status('Speed '+baseSpeed.toFixed(2)); };
+speedDownBtn.onclick = ()=>{ baseSpeed = Math.max(baseSpeed*0.95, 2); status('Speed '+baseSpeed.toFixed(2)); };
+
+// --------- Player & physics ----------
+const player = { x: 120, y: H-120, w: 16, h: 22, vx:0, vy:0, onGround:false, wantLeft:false, wantRight:false, wantJump:false, shield:0, slow:0 };
+const GRAV = 0.65;
+const JUMP = 11.5;
+const FRICTION = 0.85;
+const COYOTE_MS = 120;  // jump still valid after leaving edge
+const BUFFER_MS = 120;  // queued jump before landing
+let coyoteUntil = 0;
+let jumpBufferedUntil = 0;
+
+// --------- Terrain/obstacles ----------
+const floorY = H - 84;
+let segments = []; // each: {x,w,type:'ground'|'gap'|'ceil' }
+let entities = []; // aliens
+let items = [];    // collectibles/powerups
+let scrollX = 0;
+
+function resetWorld(){
+  segments = [];
+  entities = [];
+  items = [];
+  scrollX = 0; score = 0; speed = baseSpeed; time = 0;
+  addInitialTerrain();
+  placeNextUntil(W*2.5);
+  player.x = 120; player.y = floorY - player.h; player.vx=0; player.vy=0; player.onGround=false; player.shield=0; player.slow=0;
+}
+
+function addInitialTerrain(){
+  segments.push({ x:0, w:300, type:'ground' });
+}
+function lastEndX(){ return segments.length? (segments[segments.length-1].x + segments[segments.length-1].w) : 0; }
+
+function placeNextUntil(targetX){
+  while(lastEndX() < targetX){
+    // Difficulty ramp based on score/time
+    const t = Math.min(1, score/1000);
+    const maxGap = 90 + t*80;         // pits get wider with time
+    const minGround = 160 - t*40;     // shorter safe ground later
+    const gW = minGround + Math.floor(rand()*140);
+    const gap = 60 + Math.floor(rand()*maxGap);
+
+    // Ground segment
+    segments.push({ x:lastEndX(), w:gW, type:'ground' });
+
+    // Sometimes spawn a low ceiling (spike) right after safe landing (later only)
+    if(score > 350 && rand()<0.25){
+      const cx = lastEndX() - Math.min(80, gW-40);
+      entities.push({ kind:'spike', x:cx, y: floorY - 60, w: 40, h: 10 });
+    }
+
+    // Place alien on some ground segments (not near edges)
+    if(rand() < 0.35){
+      const ax = lastEndX() - (40 + Math.floor(rand()*(gW-80)));
+      entities.push({ kind:'alien', x: ax, y: floorY-14, w:22, h:14, dir:(rand()<0.5?-1:1), range: 36 + Math.floor(rand()*44), baseX:0 });
+    }
+
+    // Sometimes place a coin (moon chip)
+    if(rand()<0.6){
+      const ix = lastEndX() - Math.floor(rand()*(gW-30)) - 30;
+      items.push({ kind:'chip', x:ix, y: floorY-40, w:10, h:10 });
+    }
+    // Rare powerups
+    if(rand()<0.08){
+      const ix = lastEndX() - 60;
+      items.push({ kind: rand()<0.5?'shield':'slow', x:ix, y: floorY-48, w:12, h:12 });
+    }
+
+    // Gap
+    segments.push({ x:lastEndX(), w:gap, type:'gap' });
   }
-  // A few elevated ledges
-  platforms.push({ x: 700,  y: groundY-120, w: 120, h: 16, type:'ledge' });
-  platforms.push({ x: 1200, y: groundY-170, w: 100, h: 16, type:'ledge' });
-  platforms.push({ x: 1650, y: groundY-140, w: 140, h: 16, type:'ledge' });
-  // End goal platform
-  const endX = platforms[platforms.length-1].x + platforms[platforms.length-1].w + 120;
-  platforms.push({ x:endX, y:groundY-40, w:180, h:40, type:'pad' });
-})();
+}
 
-// Simple patrolling alien (rectangle)
-const aliens = [
-  { x: 820, y: H-80-14, w: 22, h: 14, vx: 0.6, left: 780, right: 900 },
-  { x: 1320, y: H-80-14, w: 22, h: 14, vx: -0.7, left: 1280, right: 1360 }
-];
-
-// Player
-const player = { x: 40, y: H-140, w: 16, h: 22, vx:0, vy:0, onGround:false, dead:false, won:false };
-
-// UFO goal
-const goal = (()=>{
-  const lastPad = platforms.find(p=>p.type==='pad');
-  return { x:lastPad.x+100, y:lastPad.y-80, r:28 };
-})();
-
-// Camera
-let camX = 0;
-
-// Input
-const keys = {};
-addEventListener('keydown', e=>{
-  if(['ArrowLeft','ArrowRight','ArrowUp',' ' , 'a','d','w','A','D','W'].includes(e.key)) e.preventDefault();
-  keys[e.key] = true;
-});
-addEventListener('keyup', e=> keys[e.key] = false );
-
-// Collision utility
 function rects(a,b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
 
-// Physics + world step
-function step(){
-  if(player.dead || player.won) return;
+// --------- Input ----------
+const keys = {};
+addEventListener('keydown', e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp',' ','w','W','a','A','d','D','Escape'].includes(e.key)) e.preventDefault();
+  keys[e.key] = true;
+  if(e.key==='Escape'){
+    if(state==='playing'){ state='paused'; status('Paused'); }
+    else if(state==='paused'){ state='playing'; status('Resume'); }
+  }
+  // menu start
+  if(state==='menu' && (e.key===' '||e.key==='Enter'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')) startGame();
+  if(state==='gameover' && (e.key===' '||e.key==='Enter'||e.key==='r'||e.key==='R')) startGame();
+});
+addEventListener('keyup', e=> keys[e.key] = false);
 
-  // Horizontal input
-  const left  = keys['ArrowLeft'] || keys['a'] || keys['A'];
-  const right = keys['ArrowRight']|| keys['d'] || keys['D'];
-  const up    = keys['ArrowUp']   || keys['w'] || keys['W'] || keys[' '];
-  if(left)  player.vx -= MOVE;
-  if(right) player.vx += MOVE;
+// Touch controls
+function bindTouch(el, on, off){
+  const down = (ev)=>{ ev.preventDefault(); on(); };
+  const up = (ev)=>{ ev.preventDefault(); off(); };
+  el.addEventListener('touchstart', down, {passive:false});
+  el.addEventListener('touchend', up, {passive:false});
+  el.addEventListener('touchcancel', up, {passive:false});
+}
+bindTouch(document.getElementById('btnLeft'), ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
+bindTouch(document.getElementById('btnRight'), ()=>keys['ArrowRight']=true, ()=>keys['ArrowRight']=false);
+bindTouch(document.getElementById('btnJump'), ()=>{ keys[' ']=true; jumpBufferedUntil = performance.now()+BUFFER_MS; }, ()=>keys[' ']=false);
+
+// --------- Helpers ----------
+function status(t){ statusEl.textContent = t; }
+function startGame(){
+  resetWorld();
+  state = 'playing';
+  status('Running…');
+  beep('coin', 0); // little start chirp
+}
+function gameOver(){
+  state = 'gameover';
+  best = Math.max(best, Math.floor(score));
+  localStorage.setItem('moonrunner_best', String(best));
+  status('Game Over — press Space/Enter to retry');
+  beep('hit');
+}
+
+// --------- Update ----------
+function update(dt){
+  if(state!=='playing') return;
+
+  // Base speed increases over time
+  time += dt;
+  speed += (baseSpeed + time*0.0006 - speed) * 0.02;
+
+  const slowFactor = player.slow>0 ? 0.6 : 1;
+  const sc = speed * slowFactor;
+
+  // World scrolls left
+  scrollX += sc;
+
+  // Generate more terrain ahead
+  placeNextUntil(scrollX + W*2.2);
+
+  // Remove old segments/entities/items left of screen
+  const cutoff = scrollX - 120;
+  segments = segments.filter(s=> s.x + s.w > cutoff);
+  entities = entities.filter(e=> e.x + (e.w||0) > cutoff);
+  items    = items.filter(i=> i.x + (i.w||0) > cutoff);
+
+  // Player input intentions
+  const left  = keys['ArrowLeft']||keys['a']||keys['A'];
+  const right = keys['ArrowRight']||keys['d']||keys['D'];
+  const up    = keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
+
+  // Movement
+  if(left)  player.vx -= 0.6;
+  if(right) player.vx += 0.6;
+  player.vx *= FRICTION;
 
   // Gravity
   player.vy += GRAV;
 
-  // Jump (only when grounded)
-  if(up && player.onGround){ player.vy = -JUMP; player.onGround=false; }
+  // Coyote & buffer tracking
+  const now = performance.now();
+  if(player.onGround) coyoteUntil = now + COYOTE_MS;
+  if(up) jumpBufferedUntil = now + BUFFER_MS;
 
-  // Apply movement
+  // Jump if allowed
+  if(jumpBufferedUntil>now && coyoteUntil>now){
+    player.vy = -JUMP;
+    player.onGround=false;
+    jumpBufferedUntil = 0;
+    coyoteUntil = 0;
+    beep('jump');
+  }
+
+  // Apply velocity
   player.x += player.vx;
   player.y += player.vy;
-  player.vx *= FRICTION;
 
-  // Floor death (pit)
-  if(player.y > H+100) player.dead = true;
-
-  // Platform collisions (AABB, resolve Y first)
+  // Collisions with ground segments (AABB, vertical resolve primary)
   player.onGround = false;
-  for(const p of platforms){
-    // Only check nearby
-    if(p.x + p.w < player.x-100 || p.x > player.x+player.w+100) continue;
 
+  // Compute player world x (world scroll)
+  const worldPlayerX = player.x + scrollX;
+
+  for(const s of segments){
+    if(s.type!=='ground') continue;
+    // segment rect in world space
+    const rx = s.x, rw = s.w, ry = floorY, rh = 48;
+    // Only check if near horizontally
+    if(worldPlayerX + player.w < rx-10 || worldPlayerX > rx+rw+10) continue;
+
+    // Convert to screen space by subtracting scrollX later when drawing; for physics we use world
     // Vertical resolve
-    if(rects(player, p)){
-      if(player.vy > 0 && player.y+player.h - player.vy <= p.y){ // landing
-        player.y = p.y - player.h; player.vy = 0; player.onGround = true;
-      } else if(player.vy < 0 && player.y - player.vy >= p.y+p.h){ // hit ceiling
-        player.y = p.y + p.h; player.vy = 0;
+    const a = { x:worldPlayerX, y:player.y, w:player.w, h:player.h };
+    const b = { x:rx, y:ry, w:rw, h:rh };
+    if(rects(a,b)){
+      if(player.vy > 0 && player.y + player.h - player.vy <= ry){
+        // landing
+        player.y = ry - player.h;
+        player.vy = 0;
+        player.onGround = true;
+      }else if(player.vy < 0 && player.y - player.vy >= ry+rh){
+        // hit underside
+        player.y = ry + rh;
+        player.vy = 0;
+      }else{
+        // horizontal resolve
+        if(player.vx > 0) player.x = (rx - scrollX) - player.w;
+        else if(player.vx < 0) player.x = (rx + rw - scrollX);
+        player.vx = 0;
       }
     }
-    // Horizontal resolve (simple)
-    if(rects(player, p)){
-      if(player.vx > 0) player.x = p.x - player.w;
-      else if(player.vx < 0) player.x = p.x + p.w;
-      player.vx = 0;
+  }
+
+  // Pits = if below floor height → death
+  if(player.y > H+40){
+    if(player.shield>0){ player.shield=0; player.y = floorY - player.h - 2; player.vy = -JUMP*0.8; beep('hit'); }
+    else gameOver();
+  }
+
+  // Entities: aliens move locally (back-forth), spikes static
+  for(const e of entities){
+    if(e.kind==='alien'){
+      if(!e.baseX) e.baseX = e.x;
+      e.x += e.dir * 0.7;
+      if(Math.abs(e.x - e.baseX) > e.range) e.dir *= -1;
+      // collide with player
+      const pr = { x:worldPlayerX, y:player.y, w:player.w, h:player.h };
+      const er = { x:e.x, y:e.y, w:e.w, h:e.h };
+      if(rects(pr,er)){
+        if(player.shield>0){ player.shield=0; beep('hit'); e.x -= 40; } // knock alien away a bit
+        else gameOver();
+      }
+    }
+    if(e.kind==='spike'){
+      const pr = { x:worldPlayerX, y:player.y, w:player.w, h:player.h };
+      const er = { x:e.x, y:e.y, w:e.w, h:e.h };
+      if(rects(pr,er)){
+        if(player.shield>0){ player.shield=0; beep('hit'); }
+        else gameOver();
+      }
     }
   }
 
-  // Aliens patrol + collide (knockout)
-  for(const a of aliens){
-    a.x += a.vx;
-    if(a.x < a.left || a.x+a.w > a.right) a.vx *= -1;
-    if(rects(player, a)) player.dead = true;
+  // Items: chips and powerups
+  for(let i=items.length-1;i>=0;i--){
+    const it = items[i];
+    const pr = { x:worldPlayerX, y:player.y, w:player.w, h:player.h };
+    const ir = { x:it.x, y:it.y, w:it.w, h:it.h };
+    if(rects(pr,ir)){
+      if(it.kind==='chip'){ score += 100; beep('coin'); }
+      if(it.kind==='shield'){ player.shield = 1; beep('coin'); }
+      if(it.kind==='slow'){ player.slow = 180; beep('coin'); } // frames (~3s)
+      items.splice(i,1);
+    }
   }
 
-  // Reach UFO?
-  const dx = (player.x + player.w/2) - goal.x;
-  const dy = (player.y + player.h/2) - goal.y;
-  if(Math.hypot(dx,dy) < goal.r-4) player.won = true;
+  // Powerup timers
+  if(player.slow>0) player.slow--;
 
-  // Camera follows
-  const target = player.x - W*0.35;
-  camX += (target - camX) * CAMERA_LAG;
-  camX = Math.max(0, Math.min(camX, 999999)); // trivial clamp
+  // Score by distance/time
+  score += sc * 0.6;
+
+  // Little landing bump
+  // (visual only; handled in draw() via flash/bump toggles if desired)
 }
 
-// Render (1-bit)
+// --------- Draw ----------
 function draw(){
-  // Clear
-  ctx.fillStyle = BLACK; ctx.fillRect(0,0,W,H);
+  const FG = COL_WHITE(), BG = COL_BLACK();
+  ctx.fillStyle = BG; ctx.fillRect(0,0,W,H);
 
-  // Star field (static pattern)
-  ctx.fillStyle = WHITE;
+  // Star parallax layers (2 speeds)
+  ctx.fillStyle = FG;
   for(let i=0;i<120;i++){
-    const sx = (i*83)%2000 - camX*0.2; // parallax
-    const sy = (i*131)%H;
-    const x = Math.floor(sx % (W+200)) - 100;
-    const y = Math.floor(sy);
-    if(x>=0 && x<W && y>=0 && y<H) ctx.fillRect(x,y,1,1);
+    const sx1 = ((i*83)%2000) - (scrollX*0.25 % 2000);
+    const sy1 = (i*131)%H;
+    const x1 = ((sx1+2000)%2000) - 100;
+    const y1 = sy1;
+    if(x1>=0 && x1<W) ctx.fillRect(x1|0, y1|0, 1, 1);
+
+    const sx2 = ((i*211)%2400) - (scrollX*0.1 % 2400);
+    const x2 = ((sx2+2400)%2400) - 100;
+    const y2 = (i*97)%H;
+    if(x2>=0 && x2<W) ctx.fillRect(x2|0, y2|0, 1, 1);
   }
 
-  // Moon horizon
-  fill(-camX, H-120, W+camX+2000, 2, WHITE);
+  // Horizon line
+  fillRect(0, floorY-40, W, 2, FG);
 
-  // Platforms
-  for(const p of platforms){
-    const x = Math.floor(p.x - camX), y = p.y;
-    if(x+p.w < -50 || x > W+50) continue;
-    // top
-    fill(x, y, p.w, p.h, WHITE);
-    // texture (simple dither blocks)
-    for(let i=0;i<p.w;i+=8){
-      for(let j=0;j<p.h;j+=8){
-        if(((i+j)>>3)&1) fill(x+i, y+j, 4, 4, BLACK);
+  // Ground segments
+  for(const s of segments){
+    if(s.type!=='ground') continue;
+    const x = (s.x - scrollX) | 0;
+    const w = s.w | 0;
+    if(x>W || x+w<-50) continue;
+    fillRect(x, floorY, w, 44, FG);
+    // dithery texture
+    for(let i=0;i<w;i+=8){
+      for(let j=0;j<44;j+=8){
+        if(((i+j)>>3)&1) fillRect(x+i, floorY+j, 4, 4, BG);
       }
     }
   }
 
-  // Aliens
-  for(const a of aliens){
-    const x = Math.floor(a.x - camX), y = Math.floor(a.y);
-    fill(x, y, a.w, a.h, WHITE);                // body
-    fill(x+4, y+4, 4, 4, BLACK);                // eye
+  // Entities
+  for(const e of entities){
+    const x = (e.x - scrollX) | 0, y = e.y | 0;
+    if(e.kind==='alien'){
+      fillRect(x, y, e.w, e.h, FG);
+      fillRect(x+4, y+4, 4, 4, BG); // eye
+    }else if(e.kind==='spike'){
+      fillRect(x, y, e.w, e.h, FG);
+    }
   }
 
-  // Player (helmet silhouette)
-  const px = Math.floor(player.x - camX), py = Math.floor(player.y);
-  fill(px, py, player.w, player.h, WHITE);
-  fill(px+4, py+6, 6, 6, BLACK); // visor
+  // Items
+  for(const it of items){
+    const x = (it.x - scrollX) | 0, y = it.y | 0;
+    if(it.kind==='chip'){ fillRect(x, y, it.w, it.h, FG); fillRect(x+3, y+3, 4, 4, BG); }
+    if(it.kind==='shield'){ fillRect(x, y, it.w, it.h, FG); fillRect(x+2, y+2, it.w-4, it.h-4, BG); }
+    if(it.kind==='slow'){ fillRect(x, y, it.w, it.h, FG); fillRect(x+1, y+5, it.w-2, 2, BG); }
+  }
 
-  // UFO goal (beam)
-  const gX = Math.floor(goal.x - camX), gY = Math.floor(goal.y);
-  // beam
-  for(let i=0;i<50;i+=2) fill(gX-6+i%12-6, gY+12+i, 12, 2, (i%4===0)?WHITE:BLACK);
-  // saucer
-  fill(gX-28, gY, 56, 8, WHITE);
-  fill(gX-22, gY-10, 44, 6, WHITE);
-  fill(gX-3, gY-18, 6, 6, WHITE); // tiny dome
+  // Player
+  const px = player.x|0, py = player.y|0;
+  fillRect(px, py, player.w, player.h, FG);      // body
+  fillRect(px+4, py+6, 6, 6, BG);                // visor
+  if(player.shield>0){
+    // simple box outline
+    fillRect(px-2, py-2, player.w+4, 2, FG);
+    fillRect(px-2, py+player.h, player.w+4, 2, FG);
+    fillRect(px-2, py-2, 2, player.h+4, FG);
+    fillRect(px+player.w, py-2, 2, player.h+4, FG);
+  }
 
-  // UI
-  ctx.fillStyle = WHITE;
-  ctx.fillRect(10,10,1,8); // tiny tick for retro vibe
-
+  // UI text inside canvas
+  ctx.fillStyle = FG;
   ctx.font = "12px monospace";
-  ctx.fillStyle = WHITE;
-  if(player.dead){
-    const msg = "YOU FELL INTO A CRATER — PRESS R TO RESTART";
-    ctx.fillText(msg, Math.floor(W/2 - ctx.measureText(msg).width/2), 40);
-  } else if(player.won){
-    const msg = "BOARD THE UFO — YOU WIN!  PRESS R TO RESTART";
-    ctx.fillText(msg, Math.floor(W/2 - ctx.measureText(msg).width/2), 40);
+  const s = `SCORE ${Math.floor(score).toString().padStart(5,'0')}   BEST ${best.toString().padStart(5,'0')}`;
+  ctx.fillText(s, 10, 18);
+
+  if(state==='menu'){
+    // Title + tutorial
+    const title = "MKHKASG: MOONRUNNER";
+    const sub = "Press SPACE to start • ←/→ move • W/↑/Space jump • Esc pause";
+    const sub2 = "Goal: survive, pick up chips (+100). Shield = 1 hit. Slow-mo = 3s.";
+    const mW = ctx.measureText(title).width;
+    ctx.fillText(title, (W-mW)/2|0, H*0.35);
+    const m1 = ctx.measureText(sub).width;
+    ctx.fillText(sub, (W-m1)/2|0, H*0.35+24);
+    const m2 = ctx.measureText(sub2).width;
+    ctx.fillText(sub2, (W-m2)/2|0, H*0.35+44);
+    // Frame
+    fillRect(10,10,W-20,2,FG); fillRect(10,H-12,W-20,2,FG); fillRect(10,10,2,H-20,FG); fillRect(W-12,10,2,H-20,FG);
+  }
+
+  if(state==='paused'){
+    const msg = "PAUSED — press Esc to resume";
+    const w = ctx.measureText(msg).width;
+    ctx.fillText(msg, (W-w)/2|0, H*0.5);
+  }
+
+  if(state==='gameover'){
+    const over = "GAME OVER";
+    const tip  = "Space/Enter to retry";
+    const w1 = ctx.measureText(over).width, w2 = ctx.measureText(tip).width;
+    ctx.fillText(over, (W-w1)/2|0, H*0.45);
+    ctx.fillText(tip,  (W-w2)/2|0, H*0.45+24);
   }
 }
 
-// Restart
-function reset(){
-  player.x = 40; player.y = H-140; player.vx=0; player.vy=0;
-  player.onGround=false; player.dead=false; player.won=false;
-  camX = 0;
-}
-addEventListener('keydown', e=>{ if(e.key==='r' || e.key==='R') reset(); });
-
-// Main loop
-function loop(){
-  step();
+// --------- Main loop ----------
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(33, now - last); // ms
+  last = now;
+  if(state==='playing') update(dt);
   draw();
   requestAnimationFrame(loop);
 }
-reset(); loop();
+resetWorld(); state='menu'; status('Press Space to start');
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
