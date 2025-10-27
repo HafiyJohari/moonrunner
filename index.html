@@ -2,421 +2,890 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — Endless 1-bit</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>MKHKASG: MoonRunner</title>
+
+<!-- Title font (requested): Press Start 2P -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
 <style>
-  :root { --w: 960; --h: 540; }
-  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:ui-monospace,Consolas,Menlo,monospace}
-  body.invert{background:#fff;color:#000}
-  .wrap{display:grid;place-items:center;height:100%;gap:8px;padding:10px}
-  canvas{
-    max-width:100vw; max-height:100vh;
-    width:min(96vw,96vh*(16/9));
-    height:calc(var(--h) * (min(96vw,96vh*(16/9)) / var(--w)));
-    image-rendering:pixelated; image-rendering:crisp-edges; background:transparent; outline:1px solid #ffffff22;
-  }
-  .hud{width:min(96vw,96vh*(16/9));display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.95}
-  .hud .left,.hud .right{display:flex;gap:10px;align-items:center}
-  .btn{padding:3px 8px;border:1px solid currentColor;cursor:pointer;user-select:none}
-  .btn:active{transform:translateY(1px)}
-  /* Mobile onscreen controls */
-  .mobile{position:fixed;inset:auto 0 10px 0;display:none;justify-content:space-between;pointer-events:none;width:100%;padding:0 8px}
-  .pad{pointer-events:auto;background:#000;color:#fff;opacity:.8;border:1px solid #fff;border-radius:10px;width:31vw;height:16vh;display:flex;align-items:center;justify-content:center;font-size:18px;touch-action:none}
-  .jump{width:31vw;height:16vh}
-  @media (max-width: 820px){ .mobile{display:flex} .hud .right{display:none} }
+/* =========================
+   ========== STYLE =========
+   1-bit: pure #000 / #fff
+   ========================= */
+:root {
+  color-scheme: light dark;
+  --bg: #000;   /* default black background */
+  --fg: #fff;   /* default white foreground */
+  --uiAlpha: 0.9;
+  --padZ: 9999;
+}
+
+html, body {
+  margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  -webkit-font-smoothing: none; -moz-osx-font-smoothing: grayscale;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+}
+
+.wrapper {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  min-height: 100dvh; gap: .75rem; padding: .75rem .5rem 5rem;
+}
+
+.toolbar {
+  display: flex; gap: .5rem; align-items: center; justify-content: center;
+  border: 1px solid var(--fg); padding: .35rem .5rem; font-size: 12px;
+  position: sticky; top: .5rem; z-index: 5; background: color-mix(in oklab, var(--bg) 85%, var(--fg) 15%);
+  opacity: var(--uiAlpha);
+}
+.toolbar button, .toolbar .group { border: 1px solid var(--fg); background: transparent; color: var(--fg); }
+.toolbar button { padding: .3rem .6rem; cursor: pointer; }
+.toolbar input[type="range"] { width: 100px; accent-color: var(--fg); }
+.toolbar .group { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .5rem; }
+.toolbar .value { min-width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Canvas scales to min(96vw, 96vh*(16/9)) with 16:9 enforced via wrapper rules */
+.stage {
+  position: relative;
+}
+#game {
+  display: block;
+  width: min(96vw, calc(96vh * (16 / 9)));
+  height: calc(min(96vw, calc(96vh * (16 / 9))) * (9 / 16));
+  outline: 1px solid var(--fg);
+}
+
+/* HUD overlays */
+.hud {
+  position: absolute; left: 8px; top: 8px; font-size: 12px; letter-spacing: .5px;
+  mix-blend-mode: normal; user-select: none; pointer-events: none;
+}
+.overlayCenter {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  text-align: center; padding: 1rem;
+}
+.smallNote { font-size: 12px; margin-top: .5rem; opacity: .9; }
+
+/* Title styling */
+.titleBlock { font-family: "Press Start 2P", system-ui, sans-serif; line-height: 1.4; }
+.titleMain { font-size: clamp(16px, 3vw, 32px); }
+.subtitle { font-size: clamp(10px, 1.6vw, 14px); margin-top: .75rem; }
+
+/* Mobile pads */
+.pads {
+  position: fixed; inset: auto 0 0 0; display: grid; grid-template-columns: 1fr 1fr;
+  gap: .5rem; padding: .75rem; z-index: var(--padZ);
+}
+.padLeft, .padRight {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .5rem;
+}
+.padJump {
+  display: grid; grid-template-columns: 1fr; gap: .5rem;
+}
+.padBtn {
+  background: color-mix(in oklab, var(--bg) 75%, var(--fg) 25%);
+  border: 2px solid var(--fg); color: var(--fg);
+  font-size: clamp(14px, 4vw, 18px); padding: 1.1rem 0;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.pads .ghost { opacity: .7; }
+
+/* Desktop hides mobile, mobile hides toolbar */
+@media (pointer: coarse), (max-width: 920px) {
+  .toolbar { display: none; }
+  .pads { display: grid; }
+}
+@media (pointer: fine) and (min-width: 921px) {
+  .pads { display: none; }
+}
+
+/* Contrast invert (toolbar toggle) */
+.invert {
+  --bg: #fff;
+  --fg: #000;
+  filter: invert(1);
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <canvas id="game" width="960" height="540"></canvas>
-  <div class="hud">
-    <div class="left"><span id="status">Ready</span> <span>•</span> <span>←/→ move • W/↑/Space jump • Esc pause</span></div>
-    <div class="right">
-      <div id="mute" class="btn">🔈 Sound</div>
-      <div id="invert" class="btn">⬛/⬜ Contrast</div>
-      <div id="fs" class="btn">⛶ Full</div>
-      <div id="speeddown" class="btn">–Speed</div>
-      <div id="speedup" class="btn">+Speed</div>
+<div class="wrapper" id="root">
+  <!-- ===== Desktop toolbar (hidden on mobile) ===== -->
+  <div class="toolbar" id="toolbar" aria-label="Desktop Toolbar">
+    <button id="btnSound" title="Toggle Sound (M)">🔊 Sound</button>
+    <button id="btnContrast" title="Invert (Contrast)">◐ Contrast</button>
+    <button id="btnFullscreen" title="Fullscreen (F)">⤢ Fullscreen</button>
+    <div class="group" title="Base Speed ±5%">
+      <span>Speed</span>
+      <button id="speedMinus" aria-label="Speed -">−</button>
+      <span class="value" id="speedVal">100%</span>
+      <button id="speedPlus" aria-label="Speed +">+</button>
     </div>
   </div>
-</div>
 
-<!-- Mobile buttons -->
-<div class="mobile">
-  <div style="display:flex;gap:8px;padding-left:8px;">
-    <div id="btnLeft" class="pad">◀</div>
-    <div id="btnRight" class="pad">▶</div>
+  <!-- ===== Canvas stage ===== -->
+  <div class="stage" style="position:relative;">
+    <canvas id="game" width="960" height="540"></canvas>
+
+    <!-- HUD -->
+    <div class="hud" id="hud">SCORE 00000  BEST 00000</div>
+
+    <!-- Center overlays (title / pause / game over) -->
+    <div class="overlayCenter" id="centerOverlay" aria-live="polite">
+      <div class="titleBlock" id="titleBlock">
+        <div class="titleMain">MKHKASG: MOONRUNNER</div>
+        <div class="smallNote subtitle" style="margin-top:12px">Press SPACE to start • ←/→ move • W/↑/Space jump • Esc pause</div>
+        <div class="smallNote">Goal: survive. Chips +100. Shield = 1 hit. Slow-mo = 3s.</div>
+      </div>
+    </div>
   </div>
-  <div style="padding-right:8px;">
-    <div id="btnJump" class="pad jump">⤒</div>
+
+  <!-- ===== Mobile pads (hidden on desktop) ===== -->
+  <div class="pads" id="pads">
+    <div class="padLeft">
+      <button class="padBtn ghost" id="btnLeft">◀</button>
+      <button class="padBtn ghost" id="btnRight">▶</button>
+    </div>
+    <div class="padJump">
+      <button class="padBtn" id="btnJump">⤒ JUMP</button>
+    </div>
   </div>
 </div>
 
 <script>
 /* ===========================================================
-   MKHKASG: MoonRunner — manual-move endless (1-bit, single file)
+   ======================== SOUNDS ===========================
+   Tiny WebAudio bleeps, reused context
    =========================================================== */
+const AudioSys = (() => {
+  let ctx = null, enabled = true, master = null;
 
-const CV = document.getElementById('game');
-const ctx = CV.getContext('2d', { alpha:false });
+  function ensure() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = ctx.createGain();
+      master.gain.value = 0.05; // quiet gain
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+  }
+  function setEnabled(v){ enabled = !!v; }
+  function tone(type, freq=440, dur=0.08, vol=0.25) {
+    if (!enabled) return;
+    ensure();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.value = vol;
+    o.connect(g); g.connect(master);
+    const t = ctx.currentTime;
+    o.start(t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.stop(t + dur + 0.02);
+  }
+  return {
+    tone,
+    on(){ setEnabled(true); },
+    off(){ setEnabled(false); },
+    toggle(){ enabled = !enabled; return enabled; },
+    enabled(){ return enabled; }
+  };
+})();
+
+/* ===========================================================
+   ======================== SPRITES ==========================
+   Code-drawn masks (rect fills) in pure 1-bit
+   =========================================================== */
+const W = 960, H = 540;
+
+/* Astronaut 16x22: round helmet + square visor; frames: idle, run1, run2, jump */
+function drawAstronaut(ctx, x, y, frame) {
+  ctx.save();
+  ctx.translate(x,y);
+  // body rectangle (torso/legs)
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(2, 8, 12, 12); // torso/legs
+  // head (round-ish): circle mask via squares (pixelated vibe)
+  ctx.fillRect(3, 2, 10, 1);
+  ctx.fillRect(2, 3, 12, 1);
+  ctx.fillRect(1, 4, 14, 1);
+  ctx.fillRect(1, 5, 14, 1);
+  ctx.fillRect(1, 6, 14, 1);
+  ctx.fillRect(2, 7, 12, 1);
+  ctx.fillRect(3, 8, 10, 1);
+  // visor (square)
+  ctx.fillStyle = "#000";
+  ctx.fillRect(5, 4, 6, 5);
+
+  // simple limb animation by frame
+  ctx.fillStyle = "#fff";
+  if (frame === "run1") {
+    // right leg forward, left back
+    ctx.fillRect(3, 20, 4, 2);
+    ctx.fillRect(9, 19, 4, 3);
+    // arms
+    ctx.fillRect(0, 11, 3, 2);
+    ctx.fillRect(13, 11, 3, 2);
+  } else if (frame === "run2") {
+    ctx.fillRect(3, 19, 4, 3);
+    ctx.fillRect(9, 20, 4, 2);
+    ctx.fillRect(0, 12, 3, 2);
+    ctx.fillRect(13, 10, 3, 2);
+  } else if (frame === "jump") {
+    ctx.fillRect(3, 19, 4, 2);
+    ctx.fillRect(9, 19, 4, 2);
+    ctx.fillRect(0, 10, 3, 2);
+    ctx.fillRect(13, 10, 3, 2);
+  } else {
+    // idle
+    ctx.fillRect(6, 20, 4, 2);
+    ctx.fillRect(0, 11, 3, 2);
+    ctx.fillRect(13, 11, 3, 2);
+  }
+  ctx.restore();
+}
+
+/* Alien 22x14: idle1/idle2 wobble */
+function drawAlien(ctx, x, y, idle2=false) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.fillStyle = "#fff";
+  // body oval-ish
+  const rows = [4,6,8,10,8,6,4];
+  let ox = idle2 ? 1 : 0;
+  let yy = 2;
+  rows.forEach(w => {
+    ctx.fillRect( (11 - Math.floor(w/2)) + ox, yy, w, 1);
+    yy++;
+  });
+  // eyes (holes)
+  ctx.fillStyle = "#000";
+  ctx.fillRect(8+ox,5,2,1);
+  ctx.fillRect(12+ox,5,2,1);
+  // tiny legs
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(7+ox, 12, 2, 2);
+  ctx.fillRect(13+ox, 12, 2, 2);
+  ctx.restore();
+}
+
+/* UFO 56x20 with beam flicker */
+function drawUFO(ctx, x, y, beam=true) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.fillStyle = "#fff";
+  // saucer top
+  ctx.fillRect(12,0,32,2);
+  ctx.fillRect(8,2,40,2);
+  ctx.fillRect(6,4,44,2);
+  ctx.fillRect(4,6,48,2);
+  // dome
+  ctx.fillRect(24, -2, 8, 2);
+  // bottom plate
+  ctx.fillRect(0,8,56,2);
+  ctx.fillRect(6,10,44,2);
+  ctx.fillRect(10,12,36,2);
+  // beam (flicker using gaps)
+  if (beam) {
+    ctx.fillRect(26,14,4,2);
+    ctx.fillRect(22,16,12,2);
+    ctx.fillRect(20,18,16,2);
+  }
+  ctx.restore();
+}
+
+/* Pickups: chip 10x10, shield 12x12 outline, slow-mo 12x12 bar */
+function drawChip(ctx, x, y) {
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(x+2,y,6,2);
+  ctx.fillRect(x,y+2,10,6);
+  ctx.fillRect(x+2,y+8,6,2);
+  // inner hole
+  ctx.fillStyle = "#000";
+  ctx.fillRect(x+3,y+3,4,4);
+}
+function drawShield(ctx, x, y) {
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(x+1,y,10,1);
+  ctx.fillRect(x,y+1,1,10);
+  ctx.fillRect(x+11,y+1,1,10);
+  ctx.fillRect(x+1,y+11,10,1);
+}
+function drawSlow(ctx, x, y) {
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(x, y+5, 12, 2); // horizontal bar
+}
+
+/* Ground tile dither (top lip + rocky dither) */
+function drawGroundSegment(ctx, x, topY, w) {
+  // top lip
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(x, topY, w, 2);
+  // dither fill below
+  for (let yy = topY+2; yy < H; yy++) {
+    for (let xx = x; xx < x+w; xx++) {
+      // Bayer-like checker
+      if (((xx>>1) + (yy>>1)) % 2 === 0) {
+        ctx.fillRect(xx, yy, 1, 1);
+      }
+    }
+  }
+}
+
+/* ===========================================================
+   ======================== WORLD GEN ========================
+   Endless procedural ground + gaps, aliens & pickups
+   =========================================================== */
+const RNG = (() => {
+  let s = 1337;
+  function rand(){ s ^= s<<13; s ^= s>>>17; s ^= s<<5; return (s>>>0)/4294967295; }
+  function seed(v){ s = v>>>0; }
+  return { rand, seed };
+})();
+
+const world = {
+  scroll: 2.0,        // base scroll px/frame (scaled by dt and speedFactor)
+  speedFactor: 1.0,   // user toolbar ±5% steps
+  time: 0,
+  elapsed: 0,
+  segments: [],       // {x, w, yTop}
+  entities: [],       // aliens
+  items: [],          // pickups
+  starsA: [],         // parallax layer A
+  starsB: [],         // parallax layer B
+  tutorialSecs: 10,
+  lastSegX: 0,
+  floorY: Math.floor(H*0.78),
+  slowMoUntil: 0
+};
+
+function initStars() {
+  world.starsA = []; world.starsB = [];
+  const total = Math.floor(60 + RNG.rand()*60); // 60–120
+  for (let i=0;i<total;i++) {
+    const layer = (i % 2 === 0) ? 'A' : 'B';
+    const star = { x: RNG.rand()*W, y: RNG.rand()*Math.floor(H*0.7) };
+    (layer==='A'?world.starsA:world.starsB).push(star);
+  }
+}
+
+function resetWorld(seed=Date.now()) {
+  RNG.seed(seed);
+  world.scroll = 2.0;
+  world.speedFactor = 1.0;
+  world.time = 0;
+  world.elapsed = 0;
+  world.segments = [];
+  world.entities = [];
+  world.items = [];
+  world.lastSegX = 0;
+  initStars();
+  // Build initial runway: safe small gaps only, no aliens
+  let x = 0;
+  while (x < W*2) {
+    const segW = Math.floor(80 + RNG.rand()*140); // 80–220
+    world.segments.push({ x, w: segW, yTop: world.floorY });
+    x += segW;
+    const gap = Math.floor(20 + RNG.rand()*35); // small gaps
+    x += gap;
+  }
+  world.lastSegX = x;
+}
+
+/* Difficulty ramp after tutorial */
+function getDifficulty() {
+  const t = Math.max(0, world.elapsed - world.tutorialSecs);
+  // gently ramp speed and gaps
+  const spd = 2.0 + Math.min(3.0, t*0.02); // +0.02 per sec up to +3
+  const gapMax = 35 + Math.min(85, t*1.8); // increases max gap
+  return { spd, gapMax };
+}
+
+function spawnAhead(toX) {
+  while (world.lastSegX < toX) {
+    const afterTutorial = world.elapsed >= world.tutorialSecs;
+    const { spd, gapMax } = getDifficulty();
+    if (afterTutorial) world.scroll = spd;
+
+    // segment width
+    const segW = Math.floor(80 + RNG.rand()*160); // 80–240
+    // yTop with occasional low ceiling "spike" bars (post tutorial)
+    const yTop = world.floorY + (RNG.rand()<0.1 && afterTutorial ? Math.floor(-10 - RNG.rand()*20) : 0);
+    world.segments.push({ x: world.lastSegX, w: segW, yTop });
+
+    // maybe spawn items/aliens on this segment (post tutorial)
+    if (afterTutorial) {
+      // chips
+      if (RNG.rand() < 0.6) {
+        const n = 1 + (RNG.rand()<0.25?1:0);
+        for (let i=0;i<n;i++) {
+          const ix = world.lastSegX + 10 + RNG.rand()*(segW-20);
+          const iy = yTop - 16 - (i*12);
+          world.items.push({ type:"chip", x: ix, y: iy, w:10, h:10 });
+        }
+      }
+      // rare powerups
+      if (RNG.rand() < 0.08) {
+        const ix = world.lastSegX + 10 + RNG.rand()*(segW-22);
+        const iy = yTop - 18;
+        world.items.push({ type:"shield", x: ix, y: iy, w:12, h:12 });
+      } else if (RNG.rand() < 0.08) {
+        const ix = world.lastSegX + 10 + RNG.rand()*(segW-22);
+        const iy = yTop - 18;
+        world.items.push({ type:"slow", x: ix, y: iy, w:12, h:12 });
+      }
+      // aliens: not within 2 tiles of edges (~32px each tile here)
+      if (RNG.rand() < 0.35 && segW > 100) {
+        const safeEdge = 64;
+        const ax = world.lastSegX + safeEdge + RNG.rand()*(segW - safeEdge*2);
+        const ay = yTop - 14;
+        world.entities.push({ x: ax, y: ay, w:22, h:14, dir: RNG.rand()<0.5?-1:1, minX: world.lastSegX+safeEdge, maxX: world.lastSegX+segW-safeEdge, t:0 });
+      }
+    }
+
+    world.lastSegX += segW;
+
+    // gap
+    const gapMin = 20;
+    const gap = Math.floor(gapMin + RNG.rand()*(afterTutorial ? gapMax : 35));
+    world.lastSegX += gap;
+  }
+}
+
+/* ===========================================================
+   ========================== INPUT ==========================
+   Keyboard + mobile pads; jump buffer & coyote
+   =========================================================== */
+const input = {
+  left: false, right: false, jump: false,
+  lastJumpPressedAt: -1,
+};
+
+window.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  switch (e.code) {
+    case 'ArrowLeft': case 'KeyA': input.left = true; break;
+    case 'ArrowRight': case 'KeyD': input.right = true; break;
+    case 'ArrowUp': case 'KeyW': case 'Space':
+      input.jump = true; input.lastJumpPressedAt = performance.now(); e.preventDefault(); break;
+    case 'Escape':
+      if (game.state === 'play') setPaused(true);
+      else if (game.state === 'pause') setPaused(false);
+      break;
+    case 'KeyM': toggleSound(); break;
+    case 'KeyF': toggleFullscreen(); break;
+  }
+});
+window.addEventListener('keyup', (e) => {
+  switch (e.code) {
+    case 'ArrowLeft': case 'KeyA': input.left = false; break;
+    case 'ArrowRight': case 'KeyD': input.right = false; break;
+    case 'ArrowUp': case 'KeyW': case 'Space': input.jump = false; break;
+  }
+});
+
+/* Mobile pads */
+function bindPad(btn, on, off) {
+  const start = (e)=>{ e.preventDefault(); on(); };
+  const end = (e)=>{ e.preventDefault(); off(); };
+  btn.addEventListener('pointerdown', start);
+  btn.addEventListener('pointerup', end);
+  btn.addEventListener('pointerleave', end);
+  btn.addEventListener('pointercancel', end);
+  btn.addEventListener('touchstart', start, {passive:false});
+  btn.addEventListener('touchend', end);
+}
+bindPad(document.getElementById('btnLeft'), ()=>input.left=true, ()=>input.left=false);
+bindPad(document.getElementById('btnRight'), ()=>input.right=true, ()=>input.right=false);
+bindPad(document.getElementById('btnJump'), ()=>{
+  input.jump = true; input.lastJumpPressedAt = performance.now();
+  // simulate quick tap buffer
+  setTimeout(()=> input.jump = false, 180);
+}, ()=> input.jump = false);
+
+/* ===========================================================
+   =================== PHYSICS & PLAYER ======================
+   Gravity, friction, coyote (120ms), jump buffer (120ms)
+   =========================================================== */
+const physics = {
+  g: 0.65,
+  jumpV: 11.5,
+  friction: 0.86,
+  coyoteMs: 120,
+  bufferMs: 120
+};
+
+const player = {
+  x: Math.floor(W*0.25), y: 0, w:16, h:22,
+  vx: 0, vy: 0,
+  onGround: false, lastGroundedAt: 0,
+  hasShield: false,
+  score: 0, best: 0
+};
+
+/* Terrain collision check: returns topY if under player, else null */
+function groundYAt(x) {
+  for (const s of world.segments) {
+    if (x >= s.x && x <= s.x+s.w) return s.yTop;
+  }
+  return null;
+}
+
+/* AABB collision */
+function overlap(a,b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
+
+/* ===========================================================
+   ====================== UPDATE =============================
+   Game loop update: world, entities, items, player
+   =========================================================== */
+const game = {
+  state: 'title', // 'title' | 'play' | 'pause' | 'over'
+  lastTime: 0,
+  dpr: 1
+};
+const centerOverlay = document.getElementById('centerOverlay');
+const titleBlock = document.getElementById('titleBlock');
+const hud = document.getElementById('hud');
+
+function setPaused(p) {
+  if (p) {
+    game.state = 'pause';
+    centerOverlay.style.display = 'grid';
+    centerOverlay.innerHTML = `<div class="titleBlock"><div class="titleMain">PAUSED</div><div class="smallNote">Esc to resume</div></div>`;
+  } else {
+    game.state = 'play';
+    centerOverlay.style.display = 'none';
+  }
+}
+
+function setGameOver() {
+  game.state = 'over';
+  centerOverlay.style.display = 'grid';
+  centerOverlay.innerHTML = `<div class="titleBlock"><div class="titleMain">GAME OVER</div><div class="smallNote">Space/Enter to retry</div></div>`;
+}
+
+function startGame() {
+  // reset player & world
+  const best = Number(localStorage.getItem('moon_best')||0);
+  player.best = isFinite(best)?best:0;
+  player.x = Math.floor(W*0.25); player.y = 0; player.vx = 0; player.vy = 0;
+  player.onGround = false; player.lastGroundedAt = 0; player.score = 0; player.hasShield = false;
+  resetWorld();
+  game.state = 'play';
+  centerOverlay.style.display = 'none';
+  AudioSys.tone('square', 660, 0.08, 0.2);
+}
+
+window.addEventListener('keydown', (e) => {
+  if (game.state === 'title' && (e.code === 'Space' || e.code === 'Enter')) startGame();
+  else if (game.state === 'over' && (e.code === 'Space' || e.code === 'Enter')) startGame();
+});
+
+/* ===========================================================
+   ======================== DRAW =============================
+   Parallax stars, world, entities, items, HUD & overlays
+   =========================================================== */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d', {alpha:false, desynchronized:true});
 ctx.imageSmoothingEnabled = false;
 
-const W = 960, H = 540;
-let DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-
-function resizeCanvas(){
-  DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-  CV.width  = Math.floor(W * DPR);
-  CV.height = Math.floor(H * DPR);
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  ctx.imageSmoothingEnabled = false;
+function applyDPR() {
+  const rawDPR = Math.min(2, window.devicePixelRatio || 1);
+  if (rawDPR !== game.dpr) {
+    game.dpr = rawDPR;
+    canvas.width = W * game.dpr;
+    canvas.height = H * game.dpr;
+    ctx.setTransform(game.dpr,0,0,game.dpr,0,0);
+    ctx.imageSmoothingEnabled = false;
+  } else {
+    ctx.setTransform(game.dpr,0,0,game.dpr,0,0);
+  }
 }
-addEventListener('resize', resizeCanvas); resizeCanvas();
+applyDPR();
+window.addEventListener('resize', applyDPR);
 
-// Colors respect invert
-function inverted(){ return document.body.classList.contains('invert'); }
-function FG(){ return inverted() ? '#000' : '#fff'; }
-function BG(){ return inverted() ? '#fff' : '#000'; }
-const fill = (x,y,w,h,col)=>{ ctx.fillStyle=col; ctx.fillRect(x|0,y|0,w|0,h|0); };
+/* Title scene deco: UFO hover + astronaut under beam (flicker) */
+let titleBeamOn = true, titleBeamT = 0;
 
-// ---- Sound (bleeps) ----
-let audio=null, muted=false;
-function beep(kind='jump'){
-  if(muted) return;
-  if(!audio) audio = new (window.AudioContext||window.webkitAudioContext)();
-  const o = audio.createOscillator(), g = audio.createGain();
-  o.type='square';
-  const now = audio.currentTime;
-  const table = { jump:[440,220,.13, .06], coin:[660,440,.12,.06], hit:[110,55,.16,.07], win:[523,659,.18,.08] };
-  const [f1,f2,dur,vol] = table[kind]||table.jump;
-  o.frequency.setValueAtTime(f1,now); o.frequency.exponentialRampToValueAtTime(f2,now+dur);
-  g.gain.setValueAtTime(vol,now); g.gain.exponentialRampToValueAtTime(0.0001,now+dur);
-  o.connect(g); g.connect(audio.destination); o.start(); o.stop(now+dur);
+function drawTitleScene() {
+  // backdrop
+  ctx.fillStyle = "#000"; ctx.fillRect(0,0,W,H);
+  // stars (static for title)
+  for (const s of world.starsA) { ctx.fillStyle="#fff"; ctx.fillRect(s.x|0, s.y|0, 1,1); }
+  for (const s of world.starsB) { ctx.fillStyle="#fff"; ctx.fillRect(s.x|0, s.y|0, 1,1); }
+  // UFO above title
+  const ufx = Math.floor(W/2 - 28), ufy = Math.floor(H*0.28);
+  drawUFO(ctx, ufx, ufy, titleBeamOn);
+  // astronaut below beam
+  drawAstronaut(ctx, Math.floor(W/2 - 8), Math.floor(ufy + 32), "idle");
 }
 
-// ---- RNG ----
-let seed=2025; const rnd=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
+/* Main rendering */
+function render() {
+  // clear
+  ctx.fillStyle = "#000"; ctx.fillRect(0,0,W,H);
 
-// ---- State ----
-let state='menu'; // menu | play | paused | over
-let score=0, best = Number(localStorage.getItem('moon_best')||0);
-let baseSpeed=2.8, time=0;
+  // Parallax stars
+  ctx.fillStyle = "#fff";
+  for (const s of world.starsA) ctx.fillRect(s.x|0, s.y|0, 1,1);
+  for (const s of world.starsB) ctx.fillRect(s.x|0, s.y|0, 1,1);
 
-const statusEl = document.getElementById('status');
-document.getElementById('mute').onclick = ()=>{ muted=!muted; event.currentTarget.textContent = muted?'🔇 Muted':'🔈 Sound'; };
-document.getElementById('invert').onclick = ()=> document.body.classList.toggle('invert');
-document.getElementById('fs').onclick = ()=> CV.requestFullscreen?.();
-document.getElementById('speedup').onclick = ()=>{ baseSpeed=Math.min(7, baseSpeed*1.05); hint(`Speed ${baseSpeed.toFixed(2)}`); };
-document.getElementById('speeddown').onclick = ()=>{ baseSpeed=Math.max(2, baseSpeed*0.95); hint(`Speed ${baseSpeed.toFixed(2)}`); };
+  // ground
+  for (const seg of world.segments) {
+    drawGroundSegment(ctx, seg.x|0, seg.yTop|0, seg.w|0);
+  }
 
-// ---- Player & physics ----
-const GRAV=0.65, JUMP=11.5, FRICTION=0.86, COYOTE=120, BUFFER=120;
-const player = { x:120,y:H-120,w:16,h:22,vx:0,vy:0,on:false,shield:0,slow:0 };
-let coyoteUntil=0, bufferUntil=0;
+  // items
+  for (const it of world.items) {
+    if (it.type === 'chip') drawChip(ctx, it.x|0, it.y|0);
+    else if (it.type === 'shield') drawShield(ctx, it.x|0, it.y|0);
+    else drawSlow(ctx, it.x|0, it.y|0);
+  }
 
-// ---- World ----
-const floorY = H-84;
-let segments=[], entities=[], items=[];
-let scroll=0, speed=baseSpeed;
+  // aliens
+  const wobble = ((world.time*8)|0)%2 === 0;
+  for (const en of world.entities) drawAlien(ctx, en.x|0, en.y|0, wobble);
 
-function resetWorld(){
-  segments=[]; entities=[]; items=[]; scroll=0; score=0; time=0; speed=baseSpeed;
-  segments.push({x:0,w:360,type:'ground'}); // runway
-  spawnUntil(W*2.2);
-  Object.assign(player,{x:120,y:floorY-player.h,vx:0,vy:0,on:false,shield:0,slow:0});
-}
-function endX(){ return segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0; }
+  // player
+  const frame =
+    !player.onGround ? "jump" :
+    (Math.abs(player.vx) > 0.5 ? ( ((world.time*12)|0)%2 ? "run1":"run2") : "idle");
+  drawAstronaut(ctx, player.x|0, (player.y|0), frame);
 
-function spawnUntil(target){
-  while(endX()<target){
-    const t = Math.min(1, score/1000);
-    const minGround = (score<200? 240: 160 - t*40);
-    const maxGap = (score<200? 60: 90 + t*80);
-
-    const gW = minGround + Math.floor(rnd()*140);
-    const gap = 50 + Math.floor(rnd()*maxGap);
-
-    // Ground
-    const gx = endX();
-    segments.push({x:gx,w:gW,type:'ground'});
-
-    // Ceiling spike (later only)
-    if(score>350 && rnd()<0.25){
-      const cx = gx + 40 + Math.floor(rnd()*(gW-80));
-      entities.push({kind:'spike',x:cx,y:floorY-60,w:40,h:10});
-    }
-    // Alien (not near edges)
-    if(rnd()<0.35 && gW>100){
-      const ax = gx + 40 + Math.floor(rnd()*(gW-100));
-      entities.push({kind:'alien',x:ax,y:floorY-14,w:22,h:14,dir:(rnd()<0.5?-1:1),baseX:ax,range:36+Math.floor(rnd()*44)});
-    }
-    // Chip
-    if(rnd()<0.6){
-      const ix = gx + 30 + Math.floor(rnd()*(gW-60));
-      items.push({kind:'chip',x:ix,y:floorY-40,w:10,h:10});
-    }
-    // Rare powerups
-    if(rnd()<0.08){
-      const px = gx + gW-60; const k = rnd()<0.5?'shield':'slow';
-      items.push({kind:k,x:px,y:floorY-48,w:12,h:12});
-    }
-
-    // Gap
-    segments.push({x:endX(),w:gap,type:'gap'});
+  // If slow-mo active, add subtle indicator bars at top
+  if (world.slowMoUntil > performance.now()) {
+    for (let i=0;i<W;i+=8) ctx.fillRect(i, 0, 4, 2);
   }
 }
 
-function rect(a,b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
-
-// ---- Input ----
-const keys={};
-addEventListener('keydown',e=>{
-  if(['ArrowLeft','ArrowRight','ArrowUp',' ','w','W','a','A','d','D','Escape','Enter'].includes(e.key)) e.preventDefault();
-  keys[e.key]=true;
-  if(e.key==='Escape'){ if(state==='play'){state='paused';hint('Paused')} else if(state==='paused'){state='play';hint('Resume')} }
-  if(state==='menu' && (e.key===' '||e.key==='Enter'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')) start();
-  if(state==='over' && (e.key===' '||e.key==='Enter'||e.key==='r'||e.key==='R')) start();
-});
-addEventListener('keyup',e=> keys[e.key]=false);
-// Touch
-function bindTouch(id, on, off){
-  const el=document.getElementById(id);
-  const down=ev=>{ev.preventDefault();on();};
-  const up=ev=>{ev.preventDefault();off();};
-  el.addEventListener('touchstart',down,{passive:false});
-  el.addEventListener('touchend',up,{passive:false});
-  el.addEventListener('touchcancel',up,{passive:false});
+/* HUD */
+function updateHUD() {
+  const sc = player.score|0;
+  const be = player.best|0;
+  hud.textContent = `SCORE ${String(sc).padStart(5,'0')}  BEST ${String(be).padStart(5,'0')}`;
 }
-bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
-bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
-bindTouch('btnJump', ()=>{ keys[' ']=true; bufferUntil=performance.now()+BUFFER; }, ()=>keys[' ']=false);
 
-function hint(t){ document.getElementById('status').textContent=t; }
-function start(){ resetWorld(); state='play'; hint('Running…'); beep('coin'); }
-function gameOver(){ state='over'; best=Math.max(best,Math.floor(score)); localStorage.setItem('moon_best',String(best)); hint('Game Over — Space to retry'); beep('hit'); }
+/* ===========================================================
+   ========================= LOOP ============================
+   Fixed-ish timestep using delta; cleans offscreen
+   =========================================================== */
+function step(ts) {
+  if (!game.lastTime) game.lastTime = ts;
+  const rawDt = Math.min(50, ts - game.lastTime); // clamp
+  game.lastTime = ts;
 
-// ---- Update ----
-function update(dt){
-  if(state!=='play') return;
+  // speed factor & slow-mo
+  let timeScale = world.speedFactor;
+  if (world.slowMoUntil > performance.now()) timeScale *= 0.6;
 
-  // Manual left/right
-  const left  = keys['ArrowLeft']||keys['a']||keys['A'];
-  const right = keys['ArrowRight']||keys['d']||keys['D'];
-  const jump  = keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
+  const dt = rawDt * (timeScale/16.6667); // normalize ~60fps
 
-  // Base speed (influences scroll of world, not player)
-  time += dt; speed += (baseSpeed - speed)*0.02;
-  const slow = player.slow>0 ? 0.6 : 1;
-
-  // Scroll world slightly with player, but keep manual control vibe:
-  scroll += speed*0.6*slow;
-
-  spawnUntil(scroll + W*2.2);
-
-  // Player horizontal
-  if(left)  player.vx -= 0.7;
-  if(right) player.vx += 0.7;
-  player.vx *= FRICTION;
-
-  // Gravity
-  player.vy += GRAV;
-
-  // Coyote/buffer
-  const now=performance.now();
-  if(player.on) coyoteUntil=now+COYOTE;
-  if(jump) bufferUntil=now+BUFFER;
-  if(bufferUntil>now && coyoteUntil>now){
-    player.vy = -JUMP; player.on=false; bufferUntil=0; coyoteUntil=0; beep('jump');
+  // Title or overlays
+  if (game.state === 'title') {
+    titleBeamT += dt;
+    if (titleBeamT > 6) { titleBeamT = 0; titleBeamOn = !titleBeamOn; }
+    drawTitleScene();
+    updateHUD(); // show best on title
+    requestAnimationFrame(step);
+    return;
+  }
+  if (game.state === 'pause') {
+    render(); updateHUD();
+    requestAnimationFrame(step);
+    return;
   }
 
-  // Apply
-  player.x += player.vx;
-  player.y += player.vy;
+  // ======= Update world =======
+  world.time += dt;
+  world.elapsed += dt/60;
 
-  // Ground collisions
-  player.on=false;
-  const worldX = player.x + scroll;
-  for(const s of segments){
-    if(s.type!=='ground') continue;
-    if(worldX+player.w < s.x-8 || worldX > s.x+s.w+8) continue;
-    const a={x:worldX,y:player.y,w:player.w,h:player.h}, b={x:s.x,y:floorY,w:s.w,h:48};
-    if(rect(a,b)){
-      if(player.vy>0 && player.y+player.h-player.vy<=floorY){
-        player.y=floorY-player.h; player.vy=0; player.on=true;
-      } else if(player.vy<0 && player.y-player.vy>=floorY+48){
-        player.y=floorY+48; player.vy=0;
+  // parallax motion
+  const sA = world.scroll*0.3*dt, sB = world.scroll*0.6*dt, sG = world.scroll*dt;
+  for (const s of world.starsA) { s.x -= sA; if (s.x < 0) s.x += W; }
+  for (const s of world.starsB) { s.x -= sB; if (s.x < 0) s.x += W; }
+
+  // spawn ground ahead
+  spawnAhead(W + 400 + (-world.segments.at(-1)?.x || 0) + world.lastSegX);
+
+  // scroll segments/items/entities
+  const offX = sG;
+  for (const seg of world.segments) seg.x -= offX;
+  for (const it of world.items) it.x -= offX;
+  for (const en of world.entities) {
+    en.x -= offX;
+    // patrol within [minX,maxX] in world space => we subtract offX equally each frame,
+    // so patrol vector applies in screen-space:
+    en.t += dt;
+    if (en.t > 0.5) { en.t = 0; en.dir *= (Math.random()<0.2?-1:1); } // subtle switches
+    en.x += en.dir * 0.8 * dt; // slow patrol
+    if (en.x < en.minX - world.segments[0]?.x) en.dir = 1;
+    if (en.x+en.w > en.maxX - world.segments[0]?.x) en.dir = -1;
+  }
+
+  // clean off-screen
+  world.segments = world.segments.filter(s => s.x + s.w > -200);
+  world.items = world.items.filter(it => it.x + it.w > -50);
+  world.entities = world.entities.filter(en => en.x + en.w > -100);
+
+  // ======= Update player =======
+  // horizontal input
+  if (input.left && !input.right) player.vx -= 0.6*dt;
+  else if (input.right && !input.left) player.vx += 0.6*dt;
+  else player.vx *= Math.pow(physics.friction, dt); // friction with dt
+
+  // clamp vx
+  player.vx = Math.max(-4.5, Math.min(4.5, player.vx));
+
+  // gravity
+  player.vy += physics.g * dt;
+
+  // coyote ground detection
+  const feetX = player.x + player.w/2;
+  const groundTop = groundYAt(feetX);
+  let onGroundNow = false;
+  if (groundTop !== null) {
+    // simple ground collide when feet touch top
+    const feet = player.y + player.h;
+    if (feet >= groundTop && player.vy >= 0) {
+      player.y = groundTop - player.h;
+      player.vy = 0;
+      onGroundNow = true;
+    }
+  }
+
+  if (onGroundNow) player.lastGroundedAt = performance.now();
+  player.onGround = onGroundNow;
+
+  // jump buffer/coyote
+  const now = performance.now();
+  const canCoyote = (now - player.lastGroundedAt) <= physics.coyoteMs;
+  const buffered = (now - input.lastJumpPressedAt) <= physics.bufferMs;
+
+  if ((input.jump || buffered) && (player.onGround || canCoyote)) {
+    player.vy = -physics.jumpV;
+    input.lastJumpPressedAt = -1; // consume buffer
+    AudioSys.tone('square', 520, 0.06, 0.18);
+  }
+
+  // move
+  player.x += player.vx * dt;
+  player.y += player.vy * dt;
+
+  // prevent going off top/bottom hard
+  if (player.y > H+40) { // fell into crater -> hit/death
+    playerHit();
+  }
+
+  // collisions with items
+  const pBox = { x: player.x, y: player.y, w: player.w, h: player.h };
+  for (let i=world.items.length-1;i>=0;i--) {
+    const it = world.items[i];
+    if (overlap(pBox, it)) {
+      if (it.type === 'chip') {
+        player.score += 100;
+        AudioSys.tone('square', 800, 0.05, 0.25);
+      } else if (it.type === 'shield') {
+        player.hasShield = true;
+        AudioSys.tone('square', 360, 0.08, 0.25);
+        AudioSys.tone('square', 540, 0.08, 0.2);
       } else {
-        if(player.vx>0) player.x=(s.x-scroll)-player.w;
-        else if(player.vx<0) player.x=(s.x+s.w-scroll);
-        player.vx=0;
+        world.slowMoUntil = performance.now() + 3000;
+        AudioSys.tone('square', 300, 0.06, 0.22);
+        setTimeout(()=>AudioSys.tone('square', 420, 0.06, 0.2), 80);
+      }
+      world.items.splice(i,1);
+    }
+  }
+
+  // collisions with aliens
+  for (const en of world.entities) {
+    if (overlap(pBox, en)) {
+      if (player.hasShield) {
+        player.hasShield = false; // consume shield
+        // knockback a little
+        player.vy = -6; player.vx *= -0.5;
+        AudioSys.tone('square', 180, 0.06, 0.25);
+      } else {
+        playerHit();
+        break;
       }
     }
   }
 
-  // Crater death
-  if(player.y>H+40){
-    if(player.shield>0){ player.shield=0; player.y=floorY-player.h-2; player.vy=-JUMP*0.8; beep('hit'); }
-    else gameOver();
-  }
+  // score increases with distance/time
+  player.score += (0.8 + world.scroll*0.1) * dt;
 
-  // Entities
-  for(const e of entities){
-    if(e.kind==='alien'){
-      e.x += e.dir*0.7;
-      if(Math.abs(e.x - e.baseX) > e.range) e.dir*=-1;
-      if(rect({x:worldX,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
-        if(player.shield>0){ player.shield=0; beep('hit'); e.x += (e.dir*-1)*40; }
-        else gameOver();
-      }
-    } else if(e.kind==='spike'){
-      if(rect({x:worldX,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
-        if(player.shield>0){ player.shield=0; beep('hit'); } else gameOver();
-      }
-    }
-  }
+  // ======= Render & HUD =======
+  render();
+  updateHUD();
 
-  // Items
-  for(let i=items.length-1;i>=0;i--){
-    const it=items[i];
-    if(rect({x:worldX,y:player.y,w:player.w,h:player.h},{x:it.x,y:it.y,w:it.w,h:it.h})){
-      if(it.kind==='chip'){ score+=100; beep('coin'); }
-      if(it.kind==='shield'){ player.shield=1; beep('coin'); }
-      if(it.kind==='slow'){ player.slow=180; beep('coin'); }
-      items.splice(i,1);
-    }
-  }
-
-  if(player.slow>0) player.slow--;
-
-  // Score by time + slight bonus for moving right
-  score += (dt*0.06) + Math.max(0, player.vx)*0.03;
+  requestAnimationFrame(step);
 }
 
-// ---- Drawing helpers (1-bit sprites via vector pixels) ----
-function spriteAstronaut(x,y,pose='idle'){
-  // 16x22 body with visor hole; simple run frames by shifting legs
-  const f=FG(), b=BG();
-  fill(x,y,16,22,f);
-  fill(x+4,y+6,6,6,b); // visor
-  if(pose==='run1'){ fill(x+2,y+18,5,2,b); fill(x+10,y+18,4,2,b); }
-  if(pose==='run2'){ fill(x+1,y+18,4,2,b); fill(x+9,y+18,6,2,b); }
-  if(pose==='jump'){ fill(x+3,y+18,10,2,b); }
-}
-function spriteAlien(x,y,frame=0){
-  const f=FG(), b=BG();
-  fill(x,y,22,14,f);
-  fill(x+4,y+4,4,4,b);
-  if(frame%2===0) fill(x+14,y+4,2,2,b); // tiny blink
-}
-function spriteUFO(x,y,frame=0){
-  const f=FG(), b=BG();
-  // saucer
-  fill(x-28,y,56,8,f);
-  fill(x-22,y-8,44,6,f);
-  fill(x-4,y-14,8,6,f);
-  // beam flicker bars
-  if(frame%3!==0){
-    for(let i=0;i<50;i+=4) fill(x-6+(i%12)-6,y+12+i,12,2,f);
+function playerHit() {
+  AudioSys.tone('square', 140, 0.1, 0.25);
+  setTimeout(()=>AudioSys.tone('square', 100, 0.14, 0.25), 60);
+  const sc = Math.floor(player.score);
+  if (sc > player.best) {
+    player.best = sc;
+    localStorage.setItem('moon_best', String(sc));
   }
-}
-function tileGround(x,y,w){
-  const f=FG(), b=BG();
-  fill(x,y,w,44,f);
-  for(let i=0;i<w;i+=8) for(let j=0;j<44;j+=8) if(((i+j)>>3)&1) fill(x+i,y+j,4,4,b);
+  setGameOver();
 }
 
-// ---- Draw ----
-function draw(){
-  ctx.fillStyle=BG(); ctx.fillRect(0,0,W,H);
+/* Start in title state */
+(function boot(){
+  // load best
+  const best = Number(localStorage.getItem('moon_best')||0);
+  player.best = isFinite(best)?best:0;
+  resetWorld();
+  drawTitleScene();
+  updateHUD();
+  requestAnimationFrame(step);
+})();
 
-  // Stars (two parallax layers)
-  ctx.fillStyle=FG();
-  for(let i=0;i<120;i++){
-    const x1 = ((i*83)%2000) - (scroll*0.25 % 2000); const y1=(i*131)%H;
-    const xx1 = ((x1+2000)%2000) - 100; if(xx1>=0 && xx1<W) ctx.fillRect(xx1|0,y1|0,1,1);
-    const x2 = ((i*211)%2400) - (scroll*0.10 % 2400); const y2=(i*97)%H;
-    const xx2 = ((x2+2400)%2400) - 100; if(xx2>=0 && xx2<W) ctx.fillRect(xx2|0,y2|0,1,1);
-  }
+/* ===========================================================
+   ====================== UI / TOOLBAR =======================
+   Sound, contrast, fullscreen, speed ±5%
+   =========================================================== */
+const root = document.getElementById('root');
+const btnSound = document.getElementById('btnSound');
+const btnContrast = document.getElementById('btnContrast');
+const btnFullscreen = document.getElementById('btnFullscreen');
+const speedMinus = document.getElementById('speedMinus');
+const speedPlus = document.getElementById('speedPlus');
+const speedVal = document.getElementById('speedVal');
 
-  // Horizon guide
-  fill(0,floorY-40,W,2,FG());
-
-  // Ground
-  for(const s of segments){
-    if(s.type!=='ground') continue;
-    const x=(s.x - scroll)|0; const w=s.w|0;
-    if(x>W || x+w<-50) continue;
-    tileGround(x,floorY,w);
-  }
-
-  // Entities
-  let frame = (performance.now()/120|0);
-  for(const e of entities){
-    const x=(e.x - scroll)|0, y=e.y|0;
-    if(e.kind==='alien') spriteAlien(x,y,frame);
-    else if(e.kind==='spike') fill(x,y,e.w,e.h,FG());
-  }
-
-  // Items
-  for(const it of items){
-    const x=(it.x - scroll)|0, y=it.y|0, f=FG(), b=BG();
-    if(it.kind==='chip'){ fill(x,y,10,10,f); fill(x+3,y+3,4,4,b); }
-    if(it.kind==='shield'){ fill(x,y,12,12,f); fill(x+2,y+2,8,8,b); }
-    if(it.kind==='slow'){ fill(x,y,12,12,f); fill(x+2,y+5,8,2,b); }
-  }
-
-  // Player
-  const pose = player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
-  spriteAstronaut(player.x|0, player.y|0, pose);
-  if(player.shield>0){
-    fill(player.x-2,player.y-2, player.w+4,2,FG());
-    fill(player.x-2,player.y+player.h, player.w+4,2,FG());
-    fill(player.x-2,player.y-2,2,player.h+4,FG());
-    fill(player.x+player.w,player.y-2,2,player.h+4,FG());
-  }
-
-  // UI
-  ctx.fillStyle=FG(); ctx.font="12px monospace";
-  const s = `SCORE ${Math.floor(score).toString().padStart(5,'0')}   BEST ${best.toString().padStart(5,'0')}`;
-  ctx.fillText(s,10,18);
-
-  if(state==='menu'){
-    // Poster-like title (no border)
-    const title="MKHKASG: MOONRUNNER";
-    const tW = ctx.measureText(title).width;
-    ctx.fillText(title,(W-tW)/2|0,H*0.30);
-    spriteUFO(W/2|0, H*0.30-40|0, frame);
-    // astronaut under beam
-    spriteAstronaut(W/2-8|0, H*0.30+18|0, 'idle');
-
-    const sub="Press SPACE to start • ←/→ move • W/↑/Space jump • Esc pause";
-    const sub2="Goal: survive. Chips +100. Shield=1 hit. Slow-mo=3s.";
-    const w1=ctx.measureText(sub).width, w2=ctx.measureText(sub2).width;
-    ctx.fillText(sub, (W-w1)/2|0, H*0.30+50);
-    ctx.fillText(sub2,(W-w2)/2|0, H*0.30+70);
-  }
-
-  if(state==='paused'){
-    const msg="PAUSED — Esc to resume"; const w=ctx.measureText(msg).width;
-    ctx.fillText(msg,(W-w)/2|0,H*0.5);
-  }
-  if(state==='over'){
-    const msg="GAME OVER"; const tip="Space/Enter to retry";
-    const w=ctx.measureText(msg).width, w2=ctx.measureText(tip).width;
-    ctx.fillText(msg,(W-w)/2|0,H*0.45);
-    ctx.fillText(tip,(W-w2)/2|0,H*0.45+22);
-  }
+function updateSpeedLabel(){
+  speedVal.textContent = `${Math.round(world.speedFactor*100)}%`;
 }
-
-// ---- Loop ----
-let last=performance.now();
-function tick(now){
-  const dt=Math.min(33, now-last); last=now;
-  if(state==='play') update(dt);
-  draw(); requestAnimationFrame(tick);
+function toggleSound(){
+  const on = AudioSys.toggle();
+  btnSound.textContent = (on? "🔊 Sound":"🔇 Sound");
 }
-resetWorld(); state='menu'; hint('Press Space to start');
-requestAnimationFrame(tick);
+function toggleContrast(){
+  root.classList.toggle('invert');
+}
+async function toggleFullscreen(){
+  const el = document.documentElement;
+  if (!document.fullscreenElement) await el.requestFullscreen().catch(()=>{});
+  else await document.exitFullscreen().catch(()=>{});
+}
+btnSound.addEventListener('click', toggleSound);
+btnContrast.addEventListener('click', toggleContrast);
+btnFullscreen.addEventListener('click', toggleFullscreen);
+speedMinus.addEventListener('click', ()=>{ world.speedFactor = Math.max(0.5, Math.round((world.speedFactor-0.05)*100)/100); updateSpeedLabel(); });
+speedPlus.addEventListener('click', ()=>{ world.speedFactor = Math.min(1.5, Math.round((world.speedFactor+0.05)*100)/100); updateSpeedLabel(); });
+updateSpeedLabel();
+
+/* Start/click on canvas to begin from title */
+canvas.addEventListener('pointerdown', ()=>{
+  if (game.state === 'title') startGame();
+  else if (game.state === 'over') startGame();
+});
+
+/* Prevent touch scroll on pads */
+document.getElementById('pads').addEventListener('touchmove', e => e.preventDefault(), {passive:false});
 </script>
 </body>
 </html>
