@@ -203,8 +203,8 @@ const pad=(n,w=5)=>String(n).padStart(w,'0');
 /* ===== WebAudio: SFX + CHiPTUNE ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
 // --- MIX BUSSES + DEFAULT VOLUMES ---
-let musicVol = 0.10;  // was ~0.16 per note — make music quieter overall
-let sfxVol   = 0.22;  // a bit louder so jumps/coins pop
+let musicVol = 0.05;  // was ~0.16 per note — make music quieter overall
+let sfxVol   = 0.28;  // a bit louder so jumps/coins pop
 let musicBus = null, sfxBus = null;
 
 function ensureAC(){
@@ -244,10 +244,10 @@ function beep(kind='jump'){
   // --- Sidechain duck the music a bit so SFX is clear ---
   if(musicBus && !musicMuted){
     const back = musicVol;
-    const duck = musicVol * 0.5; // 50% dip
+    const duck = musicVol * 0.25; // 50% dip
     musicBus.gain.cancelScheduledValues(t);
-    musicBus.gain.setTargetAtTime(duck, t, 0.01);     // quick dip
-    musicBus.gain.setTargetAtTime(back, t+0.25, 0.15); // smooth return
+    musicBus.gain.setTargetAtTime(duck, t, 0.008);     // quick dip
+    musicBus.gain.setTargetAtTime(back, t+0.35, 0.25); // smooth return
   }
 }
 
@@ -294,8 +294,8 @@ function startMusic(){
     for(let k=0;k<4;k++){
       const l=lead[musicStep % lead.length];
       const b=bass[musicStep % bass.length];
-      if(l) playNote(NT(l[0]), l[1],'square',0.16);
-      if(b) playNote(NT(b[0]), b[1],'triangle',0.12);
+      if(l) playNote(NT(l[0]), l[1],'square',0.10);
+      if(b) playNote(NT(b[0]), b[1],'triangle',0.07);
       musicStep++;
     }
     musicTimer=setTimeout(tick, stepSec*1000*4);
