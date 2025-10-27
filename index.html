@@ -202,18 +202,55 @@ const pad=(n,w=5)=>String(n).padStart(w,'0');
 
 /* ===== WebAudio: SFX + CHiPTUNE ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
+// --- MIX BUSSES + DEFAULT VOLUMES ---
+let musicVol = 0.10;  // was ~0.16 per note — make music quieter overall
+let sfxVol   = 0.22;  // a bit louder so jumps/coins pop
+let musicBus = null, sfxBus = null;
+
+function ensureAC(){
+  if(!ac){
+    ac = new (window.AudioContext||window.webkitAudioContext)();
+    // route through buses so we can balance/duck
+    musicBus = ac.createGain();
+    sfxBus   = ac.createGain();
+    musicBus.gain.value = musicVol;
+    sfxBus.gain.value   = sfxVol;
+    musicBus.connect(ac.destination);
+    sfxBus.connect(ac.destination);
+  }
+}
+  
 function ensureAC(){ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); }
 
 /* SFX */
 function beep(kind='jump'){
   if(sfxMuted) return; ensureAC();
-  const o=ac.createOscillator(), g=ac.createGain(); o.type='square'; const t=ac.currentTime;
-  const T={jump:[440,220,.13,.06], coin:[660,440,.12,.06], hit:[110,55,.16,.07]};
+
+  const o=ac.createOscillator(), g=ac.createGain(); o.type='square';
+  const t=ac.currentTime;
+  const T={jump:[440,220,.13,.08], coin:[660,440,.12,.10], hit:[110,55,.16,.10]};
   const [f1,f2,dur,vol]=T[kind]||T.jump;
-  o.frequency.setValueAtTime(f1,t); o.frequency.exponentialRampToValueAtTime(f2,t+dur);
-  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-  o.connect(g); g.connect(ac.destination); o.start(); o.stop(t+dur);
+
+  // Envelope
+  o.frequency.setValueAtTime(f1,t);
+  o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+
+  // Route to SFX bus
+  o.connect(g); g.connect(sfxBus||ac.destination);
+  o.start(); o.stop(t+dur);
+
+  // --- Sidechain duck the music a bit so SFX is clear ---
+  if(musicBus && !musicMuted){
+    const back = musicVol;
+    const duck = musicVol * 0.5; // 50% dip
+    musicBus.gain.cancelScheduledValues(t);
+    musicBus.gain.setTargetAtTime(duck, t, 0.01);     // quick dip
+    musicBus.gain.setTargetAtTime(back, t+0.25, 0.15); // smooth return
+  }
 }
+
 
 /* Simple chiptune sequencer (original melody) */
 let musicRunning=false, musicTimer=null, musicStep=0;
@@ -238,12 +275,16 @@ function playNote(freq, mul, type='square', vol=0.18){
   const t=ac.currentTime, osc=ac.createOscillator(), g=ac.createGain();
   osc.type=type; osc.frequency.setValueAtTime(freq,t);
   g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(vol,t+0.01);
-  g.gain.linearRampToValueAtTime(vol*0.6,t+0.06);
+  g.gain.linearRampToValueAtTime(vol, t+0.01);
+  g.gain.linearRampToValueAtTime(vol*0.6, t+0.06);
   const end=t+mul*stepSec;
-  g.gain.exponentialRampToValueAtTime(0.0001,end+0.08);
-  osc.connect(g).connect(ac.destination); osc.start(t); osc.stop(end+0.1);
+  g.gain.exponentialRampToValueAtTime(0.0001, end+0.08);
+
+  // route to music bus (not directly to destination)
+  osc.connect(g).connect(musicBus || ac.destination);
+  osc.start(t); osc.stop(end+0.1);
 }
+
 function startMusic(){
   if(musicRunning||musicMuted) return;
   musicRunning=true; musicStep=0;
@@ -300,8 +341,19 @@ bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
 bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+JUMP_BUFFER_MS; }, ()=>{ keys[' ']=false; });
 
 /* Toolbar */
-document.getElementById('mute').onclick = (e)=>{ sfxMuted=!sfxMuted; e.currentTarget.textContent=sfxMuted?'🔇 SFX':'🔈 SFX'; };
-document.getElementById('music').onclick = (e)=>{ musicMuted=!musicMuted; e.currentTarget.textContent=musicMuted?'♪ Music Off':'♪ Music'; if(musicMuted) stopMusic(); else startMusic(); };
+document.getElementById('music').onclick = (e)=>{
+  musicMuted = !musicMuted; ensureAC();
+  e.currentTarget.textContent = musicMuted ? '♪ Music Off' : '♪ Music';
+  if(musicBus) musicBus.gain.value = musicMuted ? 0 : musicVol;
+  if(musicMuted) stopMusic(); else startMusic();
+};
+
+document.getElementById('mute').onclick = (e)=>{
+  sfxMuted = !sfxMuted; ensureAC();
+  e.currentTarget.textContent = sfxMuted ? '🔇 SFX' : '🔈 SFX';
+  if(sfxBus) sfxBus.gain.value = sfxMuted ? 0 : sfxVol;
+};
+
 document.getElementById('invert').onclick = ()=> document.body.classList.toggle('invert');
 document.getElementById('fs').onclick = ()=> CV.requestFullscreen?.();
 document.getElementById('speedup').onclick = ()=>{ baseSpeed=Math.min(7, baseSpeed*1.05); statusEl.textContent=`Speed ${baseSpeed.toFixed(2)}`; };
