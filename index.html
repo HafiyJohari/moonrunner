@@ -5,11 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>MKHKASG: MoonRunner — 1-bit Endless</title>
 
-<!-- Title/HUD font -->
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
 <style>
-  :root { --w: 960; --h: 540; }
+  :root { --w:960; --h:540; }
   html,body{margin:0;height:100%;background:#000;color:#fff;font-family:ui-monospace,Consolas,Menlo,monospace}
   body.invert{background:#fff;color:#000}
   .wrap{display:grid;place-items:center;height:100%;gap:8px;padding:10px}
@@ -17,24 +16,24 @@
     width:min(96vw,96vh*(16/9));
     height:calc(var(--h) * (min(96vw,96vh*(16/9)) / var(--w)));
     image-rendering:pixelated; image-rendering:crisp-edges;
-    background:transparent; outline:1px solid #ffffff22;
+    background:transparent;
+    /* remove outer border to avoid confusion with artifacts */
   }
   .hud{width:min(96vw,96vh*(16/9));display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.95}
   .hud .left,.hud .right{display:flex;gap:10px;align-items:center}
   .btn{padding:3px 8px;border:1px solid currentColor;cursor:pointer;user-select:none}
   .btn:active{transform:translateY(1px)}
-  /* Mobile onscreen controls */
-  .mobile{position:fixed;inset:auto 0 10px 0;display:none;justify-content:space-between;pointer-events:none;width:100%;padding:0 8px}
+  .mobile{position:fixed;left:0;right:0;bottom:10px;display:none;justify-content:space-between;pointer-events:none;padding:0 8px}
   .pad{pointer-events:auto;background:#000;color:#fff;opacity:.85;border:1px solid #fff;border-radius:12px;width:31vw;height:16vh;display:flex;align-items:center;justify-content:center;font-size:18px;touch-action:none}
   .jump{width:31vw;height:16vh}
-  @media (max-width: 820px){ .mobile{display:flex} .hud .right{display:none} }
+  @media (max-width:820px){ .mobile{display:flex} .hud .right{display:none} }
 </style>
 </head>
 <body>
 <div class="wrap">
   <canvas id="cv" width="960" height="540"></canvas>
   <div class="hud">
-    <div class="left"><span id="status">Ready</span> <span>•</span> <span>←/→ move • W/↑/Space jump • Esc pause</span></div>
+    <div class="left"><span id="status">Loading…</span> <span>•</span> <span>←/→ move • W/↑/Space jump • Esc pause</span></div>
     <div class="right">
       <div id="mute" class="btn">🔈 Sound</div>
       <div id="invert" class="btn">⬛/⬜ Contrast</div>
@@ -57,14 +56,10 @@
 </div>
 
 <script>
-/* ===========================================================
-   MKHKASG: MoonRunner — manual-move endless (1-bit, single file)
-   =========================================================== */
-/* ---------- Canvas & DPR ---------- */
+/* ===== Canvas & DPR ===== */
 const CV = document.getElementById('cv');
 const ctx = CV.getContext('2d', { alpha:false });
 ctx.imageSmoothingEnabled = false;
-
 const W = 960, H = 540;
 let DPR = 1;
 function resizeCanvas(){
@@ -75,37 +70,38 @@ function resizeCanvas(){
 }
 addEventListener('resize', resizeCanvas); resizeCanvas();
 
-/* ---------- Colors & helpers ---------- */
+/* ===== Colors & helpers (snap to integers to kill hairlines) ===== */
 function inverted(){ return document.body.classList.contains('invert'); }
-function FG(){ return inverted() ? '#000' : '#fff'; }
-function BG(){ return inverted() ? '#fff' : '#000'; }
-const FILL = (x,y,w,h,col)=>{ ctx.fillStyle=col; ctx.fillRect(x|0,y|0,w|0,h|0); };
+function FG(){ return inverted()? '#000' : '#fff'; }
+function BG(){ return inverted()? '#fff' : '#000'; }
+const i = v => v|0;                         // snap to int
+const i2 = v => (v>>1)<<1;                  // snap to even px (coins/beam)
+const FILL = (x,y,w,h,c)=>{ ctx.fillStyle=c; ctx.fillRect(i(x),i(y),i(w),i(h)); };
 
-/* ---------- Sound ---------- */
+/* ===== Sound ===== */
 let audio=null, muted=false;
 function beep(kind='jump'){
   if(muted) return;
   if(!audio) audio = new (window.AudioContext||window.webkitAudioContext)();
   const o=audio.createOscillator(), g=audio.createGain();
   o.type='square'; const now=audio.currentTime;
-  const tbl={jump:[440,220,.13,.06], coin:[660,440,.12,.06], hit:[110,55,.16,.07], win:[523,659,.18,.08]};
-  const [f1,f2,dur,vol]=tbl[kind]||tbl.jump;
+  const T={jump:[440,220,.13,.06], coin:[660,440,.12,.06], hit:[110,55,.16,.07], win:[523,659,.18,.08]};
+  const [f1,f2,dur,vol]=T[kind]||T.jump;
   o.frequency.setValueAtTime(f1,now); o.frequency.exponentialRampToValueAtTime(f2,now+dur);
   g.gain.setValueAtTime(vol,now); g.gain.exponentialRampToValueAtTime(0.0001,now+dur);
   o.connect(g); g.connect(audio.destination); o.start(); o.stop(now+dur);
 }
 
-/* ---------- RNG ---------- */
-let seed=20251027;
-const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
+/* ===== RNG ===== */
+let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
 
-/* ---------- State ---------- */
-let state='menu'; // menu | play | paused | over
+/* ===== State ===== */
+let state='boot'; // boot -> menu | play | paused | over
 let score=0, best=Number(localStorage.getItem('moon_best')||0);
 let baseSpeed=2.8, time=0, scroll=0;
-const statusEl=document.getElementById('status');
+const statusEl = document.getElementById('status');
 
-/* ---------- Input ---------- */
+/* ===== Input ===== */
 const keys={};
 addEventListener('keydown',e=>{
   if(['ArrowLeft','ArrowRight','ArrowUp',' ','w','W','a','A','d','D','Escape','Enter'].includes(e.key)) e.preventDefault();
@@ -116,7 +112,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=> keys[e.key]=false);
 
-/* Touch pads */
+// Touch pads
 function bindTouch(id,on,off){
   const el=document.getElementById(id);
   const down=ev=>{ev.preventDefault();on();};
@@ -127,49 +123,48 @@ function bindTouch(id,on,off){
 }
 bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
 bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
-bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+JUMP_BUFFER_MS; }, ()=>keys[' ']=false);
+bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+JUMP_BUFFER_MS; }, ()=>keys[' '']=false);
 
-/* Toolbar */
+// Toolbar
 document.getElementById('mute').onclick = ()=>{ muted=!muted; event.currentTarget.textContent=muted?'🔇 Muted':'🔈 Sound'; };
 document.getElementById('invert').onclick = ()=> document.body.classList.toggle('invert');
 document.getElementById('fs').onclick = ()=> CV.requestFullscreen?.();
 document.getElementById('speedup').onclick = ()=>{ baseSpeed=Math.min(7, baseSpeed*1.05); statusEl.textContent=`Speed ${baseSpeed.toFixed(2)}`; };
 document.getElementById('speeddown').onclick = ()=>{ baseSpeed=Math.max(2, baseSpeed*0.95); statusEl.textContent=`Speed ${baseSpeed.toFixed(2)}`; };
 
-/* ---------- World ---------- */
+/* ===== World ===== */
 const floorY = H-84;
 let segments=[], entities=[], items=[];
 
-/* ---------- Player & physics ---------- */
+/* ===== Player & physics ===== */
 const GRAV=0.65, JUMP=11.6, FRICTION=0.86;
 const COYOTE_MS=120, JUMP_BUFFER_MS=120;
 const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,shield:0,slow:0};
 let coyoteUntil=0, jumpBufferUntil=0;
 
-/* ---------- Difficulty ---------- */
+/* ===== Difficulty ===== */
 function getDiff(){
   const t = Math.min(1, (time/16000) + (score/2200));
   const scrollFactor = 0.6 * (player.slow>0 ? 0.6 : 1);
   const worldScroll = (baseSpeed + t*1.2) * scrollFactor;
   const gapMin = 24;
-  const gapMax = 35 + Math.min(60, t*60); // ~35→95 across run
+  const gapMax = 35 + Math.min(60, t*60);     // ~35→95
   const gMin = (time<10000 ? 260 : 180 - t*20);
   const gMax = gMin + 140;
   return {t, worldScroll, gapMin, gapMax, gMin, gMax};
 }
 
-/* ---------- Gen ---------- */
+/* ===== Generation ===== */
 function resetWorld(){
   segments=[]; entities=[]; items=[]; scroll=0; time=0; score=0;
   Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,shield:0,slow:0});
-  segments.push({x:0,w:380,type:'ground'}); // long runway
+  segments.push({x:0,w:380,type:'ground'}); // tutorial runway
   spawnAhead(W*2.4);
 }
 function lastEnd(){ return segments.length ? segments[segments.length-1].x + segments[segments.length-1].w : 0; }
-
 function spawnAhead(targetX){
   while(lastEnd() < targetX){
-    const {t,gapMin,gapMax,gMin,gMax} = getDiff();
+    const {gapMin,gapMax,gMin,gMax} = getDiff();
     const afterTutorial = (time > 10000);
 
     const segW = Math.floor(gMin + RND()*(gMax-gMin));
@@ -177,17 +172,17 @@ function spawnAhead(targetX){
     segments.push({x:gx, w:segW, type:'ground'});
 
     if(afterTutorial){
-      if(RND()<0.22 && segW>120){ // ceiling bar
+      if(RND()<0.22 && segW>120){
         const cx = gx + 40 + Math.floor(RND()*(segW-80));
         entities.push({kind:'spike', x:cx, y:floorY-60, w:40, h:10});
       }
-      if(RND()<0.5 && segW>100){ // alien patrol
+      if(RND()<0.5 && segW>100){
         const ax = gx + 40 + Math.floor(RND()*(segW-100));
         entities.push({kind:'alien', x:ax, y:floorY-14, w:22, h:14, dir:(RND()<0.5?-1:1), baseX:ax, range:36+Math.floor(RND()*44)});
       }
     }
 
-    // Items (coin fix: centered 4x4 hole; snap to ints via |0 when drawing)
+    // Items (snap later via i() / i2())
     if(RND()<0.6){
       const ix = gx + 30 + Math.floor(RND()*(segW-60));
       items.push({kind:'chip', x:ix, y:floorY-40, w:10, h:10});
@@ -203,67 +198,46 @@ function spawnAhead(targetX){
   }
 }
 
-/* ---------- Sprites (code masks) ---------- */
+/* ===== Sprites (code masks; integer aligned) ===== */
 function astronaut(x,y,pose='idle'){
   const f=FG(), b=BG();
-  // backpack
-  FILL(x-3,y+6,3,10,f);
-  // body
-  FILL(x,y,16,22,f);
-  // helmet visor
-  FILL(x+5,y+6,6,6,b);
-  // legs (pose)
+  x=i(x); y=i(y);
+  FILL(x-3,y+6,3,10,f);        // backpack
+  FILL(x,y,16,22,f);           // body
+  FILL(x+5,y+6,6,6,b);         // visor
   if(pose==='run1'){ FILL(x+2,y+18,5,2,b); FILL(x+11,y+18,3,2,b); }
   if(pose==='run2'){ FILL(x+1,y+18,4,2,b); FILL(x+9,y+18,6,2,b); }
   if(pose==='jump'){ FILL(x+3,y+18,10,2,b); }
-  // tiny shadow under feet (subtle)
-  // (kept minimal to stay 1-bit)
 }
-
 function alien(x,y,frame=0){
-  const f=FG(), b=BG();
-  FILL(x,y,22,14,f);
-  FILL(x+4,y+4,4,4,b);
-  if(frame%2===0) FILL(x+14,y+4,2,2,b); // wobble dot
+  const f=FG(), b=BG(); x=i(x); y=i(y);
+  FILL(x,y,22,14,f); FILL(x+4,y+4,4,4,b);
+  if(frame%2===0) FILL(x+14,y+4,2,2,b);
 }
-
 function ufo(x,y,frame=0){
-  const f=FG();
-  FILL(x-28,y,56,8,f);
-  FILL(x-22,y-8,44,6,f);
-  FILL(x-4,y-14,8,6,f);
-  // beam bars (flicker)
-  if(frame%3!==0){ for(let i=0;i<50;i+=4) FILL(x-6+(i%12)-6, y+12+i, 12, 2, f); }
+  const f=FG(); x=i(x); y=i(y);
+  FILL(x-28,y,56,8,f); FILL(x-22,y-8,44,6,f); FILL(x-4,y-14,8,6,f);
 }
-
-/* Tractor beam animation for START cover:
-   - soft pulsing cone
-   - gentle hovering UFO
-   - astronaut bobbing upward a few px, then back */
-function drawTractorBeam(cx, cy, t){
-  const f=FG();
-  // pulse width
-  const pulse = (Math.sin(t/340)+1)*0.5; // 0..1
-  const halfW = 10 + (pulse*8)|0;        // beam half-width at top
-  // "scan lines" going down
+function beamScan(cx, topY, t){
+  const f=FG(); cx=i2(cx); topY=i2(topY);
+  const pulse=(Math.sin(t/340)+1)*0.5;
   for(let i=0;i<56;i+=4){
-    const y = cy + 14 + i;
-    const w = halfW + ((i/56)*10)|0;
-    FILL(cx - w, y, w*2, 2, f);
+    const y = topY + 14 + i;                 // all ints
+    const half = 8 + ((i/56)*10)|0;          // widening
+    const wobble = (pulse*2)|0;
+    FILL(cx-(half+wobble), y, (half+wobble)*2, 2, f);
   }
 }
-
-/* Tiles */
 function tileGround(x,y,w){
-  const f=FG(), b=BG();
+  const f=FG(), b=BG(); x=i(x); y=i(y); w=i(w);
   FILL(x,y,w,44,f);
-  for(let i=0;i<w;i+=8) for(let j=0;j<44;j+=8) if(((i+j)>>3)&1) FILL(x+i,y+j,4,4,b);
+  for(let dx=0;dx<w;dx+=8) for(let dy=0;dy<44;dy+=8) if(((dx+dy)>>3)&1) FILL(x+dx,y+dy,4,4,b);
 }
 
-/* ---------- Collisions ---------- */
+/* ===== Collisions ===== */
 function AABB(a,b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
 
-/* ---------- Control ---------- */
+/* ===== Control ===== */
 function start(){ resetWorld(); state='play'; statusEl.textContent='Running…'; beep('coin'); }
 function gameOver(){
   state='over';
@@ -273,21 +247,20 @@ function gameOver(){
   beep('hit');
 }
 
-/* ---------- Update ---------- */
+/* ===== Update ===== */
 function update(dt){
   if(state!=='play') return;
   time += dt;
-
   const { worldScroll } = getDiff();
   scroll += worldScroll;
 
   spawnAhead(scroll + W*2.3);
-  const cutoff = scroll - 140;
-  segments = segments.filter(s=> s.x + s.w > cutoff);
-  entities = entities.filter(e=> e.x + (e.w||0) > cutoff);
-  items    = items.filter(i=> i.x + (i.w||0) > cutoff);
+  const cut = scroll - 140;
+  segments = segments.filter(s=> s.x + s.w > cut);
+  entities = entities.filter(e=> e.x + (e.w||0) > cut);
+  items    = items.filter(i=> i.x + (i.w||0) > cut);
 
-  // Inputs
+  // input
   const left  = keys['ArrowLeft']||keys['a']||keys['A'];
   const right = keys['ArrowRight']||keys['d']||keys['D'];
   const jump  = keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
@@ -306,7 +279,7 @@ function update(dt){
 
   player.x += player.vx; player.y += player.vy;
 
-  // Platform resolve
+  // ground resolve
   player.on=false;
   const wx = player.x + scroll;
   for(const s of segments){
@@ -326,13 +299,13 @@ function update(dt){
     }
   }
 
-  // Fall
+  // fall
   if(player.y > H+40){
     if(player.shield>0){ player.shield=0; player.y=floorY-player.h-2; player.vy=-JUMP*0.8; beep('hit'); }
     else gameOver();
   }
 
-  // Entities
+  // entities
   for(const e of entities){
     if(e.kind==='alien'){
       e.x += e.dir*0.7;
@@ -348,14 +321,14 @@ function update(dt){
     }
   }
 
-  // Items
-  for(let i=items.length-1;i>=0;i--){
-    const it=items[i];
+  // items
+  for(let k=items.length-1;k>=0;k--){
+    const it=items[k];
     if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:it.x,y:it.y,w:it.w,h:it.h})){
       if(it.kind==='chip'){ score+=100; beep('coin'); }
       if(it.kind==='shield'){ player.shield=1; beep('coin'); }
       if(it.kind==='slow'){ player.slow=180; beep('coin'); }
-      items.splice(i,1);
+      items.splice(k,1);
     }
   }
 
@@ -363,50 +336,52 @@ function update(dt){
   score += dt*0.06 + Math.max(0, player.vx)*0.03;
 }
 
-/* ---------- Draw ---------- */
+/* ===== Draw ===== */
 function draw(){
   const f=FG(), b=BG();
   ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
 
-  // Stars parallax
+  // stars (parallax)
   ctx.fillStyle=f;
-  for(let i=0;i<100;i++){
-    const x1=((i*83)%2000) - (scroll*0.25 % 2000), y1=(i*131)%H;
-    const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(xx1|0,y1|0,1,1);
-    const x2=((i*211)%2400) - (scroll*0.10 % 2400), y2=(i*97)%H;
-    const xx2=((x2+2400)%2400)-100; if(xx2>=0&&xx2<W) ctx.fillRect(xx2|0,y2|0,1,1);
+  for(let n=0;n<100;n++){
+    const x1=((n*83)%2000) - (scroll*0.25 % 2000), y1=(n*131)%H;
+    const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
+    const x2=((n*211)%2400) - (scroll*0.10 % 2400), y2=(n*97)%H;
+    const xx2=((x2+2400)%2400)-100; if(xx2>=0&&xx2<W) ctx.fillRect(i(xx2),i(y2),1,1);
   }
 
-  // Horizon
-  FILL(0,floorY-40,W,2,f);
+  // horizon only during gameplay (remove “mystery line” on cover)
+  if(state==='play' || state==='paused' || state==='over'){
+    FILL(0,floorY-40,W,2,f);
+  }
 
-  // Ground
+  // ground
   for(const s of segments){
     if(s.type!=='ground') continue;
-    const x=(s.x - scroll)|0, w=s.w|0;
+    const x=i(s.x - scroll), w=i(s.w);
     if(x>W || x+w<-50) continue;
     tileGround(x,floorY,w);
   }
 
-  // Entities
+  // entities
   const frame=(performance.now()/120|0);
   for(const e of entities){
-    const x=(e.x - scroll)|0, y=e.y|0;
+    const x=i(e.x - scroll), y=i(e.y);
     if(e.kind==='alien') alien(x,y,frame);
     else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
   }
 
-  // Items (snap to ints; coin center hole is 4x4 to avoid “line” aliasing)
+  // items (snap to even pixels to avoid hairline illusions)
   for(const it of items){
-    const x=(it.x - scroll)|0, y=it.y|0;
+    const x=i2(it.x - scroll), y=i2(it.y);
     if(it.kind==='chip'){ FILL(x,y,10,10,f); FILL(x+3,y+3,4,4,b); }
     if(it.kind==='shield'){ FILL(x,y,12,12,f); FILL(x+2,y+2,8,8,b); }
     if(it.kind==='slow'){ FILL(x,y,12,12,f); FILL(x+2,y+5,8,2,b); }
   }
 
-  // Player
+  // player
   const pose = player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
-  astronaut(player.x|0, player.y|0, pose);
+  astronaut(player.x, player.y, pose);
   if(player.shield>0){
     FILL(player.x-2,player.y-2, player.w+4,2,f);
     FILL(player.x-2,player.y+player.h, player.w+4,2,f);
@@ -421,44 +396,50 @@ function draw(){
   ctx.fillText(hud,10,18);
 
   if(state==='menu'){
-    // Poster cover with animated tractor beam
-    const t = performance.now();
-    const cx = W/2|0, cy = (H*0.30)|0;
-    // hover UFO slightly
+    // Poster cover with animated tractor beam + bobbing astronaut
+    const t=performance.now();
+    const cx=i(W/2), cy=i(H*0.30);
     const hover = Math.sin(t/600)*3;
     ufo(cx, cy-40+hover, frame);
-    drawTractorBeam(cx, cy-40+hover, t);
-    // astronaut gently pulled up & down
+    beamScan(cx, cy-40+hover, t);
     const pull = (Math.sin(t/700+1.2)*4)|0;
     astronaut(cx-8, cy+18-pull, 'idle');
 
-    const title="MKHKASG: MOONRUNNER";
+    // Title + tutorial (font may load async)
+    ctx.fillStyle=f;
     ctx.font="22px 'Press Start 2P', monospace";
-    const tw=ctx.measureText(title).width;
-    ctx.fillText(title, ((W-tw)/2)|0, cy+64);
+    const title="MKHKASG: MOONRUNNER";
+    ctx.fillText(title, i((W-ctx.measureText(title).width)/2), cy+64);
 
     ctx.font="10px 'Press Start 2P', monospace";
     const t1="Press SPACE to start • ←/→ move • W/↑/Space jump • Esc pause";
     const t2="Goal: survive. Chips +100. Shield = 1 hit. Slow-mo = 3s.";
-    ctx.fillText(t1, ((W-ctx.measureText(t1).width)/2)|0, cy+86);
-    ctx.fillText(t2, ((W-ctx.measureText(t2).width)/2)|0, cy+104);
+    ctx.fillText(t1, i((W-ctx.measureText(t1).width)/2), cy+86);
+    ctx.fillText(t2, i((W-ctx.measureText(t2).width)/2), cy+104);
   }
 
   if(state==='paused'){
     ctx.font="12px 'Press Start 2P', monospace";
     const msg="PAUSED — Esc to resume";
-    ctx.fillText(msg, ((W-ctx.measureText(msg).width)/2)|0, H*0.5);
+    ctx.fillText(msg, i((W-ctx.measureText(msg).width)/2), H*0.5|0);
   }
   if(state==='over'){
     ctx.font="14px 'Press Start 2P', monospace";
     const msg="GAME OVER", tip="Space/Enter to retry";
-    ctx.fillText(msg, ((W-ctx.measureText(msg).width)/2)|0, H*0.45);
+    ctx.fillText(msg, i((W-ctx.measureText(msg).width)/2), H*0.45|0);
     ctx.font="10px 'Press Start 2P', monospace";
-    ctx.fillText(tip, ((W-ctx.measureText(tip).width)/2)|0, H*0.45+24);
+    ctx.fillText(tip, i((W-ctx.measureText(tip).width)/2), (H*0.45+24)|0);
   }
 }
 
-/* ---------- Loop ---------- */
+/* ===== Boot: wait for font so cover text never disappears ===== */
+async function boot(){
+  try{ await document.fonts.load("12px 'Press Start 2P'"); await document.fonts.ready; }catch(e){}
+  resetWorld(); state='menu'; statusEl.textContent='Press Space to start';
+  requestAnimationFrame(loop);
+}
+
+/* ===== Loop ===== */
 function start(){ resetWorld(); state='play'; statusEl.textContent='Running…'; beep('coin'); }
 function gameOver(){ state='over'; best=Math.max(best,Math.floor(score)); localStorage.setItem('moon_best',String(best)); statusEl.textContent='Game Over — Space/Enter to retry'; beep('hit'); }
 
@@ -469,8 +450,10 @@ function loop(now){
   draw();
   requestAnimationFrame(loop);
 }
-resetWorld(); state='menu'; statusEl.textContent='Press Space to start';
-requestAnimationFrame(loop);
+
+boot();
+
+/* ===== End ===== */
 </script>
 </body>
 </html>
