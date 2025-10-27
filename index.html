@@ -94,14 +94,21 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
 </div>
 
 <script>
+/* ===== helpers ===== */
+function last(arr){ return arr.length ? arr[arr.length-1] : undefined; }
+
 /* ===========================================================
    ======================== SOUNDS ===========================
    =========================================================== */
 const AudioSys=(()=>{let ctx=null,en=true,master=null;
-function ensure(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.06;master.connect(ctx.destination)} if(ctx.state==='suspended')ctx.resume()}
-function tone(type,f=440,d=.08,v=.25){if(!en)return;ensure();const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(master);const t=ctx.currentTime;o.start(t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.stop(t+d+.02)}
-function beep(kind='jump'){ if(!en) return; ensure(); const t=ctx.currentTime, o=ctx.createOscillator(), g=ctx.createGain(); o.type='square'; const tbl={jump:[520,380,.09,.25], coin:[760,520,.07,.28], hit:[160,110,.14,.28], pow:[360,540,.10,.22]}; const [f1,f2,dur,vol]=tbl[kind]||tbl.jump; o.frequency.setValueAtTime(f1,t); o.frequency.exponentialRampToValueAtTime(f2,t+dur); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g); g.connect(master); o.start(); o.stop(t+dur+.02); }
-return {tone,beep,toggle(){en=!en;return en},enabled(){return en}})();
+function ensure(){try{if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.06;master.connect(ctx.destination)} if(ctx.state==='suspended')ctx.resume()}catch{}}
+function beep(kind='jump'){ if(!en) return; ensure(); if(!ctx) return;
+  const t=ctx.currentTime, o=ctx.createOscillator(), g=ctx.createGain(); o.type='square';
+  const tbl={jump:[520,380,.09,.25], coin:[760,520,.07,.28], hit:[160,110,.14,.28], pow:[360,540,.10,.22]};
+  const [f1,f2,dur,vol]=tbl[kind]||tbl.jump; o.frequency.setValueAtTime(f1,t); o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g); g.connect(master); o.start(); o.stop(t+dur+.02);
+}
+return {beep,toggle(){en=!en;return en},enabled(){return en}})();
 
 /* ===========================================================
    ======================== SPRITES ==========================
@@ -185,7 +192,7 @@ function resetWorld(seed=Date.now()){
   }
   world.lastX=x;
 }
-function lastEnd(){ const s=world.segments.at(-1); return s? s.x+s.w : 0 }
+function lastEnd(){ const s=last(world.segments); return s? s.x+s.w : 0 }
 function diffProfile(){
   const t=Math.min(1, (world.elapsed/22) ); // ~22s to max
   const slow = (performance.now()<world.slowMoUntil)?0.6:1;
@@ -200,7 +207,7 @@ function spawnAhead(targetX){
   let prevBig=false;
   while(lastEnd()<targetX){
     const afterTutorial = world.elapsed>=world.tutorialSecs;
-    const {t,worldScroll,gapMin,gapMax,groundMin,groundMax}=diffProfile();
+    const {worldScroll,gapMin,gapMax,groundMin,groundMax}=diffProfile();
     world.scroll=worldScroll;
 
     // ---- Ground ----
@@ -295,7 +302,10 @@ bindPad(document.getElementById('btnJump'), ()=>{
 const physics={g:0.65,jumpV:11.5,friction:0.86,coyoteMs:120,bufferMs:120};
 const player={x:Math.floor(W*0.25),y:0,w:16,h:22,vx:0,vy:0,onGround:false,lastGroundAt:0,shield:false,score:0,coins:0,best:0};
 function groundYAt(x){
-  for(const s of world.segments){ if(s.type==='ground' && x>=s.x && x<=s.x+s.w) return world.floorY; }
+  for(var i=0;i<world.segments.length;i++){
+    const s=world.segments[i];
+    if(s.type==='ground' && x>=s.x && x<=s.x+s.w) return world.floorY;
+  }
   return null;
 }
 function overlap(a,b){return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y}
@@ -342,10 +352,8 @@ function render(){
   }
   const wob = ((world.time*8)|0)%2===0;
   for(const en of world.entities) if(en.kind==='alien') drawAlien(ctx,en.x|0,en.y|0,wob);
-  // player
   const frame = !player.onGround ? "jump" : (Math.abs(player.vx)>0.5 ? (((world.time*12)|0)%2?"run1":"run2") : "idle");
   drawAstronaut(ctx,player.x|0,player.y|0,frame);
-  // slow-mo indicator
   if(performance.now()<world.slowMoUntil){ for(let i=0;i<W;i+=8) ctx.fillRect(i,0,4,2); }
 }
 function fmtTime(sec){ const s=Math.max(0,Math.floor(sec)); const m=(s/60)|0, r=s%60; return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; }
@@ -365,12 +373,10 @@ function setPaused(p){
 }
 function setGameOver(){
   game.state='over';
-  // Save score & leaderboard
   const finalScore=Math.floor(player.score);
   const entry={name: (localStorage.getItem('moon_name')||'YOU'),
                score: finalScore, coins: player.coins|0, time: Math.floor(world.elapsed), at: Date.now()};
   saveLeaderboard(entry);
-  // Overlay
   centerOverlay.style.display='grid';
   centerOverlay.innerHTML=`<div class="titleBlock">
     <div class="titleMain">GAME OVER</div>
@@ -386,7 +392,9 @@ function startGame(){
   AudioSys.beep('coin');
 }
 addEventListener('keydown',e=>{
-  if((e.code==='Space'||e.code==='Enter') && (game.state==='title'||game.state==='over')) startGame();
+  if((e.code==='Space'||e.code==='Enter') && (game.state==='title'||game.state==='over')){
+    e.preventDefault(); startGame();
+  }
 });
 function playerHit(){
   AudioSys.beep('hit');
@@ -484,9 +492,7 @@ function step(ts){
   // Score: time/distance
   player.score += (0.8 + world.scroll*0.1) * dt;
 
-  // Render & HUD
   render(); updateHUD();
-
   requestAnimationFrame(step);
 }
 
@@ -520,7 +526,7 @@ btnBoard.addEventListener('click',()=>toggleLeaderboard());
 updateSpeedLabel();
 
 const canvasEl=document.getElementById('game');
-canvasEl.addEventListener('pointerdown',()=>{ if(game.state==='title'||game.state==='over') startGame(); });
+canvasEl.addEventListener('pointerdown',(e)=>{ e.preventDefault(); if(game.state==='title'||game.state==='over') startGame(); },{passive:false});
 document.getElementById('pads').addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 
 /* ===========================================================
