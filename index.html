@@ -17,7 +17,6 @@
     height:calc(var(--h) * (min(96vw,96vh*(16/9)) / var(--w)));
     image-rendering:pixelated; image-rendering:crisp-edges;
     background:transparent;
-    /* remove outer border to avoid confusion with artifacts */
   }
   .hud{width:min(96vw,96vh*(16/9));display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.95}
   .hud .left,.hud .right{display:flex;gap:10px;align-items:center}
@@ -74,8 +73,8 @@ addEventListener('resize', resizeCanvas); resizeCanvas();
 function inverted(){ return document.body.classList.contains('invert'); }
 function FG(){ return inverted()? '#000' : '#fff'; }
 function BG(){ return inverted()? '#fff' : '#000'; }
-const i = v => v|0;                         // snap to int
-const i2 = v => (v>>1)<<1;                  // snap to even px (coins/beam)
+const i = v => v|0;              // snap to int
+const i2 = v => (v>>1)<<1;       // snap to even px
 const FILL = (x,y,w,h,c)=>{ ctx.fillStyle=c; ctx.fillRect(i(x),i(y),i(w),i(h)); };
 
 /* ===== Sound ===== */
@@ -123,7 +122,10 @@ function bindTouch(id,on,off){
 }
 bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
 bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
-bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+JUMP_BUFFER_MS; }, ()=>keys[' '']=false);
+bindTouch('btnJump',
+  ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+JUMP_BUFFER_MS; },
+  ()=>{ keys[' ']=false; }
+);
 
 // Toolbar
 document.getElementById('mute').onclick = ()=>{ muted=!muted; event.currentTarget.textContent=muted?'🔇 Muted':'🔈 Sound'; };
@@ -182,7 +184,7 @@ function spawnAhead(targetX){
       }
     }
 
-    // Items (snap later via i() / i2())
+    // Items
     if(RND()<0.6){
       const ix = gx + 30 + Math.floor(RND()*(segW-60));
       items.push({kind:'chip', x:ix, y:floorY-40, w:10, h:10});
@@ -221,9 +223,9 @@ function ufo(x,y,frame=0){
 function beamScan(cx, topY, t){
   const f=FG(); cx=i2(cx); topY=i2(topY);
   const pulse=(Math.sin(t/340)+1)*0.5;
-  for(let i=0;i<56;i+=4){
-    const y = topY + 14 + i;                 // all ints
-    const half = 8 + ((i/56)*10)|0;          // widening
+  for(let k=0;k<56;k+=4){
+    const y = topY + 14 + k;
+    const half = 8 + ((k/56)*10)|0;
     const wobble = (pulse*2)|0;
     FILL(cx-(half+wobble), y, (half+wobble)*2, 2, f);
   }
@@ -341,7 +343,7 @@ function draw(){
   const f=FG(), b=BG();
   ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
 
-  // stars (parallax)
+  // stars
   ctx.fillStyle=f;
   for(let n=0;n<100;n++){
     const x1=((n*83)%2000) - (scroll*0.25 % 2000), y1=(n*131)%H;
@@ -350,8 +352,8 @@ function draw(){
     const xx2=((x2+2400)%2400)-100; if(xx2>=0&&xx2<W) ctx.fillRect(i(xx2),i(y2),1,1);
   }
 
-  // horizon only during gameplay (remove “mystery line” on cover)
-  if(state==='play' || state==='paused' || state==='over'){
+  // horizon (only in play/pause/over)
+  if(state!=='menu'){
     FILL(0,floorY-40,W,2,f);
   }
 
@@ -371,7 +373,7 @@ function draw(){
     else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
   }
 
-  // items (snap to even pixels to avoid hairline illusions)
+  // items (snap to even px)
   for(const it of items){
     const x=i2(it.x - scroll), y=i2(it.y);
     if(it.kind==='chip'){ FILL(x,y,10,10,f); FILL(x+3,y+3,4,4,b); }
@@ -396,16 +398,16 @@ function draw(){
   ctx.fillText(hud,10,18);
 
   if(state==='menu'){
-    // Poster cover with animated tractor beam + bobbing astronaut
+    // Cover with tractor beam + bobbing astronaut
     const t=performance.now();
     const cx=i(W/2), cy=i(H*0.30);
-    const hover = Math.sin(t/600)*3;
+    const hover=Math.sin(t/600)*3;
     ufo(cx, cy-40+hover, frame);
     beamScan(cx, cy-40+hover, t);
-    const pull = (Math.sin(t/700+1.2)*4)|0;
+    const pull=(Math.sin(t/700+1.2)*4)|0;
     astronaut(cx-8, cy+18-pull, 'idle');
 
-    // Title + tutorial (font may load async)
+    // Title + tutorial
     ctx.fillStyle=f;
     ctx.font="22px 'Press Start 2P', monospace";
     const title="MKHKASG: MOONRUNNER";
@@ -432,9 +434,14 @@ function draw(){
   }
 }
 
-/* ===== Boot: wait for font so cover text never disappears ===== */
+/* ===== Boot: wait for font (with timeout) ===== */
 async function boot(){
-  try{ await document.fonts.load("12px 'Press Start 2P'"); await document.fonts.ready; }catch(e){}
+  try{
+    await Promise.race([
+      document.fonts.ready,
+      new Promise(r=>setTimeout(r,1500))
+    ]);
+  }catch(e){}
   resetWorld(); state='menu'; statusEl.textContent='Press Space to start';
   requestAnimationFrame(loop);
 }
@@ -452,8 +459,6 @@ function loop(now){
 }
 
 boot();
-
-/* ===== End ===== */
 </script>
 </body>
 </html>
