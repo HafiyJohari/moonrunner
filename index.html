@@ -21,23 +21,30 @@
   .btn{padding:4px 10px;border:1px solid currentColor;cursor:pointer;user-select:none}
   .btn:active{transform:translateY(1px)}
 
-  /* Modal overlays */
-  .ui{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);z-index:10}
-  .ui .card{background:rgba(0,0,0,.96);border:2px solid currentColor;padding:18px 20px;max-width:min(92vw,840px);box-shadow:0 0 0 2px currentColor inset}
+  /* Base modals */
+  .ui{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10}
+  .ui .card{padding:18px 20px;max-width:min(92vw,840px);border:2px solid currentColor;box-shadow:0 0 0 2px currentColor inset}
   .ui h1,.ui h2,.ui h3{font-family:'Press Start 2P',monospace;margin:0 0 14px 0}
   .ui h1{font-size:22px} .ui h2{font-size:16px} .ui h3{font-size:12px}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .ghost{opacity:.85}
   .mt6{margin-top:6px} .mt8{margin-top:8px} .mt12{margin-top:12px} .mt16{margin-top:16px}
-  input[type=text]{background:#000;color:inherit;border:1px solid currentColor;padding:8px 10px;font:12px 'Press Start 2P',monospace;min-width:220px}
+  input[type=text]{background:transparent;color:inherit;border:1px solid currentColor;padding:8px 10px;font:12px 'Press Start 2P',monospace;min-width:220px}
   table{width:100%;border-collapse:collapse;font:12px 'Press Start 2P',monospace}
   th,td{border-bottom:1px solid currentColor;padding:6px 4px;text-align:left}
 
   /* Mobile onscreen controls */
   .mobile{position:fixed;left:0;right:0;bottom:10px;display:none;justify-content:space-between;pointer-events:none;padding:0 8px;z-index:5}
-  .pad{pointer-events:auto;background:#000;color:#fff;opacity:.9;border:1px solid #fff;border-radius:12px;width:31vw;height:16vh;display:flex;align-items:center;justify-content:center;font-size:18px;touch-action:none}
+  .pad{pointer-events:auto;background:transparent;color:inherit;border:1px solid currentColor;border-radius:12px;width:31vw;height:16vh;display:flex;align-items:center;justify-content:center;font-size:18px;touch-action:none;opacity:.9}
   .jump{width:31vw;height:16vh}
   @media (max-width:820px){ .mobile{display:flex} .hud .right{display:none} }
+
+  /* === Contrast-safe UI (auto adapts to theme) === */
+  body:not(.invert) .ui { background: rgba(0,0,0,.78); }
+  body:not(.invert) .ui .card { background: rgba(0,0,0,.96); color:#fff; border-color:#fff; box-shadow:0 0 0 2px #fff inset; }
+  body.invert .ui { background: rgba(255,255,255,.75); }
+  body.invert .ui .card { background: rgba(255,255,255,.98); color:#000; border-color:#000; box-shadow:0 0 0 2px #000 inset; }
+  .ui .btn{border-color:currentColor}
 </style>
 </head>
 <body>
@@ -68,7 +75,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.5 • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.6 • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -157,6 +164,7 @@
     <div class="mt8">Design & code: <b>MkhkAsg</b></div>
     <div class="mt6">Font: <b>Press Start 2P</b> (CodeMan38) — SIL Open Font License 1.1</div>
     <div class="mt6">Music & SFX: <b>Original in-engine chiptune</b> via Web Audio API</div>
+    <div class="mt6">Assisted by <b>Mira</b> (AI collaborator)</div>
     <div class="mt6 ghost">Scores are sent to a Google Sheet leaderboard. Please avoid personal info in your name.</div>
     <div class="row mt12"><div id="creditsClose" class="btn">Close</div></div>
   </div>
@@ -356,7 +364,7 @@ async function loadLeaderboard(limit=20){
 }
 async function submitScore(name,score){
   try{
-    const body = new URLSearchParams({name,score:String(Math.floor(score)),version:'1.5'}).toString();
+    const body = new URLSearchParams({name,score:String(Math.floor(score)),version:'1.6'}).toString();
     await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body});
     return true;
   }catch(e){ return false; }
@@ -419,7 +427,7 @@ function spawnAhead(targetX){
     }
     if(afterTutorial && RND()<0.08){
       const ix=gx+segW-60;
-      items.push({kind:(RND()<0.5?'shield':'slow'),x:ix,y:floorY-48,w:12,h:12}); /* <-- fixed bug (was w:12,12) */
+      items.push({kind:(RND()<0.5?'shield':'slow'),x:ix,y:floorY-48,w:12,h:12}); /* fixed */
     }
 
     const gap=afterTutorial?Math.floor(gapMin+RND()*gapMax):Math.floor(20+RND()*30);
