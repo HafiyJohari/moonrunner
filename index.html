@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — v1.8 "Lunar Shields"</title>
+<title>MKHKASG: MoonRunner — 1-bit Endless (v1.7.3 Hotfix)</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -14,16 +14,14 @@
     width:min(96vw,96vh*(16/9));
     height:calc(var(--h) * (min(96vw,96vh*(16/9)) / var(--w)));
     image-rendering:pixelated; image-rendering:crisp-edges;
-    background:transparent;
+    background:transparent; outline:none;
   }
   .hud{width:min(96vw,96vh*(16/9));display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.95}
   .hud .left,.hud .right{display:flex;gap:10px;align-items:center}
   .btn{padding:4px 10px;border:1px solid currentColor;cursor:pointer;user-select:none}
   .btn:active{transform:translateY(1px)}
-
-  /* Overlays */
   .ui{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10}
-  .ui .card{padding:18px 20px;max-width:min(92vw,860px);border:2px solid currentColor;box-shadow:0 0 0 2px currentColor inset}
+  .ui .card{padding:18px 20px;max-width:min(92vw,840px);border:2px solid currentColor;box-shadow:0 0 0 2px currentColor inset}
   .ui h1,.ui h2,.ui h3{font-family:'Press Start 2P',monospace;margin:0 0 14px 0}
   .ui h1{font-size:22px} .ui h2{font-size:16px} .ui h3{font-size:12px}
   .row{display:flex;gap:10px;flex-wrap:wrap}
@@ -32,14 +30,10 @@
   input[type=text]{background:transparent;color:inherit;border:1px solid currentColor;padding:8px 10px;font:12px 'Press Start 2P',monospace;min-width:220px}
   table{width:100%;border-collapse:collapse;font:12px 'Press Start 2P',monospace}
   th,td{border-bottom:1px solid currentColor;padding:6px 4px;text-align:left}
-
-  /* Mobile */
   .mobile{position:fixed;left:0;right:0;bottom:10px;display:none;justify-content:space-between;pointer-events:none;padding:0 8px;z-index:5}
   .pad{pointer-events:auto;background:transparent;color:inherit;border:1px solid currentColor;border-radius:12px;width:31vw;height:16vh;display:flex;align-items:center;justify-content:center;font-size:18px;touch-action:none;opacity:.9}
   .jump{width:31vw;height:16vh}
   @media (max-width:820px){ .mobile{display:flex} .hud .right{display:none} }
-
-  /* Contrast-safe overlays */
   body:not(.invert) .ui { background: rgba(0,0,0,.78); }
   body:not(.invert) .ui .card { background: rgba(0,0,0,.96); color:#fff; border-color:#fff; box-shadow:0 0 0 2px #fff inset; }
   body.invert .ui { background: rgba(255,255,255,.75); }
@@ -49,14 +43,9 @@
 </head>
 <body>
 <div class="wrap">
-  <canvas id="cv" width="960" height="540"></canvas>
+  <canvas id="cv" width="960" height="540" tabindex="0" aria-label="Game canvas"></canvas>
   <div class="hud">
-    <div class="left">
-      <span id="status">Loading…</span>
-      <span>•</span>
-      <span>←/→ move • W/↑/Space jump • Esc pause</span>
-      <span id="shieldHud" style="margin-left:10px;">🛡 ● ○ ○</span>
-    </div>
+    <div class="left"><span id="status">Loading…</span> <span>•</span> <span>←/→ move • W/↑/Space jump • Esc pause</span></div>
     <div class="right">
       <div id="mute" class="btn">🔈 SFX</div>
       <div id="music" class="btn">♪ Music</div>
@@ -64,12 +53,11 @@
       <div id="fs" class="btn">⛶ Full</div>
       <div id="speeddown" class="btn">–Speed</div>
       <div id="speedup" class="btn">+Speed</div>
-      <div id="menuBtn" class="btn" style="display:none">☰ Menu</div>
     </div>
   </div>
 </div>
 
-<!-- Main Menu -->
+<!-- Menu -->
 <div id="menu" class="ui" style="display:flex">
   <div class="card">
     <h1>MKHKASG: MOONRUNNER</h1>
@@ -81,7 +69,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.8 — Lunar Shields • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.7.3 Hotfix • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -140,13 +128,8 @@
 <div id="how" class="ui">
   <div class="card">
     <h2>How to Play</h2>
-    <div class="mt8">Controls: ←/→ move • W/↑/Space jump • Esc pause</div>
-    <div class="mt8">Goal: Survive and run as far as you can!</div>
-    <div class="mt8">Collect:</div>
-    <div class="mt6 ghost">💠 Chips = +200 pts (× difficulty multiplier)</div>
-    <div class="mt6 ghost">🛡 Shields = up to 3 hits of protection</div>
-    <div class="mt6 ghost">⏳ Slow Field = 3 s slow-motion</div>
-    <div class="mt8">Avoid: Spikes and Aliens — they cost a shield or your life!</div>
+    <div class="mt8">←/→ move • W/↑/Space jump • Esc pause</div>
+    <div class="mt8">Survive. Grab chips (+100). Shield = 1 hit. Slow-mo = 3s.</div>
     <div class="row mt12"><div id="howClose" class="btn">Close</div></div>
   </div>
 </div>
@@ -154,21 +137,16 @@
 <!-- Leaderboard -->
 <div id="lb" class="ui">
   <div class="card">
-    <div class="row" style="justify-content:space-between;align-items:center;">
-      <h2>Leaderboard</h2>
-      <div class="row">
-        <div id="lbAll" class="btn">All-time</div>
-        <div id="lb20" class="btn">Top 20</div>
-        <div id="lb10" class="btn">Top 10</div>
-        <div id="lbClose" class="btn">Back</div>
-      </div>
+    <h2>Leaderboard</h2>
+    <div class="row mt8">
+      <div id="lbAll" class="btn">All-time</div>
+      <div id="lb20" class="btn">Top 20</div>
+      <div id="lb10" class="btn">Top 10</div>
+      <div id="lbClose" class="btn">Close</div>
     </div>
     <div class="mt12" id="lbSelf" class="ghost"></div>
     <div class="mt8" style="max-height:55vh;overflow:auto;">
-      <table id="lbTable">
-        <thead><tr><th>#</th><th>Score</th><th>Name</th><th>Mode</th><th>Date</th></tr></thead>
-        <tbody></tbody>
-      </table>
+      <table id="lbTable"><thead><tr><th>#</th><th>Score</th><th>Name</th><th>Mode</th><th>Date</th></tr></thead><tbody></tbody></table>
     </div>
   </div>
 </div>
@@ -186,7 +164,7 @@
   </div>
 </div>
 
-<!-- Mobile buttons -->
+<!-- Mobile -->
 <div class="mobile">
   <div style="display:flex;gap:8px;padding-left:8px;">
     <div id="btnLeft" class="pad">◀</div>
@@ -198,97 +176,68 @@
 </div>
 
 <script>
-/* ===== Config ===== */
-const GAME_VERSION = '1.8';
+/* ===== Leaderboard API ===== */
 const API_URL = "https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
 
-/* ===== Canvas & DPR ===== */
+/* ===== Canvas ===== */
 const CV = document.getElementById('cv');
 const ctx = CV.getContext('2d', { alpha:false }); ctx.imageSmoothingEnabled=false;
 const W=960,H=540; let DPR=1;
 function resizeCanvas(){ DPR=Math.min(2,Math.max(1,window.devicePixelRatio||1)); CV.width=(W*DPR)|0; CV.height=(H*DPR)|0; ctx.setTransform(DPR,0,0,DPR,0,0); }
 addEventListener('resize',resizeCanvas); resizeCanvas();
 
-/* ===== Colors & helpers ===== */
+/* ===== Helpers ===== */
 function inverted(){ return document.body.classList.contains('invert'); }
 function FG(){ return inverted()?'#000':'#fff'; }
 function BG(){ return inverted()?'#fff':'#000'; }
 const i=v=>v|0, i2=v=>(v>>1)<<1;
 const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
 const pad=(n,w=5)=>String(n).padStart(w,'0');
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-/* ===== WebAudio: buses, mix, ducking ===== */
+/* ===== Audio (buses + ducking) ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
-let musicVol = 0.05;  // same mix as 1.7.2
-let sfxVol   = 0.28;
-let musicBus = null, sfxBus = null;
-
+let musicVol = 0.04, sfxVol = 0.28; // slightly softer music vs 1.7.2
+let musicBus=null, sfxBus=null;
 function ensureAC(){
   if(!ac){
-    ac = new (window.AudioContext||window.webkitAudioContext)();
-    musicBus = ac.createGain();
-    sfxBus   = ac.createGain();
-    musicBus.gain.value = musicMuted ? 0 : musicVol;
-    sfxBus .gain.value  = sfxMuted  ? 0 : sfxVol;
-    musicBus.connect(ac.destination);
-    sfxBus.connect(ac.destination);
+    ac=new (window.AudioContext||window.webkitAudioContext)();
+    musicBus=ac.createGain(); sfxBus=ac.createGain();
+    musicBus.gain.value = musicMuted?0:musicVol;
+    sfxBus.gain.value   = sfxMuted ?0:sfxVol;
+    musicBus.connect(ac.destination); sfxBus.connect(ac.destination);
   }
 }
-
 function beep(kind='jump'){
   if(sfxMuted) return; ensureAC();
   const o=ac.createOscillator(), g=ac.createGain(); o.type='square';
   const t=ac.currentTime;
-  const T={jump:[440,220,.13,.10], coin:[660,440,.12,.12], hit:[110,55,.16,.12], shield:[880,660,.10,.12]};
+  const T={jump:[440,220,.13,.10], coin:[660,440,.12,.12], hit:[110,55,.16,.12]};
   const [f1,f2,dur,vol]=T[kind]||T.jump;
   o.frequency.setValueAtTime(f1,t);
   o.frequency.exponentialRampToValueAtTime(f2,t+dur);
-  g.gain.setValueAtTime(vol, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
-  o.connect(g); g.connect(sfxBus||ac.destination);
-  o.start(); o.stop(t+dur);
-
-  // Music ducking
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(sfxBus||ac.destination); o.start(); o.stop(t+dur);
   if(musicBus && !musicMuted){
-    const back = musicVol, duck = musicVol * 0.25;
+    const back=musicVol, duck=musicVol*0.25;
     musicBus.gain.cancelScheduledValues(t);
-    musicBus.gain.setTargetAtTime(duck, t, 0.008);
-    musicBus.gain.setTargetAtTime(back, t+0.35, 0.25);
+    musicBus.gain.setTargetAtTime(duck,t,0.008);
+    musicBus.gain.setTargetAtTime(back,t+0.35,0.25);
   }
 }
-
-/* Simple chiptune sequencer (same as 1.7.2) */
 let musicRunning=false, musicTimer=null, musicStep=0;
 const bpm=140, stepSec=60/bpm/2;
-const NT=(n)=>440*Math.pow(2,(n-69)/12);
+const NT=n=>440*Math.pow(2,(n-69)/12);
 const N={C4:60,D4:62,E4:64,F4:65,G4:67,A4:69,B4:71,C5:72,D5:74,E5:76,F5:77,G5:79,A5:81};
-function leadPattern(){
-  return [
-    [N.E5,1],[N.G5,1],[N.C5,1],[N.D5,1],  [N.E5,1],[N.G5,1],[N.A5,1],[N.G5,1],
-    [N.E5,1],[N.C5,1],[N.A4,1],[N.C5,1],  [N.E5,1],[N.D5,1],[N.C5,2],
-    [N.F5,1],[N.A5,1],[N.C5,1],[N.D5,1],  [N.F5,1],[N.A5,1],[N.G5,1],[N.F5,1],
-    [N.E5,1],[N.D5,1],[N.C5,1],[N.B4,1],  [N.C5,4]
-  ];
-}
-function bassPattern(){
-  const root=[N.C4,N.A4-12,N.F5-24,N.G5-24]; const seq=[];
-  for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]);
-  return seq;
-}
-function playNote(freq, mul, type='square', vol=0.10){
-  ensureAC();
-  const t=ac.currentTime, osc=ac.createOscillator(), g=ac.createGain();
+function leadPattern(){return[[N.E5,1],[N.G5,1],[N.C5,1],[N.D5,1],[N.E5,1],[N.G5,1],[N.A5,1],[N.G5,1],[N.E5,1],[N.C5,1],[N.A4,1],[N.C5,1],[N.E5,1],[N.D5,1],[N.C5,2],[N.F5,1],[N.A5,1],[N.C5,1],[N.D5,1],[N.F5,1],[N.A5,1],[N.G5,1],[N.F5,1],[N.E5,1],[N.D5,1],[N.C5,1],[N.B4,1],[N.C5,4]];}
+function bassPattern(){const root=[N.C4,N.A4-12,N.F5-24,N.G5-24]; const seq=[]; for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]); return seq;}
+function playNote(freq,mul,type='square',vol=0.10){
+  ensureAC(); const t=ac.currentTime,osc=ac.createOscillator(),g=ac.createGain();
   osc.type=type; osc.frequency.setValueAtTime(freq,t);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(vol, t+0.01);
-  g.gain.linearRampToValueAtTime(vol*0.6, t+0.06);
-  const end=t+mul*stepSec;
-  g.gain.exponentialRampToValueAtTime(0.0001, end+0.08);
-  osc.connect(g).connect(musicBus || ac.destination);
-  osc.start(t); osc.stop(end+0.1);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.01); g.gain.linearRampToValueAtTime(vol*0.6,t+0.06);
+  const end=t+mul*stepSec; g.gain.exponentialRampToValueAtTime(0.0001,end+0.08);
+  osc.connect(g).connect(musicBus||ac.destination); osc.start(t); osc.stop(end+0.1);
 }
-function playBass(freq, mul){ playNote(freq, mul, 'triangle', 0.07); }
+function playBass(freq,mul){ playNote(NT(freq),mul,'triangle',0.07); }
 function startMusic(){
   if(musicRunning||musicMuted) return;
   musicRunning=true; musicStep=0;
@@ -296,10 +245,9 @@ function startMusic(){
   function tick(){
     if(!musicRunning) return;
     for(let k=0;k<4;k++){
-      const l=lead[musicStep % lead.length];
-      const b=bass[musicStep % bass.length];
-      if(l) playNote(NT(l[0]), l[1],'square',0.10);
-      if(b) playBass(NT(b[0]), b[1]);
+      const l=lead[musicStep%lead.length], b=bass[musicStep%bass.length];
+      if(l) playNote(NT(l[0]),l[1],'square',0.10);
+      if(b) playBass(b[0],b[1]);
       musicStep++;
     }
     musicTimer=setTimeout(tick, stepSec*1000*4);
@@ -308,148 +256,13 @@ function startMusic(){
 }
 function stopMusic(){ musicRunning=false; if(musicTimer){clearTimeout(musicTimer); musicTimer=null;} }
 
-/* ===== RNG ===== */
+/* ===== RNG & Timebase ===== */
 let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
-
-/* ===== Timebase (frame-rate independent @ 75Hz feel) ===== */
-const TARGET_FPS = 75;
-let last = performance.now();
-let timeMs = 0;
+const TARGET_FPS=75; let last=performance.now(), timeMs=0;
 
 /* ===== Game State ===== */
-let state='boot'; // boot | menu | play | paused | over
-let score=0, best=Number(localStorage.getItem('moon_best')||0);
-let scroll=0;
-let uiReturn = 'menu'; // where to return after closing leaderboard
+let state='boot', score=0, best=Number(localStorage.getItem('moon_best')||0);
 const statusEl=document.getElementById('status');
-const shieldHudEl=document.getElementById('shieldHud');
-
-/* ===== Input ===== */
-const keys={};
-addEventListener('keydown',e=>{
-  if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
-  if(['ArrowLeft','ArrowRight','ArrowUp',' ','w','W','a','A','d','D','Escape','Enter'].includes(e.key)) e.preventDefault();
-  keys[e.key]=true;
-  if(e.key==='Escape'){
-    if(state==='play'){ state='paused'; showUI('pause',true); document.getElementById('menuBtn').style.display=''; }
-    else if(state==='paused'){ hideUI('pause'); state='play'; document.getElementById('menuBtn').style.display='none'; }
-  }
-  if(state==='menu'&&(e.key===' '||e.key==='Enter'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')) start();
-  if(state==='over'&&(e.key===' '||e.key==='Enter')) start();
-});
-addEventListener('keyup',e=>{ if (document.activeElement && document.activeElement.tagName === 'INPUT') return; keys[e.key]=false; });
-
-function bindTouch(id,on,off){
-  const el=document.getElementById(id);
-  const down=ev=>{ev.preventDefault();on();};
-  const up=ev=>{ev.preventDefault();off();};
-  el.addEventListener('touchstart',down,{passive:false});
-  el.addEventListener('touchend',up,{passive:false});
-  el.addEventListener('touchcancel',up,{passive:false});
-}
-bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
-bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
-bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+JUMP_BUFFER_MS; }, ()=>{ keys[' ']=false; });
-
-/* Toolbar */
-document.getElementById('music').onclick = (e)=>{
-  musicMuted = !musicMuted; ensureAC();
-  e.currentTarget.textContent = musicMuted ? '♪ Music Off' : '♪ Music';
-  if(musicBus) musicBus.gain.value = musicMuted ? 0 : musicVol;
-  if(musicMuted) stopMusic(); else startMusic();
-};
-document.getElementById('mute').onclick = (e)=>{
-  sfxMuted = !sfxMuted; ensureAC();
-  e.currentTarget.textContent = sfxMuted ? '🔇 SFX' : '🔈 SFX';
-  if(sfxBus) sfxBus.gain.value = sfxMuted ? 0 : sfxVol;
-};
-document.getElementById('invert').onclick = ()=> document.body.classList.toggle('invert');
-document.getElementById('fs').onclick = ()=> CV.requestFullscreen?.();
-document.getElementById('speedup').onclick  = ()=> setMode(speedMode+1);
-document.getElementById('speeddown').onclick= ()=> setMode(speedMode-1);
-document.getElementById('menuBtn').onclick  = ()=>{ hideAllUI(); showUI('menu'); state='menu'; };
-
-/* ===== UI helpers ===== */
-function showUI(id,lock=false){ document.getElementById(id).style.display='flex'; if(lock&&state==='play') state='paused'; }
-function hideUI(id){ document.getElementById(id).style.display='none'; }
-function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits'].forEach(hideUI); }
-
-/* Menu wiring */
-document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
-document.getElementById('howBtn').onclick=()=> showUI('how');
-document.getElementById('settingsBtn').onclick=()=>{ document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
-document.getElementById('lbBtn').onclick=()=>{ uiReturn='menu'; showUI('lb'); loadLeaderboard(20); };
-document.getElementById('creditsBtn').onclick=()=> showUI('credits');
-
-document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
-document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
-document.getElementById('pauseSettingsBtn').onclick=()=>{ hideUI('pause'); document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
-document.getElementById('exitBtn').onclick=()=>{ hideUI('pause'); showUI('menu'); state='menu'; };
-
-document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
-document.getElementById('overMenuBtn').onclick=()=>{ hideUI('over'); showUI('menu'); state='menu'; };
-document.getElementById('overLbBtn').onclick=()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); loadLeaderboard(20); };
-
-document.getElementById('howClose').onclick=()=> hideUI('how');
-document.getElementById('creditsClose').onclick=()=> hideUI('credits');
-
-document.getElementById('setSound').onclick=(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent=sfxMuted?'🔇 SFX: Off':'🔈 SFX: On'; if(sfxBus) sfxBus.gain.value = sfxMuted ? 0 : sfxVol; };
-document.getElementById('setMusic').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent=musicMuted?'♪ Music: Off':'♪ Music: On'; if(musicBus) musicBus.gain.value = musicMuted ? 0 : musicVol; if(musicMuted) stopMusic(); else startMusic(); };
-document.getElementById('setContrast').onclick=()=> document.body.classList.toggle('invert');
-document.getElementById('setSpeed').onclick=()=> setMode(speedMode+1);
-document.getElementById('settingsClose').onclick=()=>{ localStorage.setItem('moon_name', (document.getElementById('setName').value||'').trim()); hideUI('settings'); };
-
-document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
-
-document.getElementById('lbAll').onclick=()=> loadLeaderboard(100);
-document.getElementById('lb20').onclick=()=> loadLeaderboard(20);
-document.getElementById('lb10').onclick=()=> loadLeaderboard(10);
-
-/* ===== Leaderboard ===== */
-async function loadLeaderboard(limit=20){
-  try{
-    document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="5">Loading…</td></tr>';
-    const res = await fetch(`${API_URL}?limit=${limit}`, {cache:'no-cache'});
-    const rows = await res.json();
-    const me = localStorage.getItem('moon_name')||'';
-    const tbody = rows.map((r,idx)=>`<tr>
-      <td>${idx+1}</td><td>${pad(r.score)}</td>
-      <td>${escapeHTML(r.name||'')}</td>
-      <td>${r.mode || '-'}</td>
-      <td>${new Date(r.timestamp).toLocaleDateString()}</td>
-    </tr>`).join('') || '<tr><td colspan="5">No scores yet.</td></tr>';
-    document.querySelector('#lbTable tbody').innerHTML = tbody;
-    document.getElementById('lbSelf').textContent = me ? `Your name: ${me}` : 'You have not set a name yet.';
-  }catch(e){
-    document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="5">Failed to load.</td></tr>';
-  }
-}
-async function submitScore(name,score){
-  try{
-    const body = new URLSearchParams({name,score:String(Math.floor(score)),version:GAME_VERSION,mode:speedModes[speedMode].name}).toString();
-    await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body});
-    return true;
-  }catch(e){ return false; }
-}
-function escapeHTML(s){ return s.replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-/* ===== World & Difficulty ===== */
-const floorY=H-84;
-let segments=[],entities=[],items=[];
-
-function getDiff(){
-  // Option B tuning: softer score curve
-  const tScore = Math.min(1, (score/2800));               // was /2200
-  const tTime  = Math.min(1, (timeMs/16000));             // keep
-  const t = Math.min(1, tTime + tScore);
-  const factor=0.6*(player.slow>0?0.6:1);
-  const worldScroll=(baseSpeed + t*1.2) * factor;         // same ramp factor
-  const gapMin=24;
-  const gapMax=35+Math.min(54,t*60); // tiny soften (60→54)
-  const gMin=(timeMs<10000?300:200-t*18);                 // runway feels a touch wider
-  const gMax=gMin+140;
-  return {worldScroll,gapMin,gapMax,gMin,gMax};
-}
 
 /* ===== Speed Modes ===== */
 const speedModes=[
@@ -457,7 +270,7 @@ const speedModes=[
   {name:'Normal', speed:3.2, score:1.5},
   {name:'Hard',   speed:4.4, score:2.0},
 ];
-let speedMode=1; // default Normal
+let speedMode=1;
 let baseSpeed=speedModes[speedMode].speed;
 let scoreMul = speedModes[speedMode].score;
 function setMode(idx){
@@ -469,20 +282,140 @@ function setMode(idx){
   if(setBtn) setBtn.textContent = `Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
 }
 
-/* ===== Player & physics ===== */
+/* ===== Input ===== */
+const keys={};
+function blockIfTyping(e){
+  const el=document.activeElement;
+  if(el && el.tagName==='INPUT') return true;
+  return false;
+}
+addEventListener('keydown',e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp',' ','w','W','a','A','d','D','Escape','Enter'].includes(e.key)) e.preventDefault();
+  if(blockIfTyping(e)) return;
+  keys[e.key]=true;
+  if(e.key==='Escape'){
+    if(state==='play'){ state='paused'; showUI('pause',true); }
+    else if(state==='paused'){ hideUI('pause'); state='play'; }
+  }
+  if(state==='menu'&&(e.key===' '||e.key==='Enter'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')) start();
+  if(state==='over'&&(e.key===' '||e.key==='Enter')) start();
+});
+addEventListener('keyup',e=>{ if(blockIfTyping(e)) return; keys[e.key]=false; });
+
+/* Click-to-start safety */
+CV.addEventListener('click',()=>{
+  if(state==='menu'){ start(); }
+  else if(state==='paused'){ hideUI('pause'); state='play'; }
+  else if(state==='over'){ start(); }
+});
+
+/* Touch buttons */
+function bindTouch(id,on,off){
+  const el=document.getElementById(id), down=ev=>{ev.preventDefault();on();}, up=ev=>{ev.preventDefault();off();};
+  el.addEventListener('touchstart',down,{passive:false}); el.addEventListener('touchend',up,{passive:false}); el.addEventListener('touchcancel',up,{passive:false});
+}
+bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
+bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
+let jumpBufferUntil=0;
+bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+120; }, ()=>{ keys[' ']=false; });
+
+/* Toolbar */
+document.getElementById('music').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent=musicMuted?'♪ Music Off':'♪ Music'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
+document.getElementById('mute').onclick =(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent=sfxMuted?'🔇 SFX':'🔈 SFX'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
+document.getElementById('invert').onclick=()=> document.body.classList.toggle('invert');
+document.getElementById('fs').onclick     =()=> CV.requestFullscreen?.();
+document.getElementById('speedup').onclick  =()=> setMode(speedMode+1);
+document.getElementById('speeddown').onclick=()=> setMode(speedMode-1);
+
+/* UI helpers */
+function showUI(id,lock=false){ document.getElementById(id).style.display='flex'; if(lock&&state==='play') state='paused'; }
+function hideUI(id){ document.getElementById(id).style.display='none'; }
+function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits'].forEach(hideUI); }
+
+/* Menu wiring */
+document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
+document.getElementById('howBtn').onclick=()=> showUI('how');
+document.getElementById('settingsBtn').onclick=()=>{ document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
+document.getElementById('lbBtn').onclick=()=>{ showUI('lb'); loadLeaderboard(20); };
+document.getElementById('creditsBtn').onclick=()=> showUI('credits');
+
+document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
+document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
+document.getElementById('pauseSettingsBtn').onclick=()=>{ hideUI('pause'); document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
+document.getElementById('exitBtn').onclick=()=>{ hideUI('pause'); showUI('menu'); state='menu'; };
+
+document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
+document.getElementById('overMenuBtn').onclick=()=>{ hideUI('over'); showUI('menu'); state='menu'; };
+document.getElementById('overLbBtn').onclick=()=>{ hideUI('over'); showUI('lb'); loadLeaderboard(20); };
+
+document.getElementById('howClose').onclick=()=> hideUI('how');
+document.getElementById('creditsClose').onclick=()=> hideUI('credits');
+
+document.getElementById('setSound').onclick=(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent=sfxMuted?'🔇 SFX: Off':'🔈 SFX: On'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
+document.getElementById('setMusic').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent=musicMuted?'♪ Music: Off':'♪ Music: On'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
+document.getElementById('setContrast').onclick=()=> document.body.classList.toggle('invert');
+document.getElementById('setSpeed').onclick=()=> setMode(speedMode+1);
+document.getElementById('settingsClose').onclick=()=>{ localStorage.setItem('moon_name',(document.getElementById('setName').value||'').trim()); hideUI('settings'); };
+
+document.getElementById('lbClose').onclick=()=> hideUI('lb');
+document.getElementById('lbAll').onclick=()=> loadLeaderboard(100);
+document.getElementById('lb20').onclick=()=> loadLeaderboard(20);
+document.getElementById('lb10').onclick=()=> loadLeaderboard(10);
+
+/* Leaderboard */
+async function loadLeaderboard(limit=20){
+  try{
+    document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="6">Loading…</td></tr>';
+    const res=await fetch(`${API_URL}?limit=${limit}`,{cache:'no-cache'});
+    const rows=await res.json();
+    const me=localStorage.getItem('moon_name')||'';
+    const tbody = rows.map((r,idx)=>`
+  <tr>
+    <td>${idx+1}</td>
+    <td>${pad(r.score)}</td>
+    <td>${escapeHTML(r.name||'')}</td>
+    <td>${r.mode || '-'}</td>
+    <td>${new Date(r.timestamp).toLocaleDateString()}</td>
+  </tr>
+`).join('') || '<tr><td colspan="6">No scores yet.</td></tr>';
+    document.querySelector('#lbTable tbody').innerHTML=tbody;
+    document.getElementById('lbSelf').textContent= me ? `Your name: ${me}` : 'You have not set a name yet.';
+  }catch(e){ document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="6">Failed to load.</td></tr>'; }
+}
+async function submitScore(name,score){
+  try{
+    const body=new URLSearchParams({name,score:String(Math.floor(score)),version:'1.7.3',mode:speedModes[speedMode].name}).toString();
+    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    return true;
+  }catch(e){ return false; }
+}
+function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* World & Player */
+const floorY=H-84;
+let segments=[],entities=[],items=[];
 const GRAV=0.65,JUMP=11.6,FRICTION=0.86;
 const COYOTE_MS=120,JUMP_BUFFER_MS=120;
-const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,shield:0,slow:0,shields:0,auraPulse:0,auraFlash:0};
-let coyoteUntil=0,jumpBufferUntil=0;
+const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,shield:0,slow:0};
+let coyoteUntil=0;
 
-/* ===== Generation ===== */
+/* Difficulty */
+let scroll=0,timeMs=0;
+function getDiff(){
+  const t=Math.min(1,(timeMs/16000)+(score/2200));
+  const factor=0.6*(player.slow>0?0.6:1);
+  const worldScroll=(speedModes[speedMode].speed+t*1.2)*factor;
+  const gapMin=24;
+  const gapMax=35+Math.min(60,t*60);
+  const gMin=(timeMs<10000?260:180-t*20);
+  const gMax=gMin+140;
+  return {worldScroll,gapMin,gapMax,gMin,gMax};
+}
 function resetWorld(){
   segments=[];entities=[];items=[];scroll=0;timeMs=0;score=0;
-  Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,shield:0,slow:0,shields:0,auraPulse:0,auraFlash:0});
-  // runway increased 380 -> 440 (Option B)
-  segments.push({x:0,w:440,type:'ground'});
+  Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,shield:0,slow:0});
+  segments.push({x:0,w:380,type:'ground'});
   spawnAhead(W*2.4);
-  updateShieldHUD();
 }
 function lastEnd(){ return segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0; }
 function spawnAhead(targetX){
@@ -492,85 +425,40 @@ function spawnAhead(targetX){
     const segW=Math.floor(gMin+RND()*(gMax-gMin));
     const gx=lastEnd();
     segments.push({x:gx,w:segW,type:'ground'});
-
     if(afterTutorial){
-      // Option B: spikes 0.22 -> 0.19 ; aliens 0.50 -> 0.38
-      if(RND()<0.19 && segW>120){
-        const cx=gx+40+Math.floor(RND()*(segW-80));
-        entities.push({kind:'spike',x:cx,y:floorY-60,w:40,h:10});
-      }
-      if(RND()<0.38 && segW>100){
-        const ax=gx+40+Math.floor(RND()*(segW-100));
-        entities.push({kind:'alien',x:ax,y:floorY-14,w:22,h:14,dir:(RND()<0.5?-1:1),baseX:ax,range:36+Math.floor(RND()*44)});
-      }
+      if(RND()<0.22 && segW>120){ const cx=gx+40+Math.floor(RND()*(segW-80)); entities.push({kind:'spike',x:cx,y:floorY-60,w:40,h:10}); }
+      if(RND()<0.5 && segW>100){ const ax=gx+40+Math.floor(RND()*(segW-100)); entities.push({kind:'alien',x:ax,y:floorY-14,w:22,h:14,dir:(RND()<0.5?-1:1),baseX:ax,range:36+Math.floor(RND()*44)}); }
     }
-
-    // Coins more meaningful: base 200 (scales by mode)
-    if(RND()<0.6){
-      const ix=gx+30+Math.floor(RND()*(segW-60));
-      items.push({kind:'chip',x:ix,y:floorY-40,w:10,h:10,phase:(RND()*6.28)});
-    }
-    // Powerups (shield/slow)
-    if(afterTutorial && RND()<0.12){
-      const ix=gx+segW-60;
-      const type = (RND()<0.6 ? 'shield' : 'slow');
-      items.push({kind:type,x:ix,y:floorY-48,w:12,h:12,phase:(RND()*6.28)});
-    }
-
+    if(RND()<0.6){ const ix=gx+30+Math.floor(RND()*(segW-60)); items.push({kind:'chip',x:ix,y:floorY-40,w:10,h:10}); }
+    if(afterTutorial && RND()<0.08){ const ix=gx+segW-60; items.push({kind:(RND()<0.5?'shield':'slow'),x:ix,y:floorY-48,w:12,h:12}); }
     const gap=afterTutorial?Math.floor(gapMin+RND()*gapMax):Math.floor(20+RND()*30);
     segments.push({x:lastEnd(),w:gap,type:'gap'});
   }
 }
 
-/* ===== Sprites ===== */
-function astronaut(x,y,pose='idle'){
-  const f=FG(),b=BG(); x=i(x); y=i(y);
-  FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
+/* Sprites */
+function astronaut(x,y,pose='idle'){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
   if(pose==='run1'){FILL(x+2,y+18,5,2,b);FILL(x+11,y+18,3,2,b);}
   if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+9,y+18,6,2,b);}
   if(pose==='jump'){FILL(x+3,y+18,10,2,b);}
 }
-function alien(x,y,blink=false){
-  const f=FG(),b=BG(); x=i(x); y=i(y);
-  FILL(x,y,22,14,f);
-  // eyes: blink toggle
-  if(!blink){ FILL(x+4,y+4,4,4,b); FILL(x+14,y+4,2,2,b); }
-}
-function ufo(x,y){
-  const f=FG(); x=i(x); y=i(y);
-  FILL(x-28,y,56,8,f); FILL(x-22,y-8,44,6,f); FILL(x-4,y-14,8,6,f);
-}
-function beamScan(cx,topY,t){
-  const f=FG(); cx=i2(cx); topY=i2(topY);
-  const wob=(Math.sin(t/420)+1)*1.2;
+function alien(x,y,frame=0){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x,y,22,14,f); FILL(x+4,y+4,4,4,b); if(frame%2===0) FILL(x+14,y+4,2,2,b); }
+function ufo(x,y){ const f=FG(); x=i(x); y=i(y); FILL(x-28,y,56,8,f); FILL(x-22,y-8,44,6,f); FILL(x-4,y-14,8,6,f); }
+function beamScan(cx,topY,t){ const f=FG(); cx=i2(cx); topY=i2(topY); const wob=(Math.sin(t/420)+1)*1.2;
   for(let k=0;k<56;k+=6){ const y=topY+14+k; const half=8+((k/56)*9)|0; FILL(cx-(half+wob),y,(half+wob)*2,2,f); }
 }
-/* Ground with 2px lip to kill hairline */
-function tileGround(x,y,w){
-  const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w);
-  FILL(x,y-2,w,2,f);
-  FILL(x,y,w,44,f);
+function tileGround(x,y,w){ const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w); FILL(x,y-2,w,2,f); FILL(x,y,w,44,f);
   for(let dx=0;dx<w;dx+=8) for(let dy=0;dy<44;dy+=8) if(((dx+dy)>>3)&1) FILL(x+dx,y+dy,4,4,b);
 }
 
-/* ===== Collisions ===== */
+/* Collisions */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
 
-/* ===== Control ===== */
-function updateShieldHUD(){
-  const dots = ['○','○','○'];
-  for(let k=0;k<player.shields;k++) dots[k]='●';
-  shieldHudEl.textContent = `🛡 ${dots.join(' ')}`;
-}
+/* Control */
+let nameOnDisk = localStorage.getItem('moon_name')||'';
 function start(){
-  resetWorld(); state='play'; hideUI('over'); hideUI('menu'); statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
-  document.getElementById('menuBtn').style.display='none';
-  if(!musicMuted) startMusic(); beep('coin');
-}
-function useShield(){
-  player.shields = clamp(player.shields-1,0,3);
-  player.auraFlash = 180; // frames scaled by u
-  updateShieldHUD(); beep('hit');
+  resetWorld(); state='play'; hideAllUI(); statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
+  CV.focus(); if(!musicMuted) startMusic(); beep('coin');
 }
 function gameOver(){
   state='over';
@@ -582,7 +470,7 @@ function gameOver(){
   document.getElementById('submitMsg').style.display='none';
   document.getElementById('nameInput').value='';
   showUI('over',true);
-  document.getElementById('menuBtn').style.display='';
+  if(savedName){ submitScore(savedName,score).then(ok=>{ document.getElementById('submitMsg').style.display='block'; document.getElementById('submitMsg').textContent= ok?'Submitted ✓':'Submit failed'; }); }
 }
 document.getElementById('submitBtn').onclick=async()=>{
   const nm=(document.getElementById('nameInput').value||'').trim().slice(0,24);
@@ -594,44 +482,29 @@ document.getElementById('submitBtn').onclick=async()=>{
   document.getElementById('nameGate').style.display='none';
 };
 
-/* ===== Update (frame-rate independent) ===== */
-const GRAV_U = GRAV;
-const ACCEL_U = 0.7;
-const COIN_BASE = 200; // Option B
+/* Update (frame-rate independent) */
+const GRAV_U=GRAV, ACCEL_U=0.7;
 function update(u){
-  // u ~ 1 per frame at 75Hz
   timeMs += (u / TARGET_FPS) * 1000;
+  const {worldScroll}=getDiff(); const m=u;
 
-  const {worldScroll}=getDiff();
-  const m = u;
-
-  // input
   const left=keys['ArrowLeft']||keys['a']||keys['A'];
   const right=keys['ArrowRight']||keys['d']||keys['D'];
   const jump=keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
-  if(left)  player.vx -= ACCEL_U * m;
-  if(right) player.vx += ACCEL_U * m;
+  if(left)  player.vx -= ACCEL_U*m;
+  if(right) player.vx += ACCEL_U*m;
 
-  // physics
-  player.vx *= Math.pow(FRICTION, m);
-  player.vy += GRAV_U * m;
+  player.vx *= Math.pow(FRICTION,m);
+  player.vy += GRAV_U*m;
 
-  // coyote & jump buffer (ms)
-  const now = performance.now();
+  const now=performance.now();
   if(player.on) coyoteUntil=now+COYOTE_MS;
   if(jump)     jumpBufferUntil=now+JUMP_BUFFER_MS;
-  if(jumpBufferUntil>now && coyoteUntil>now){
-    player.vy = -JUMP;
-    player.on=false; jumpBufferUntil=0; coyoteUntil=0; beep('jump');
-  }
+  if(jumpBufferUntil>now && coyoteUntil>now){ player.vy=-JUMP; player.on=false; jumpBufferUntil=0; coyoteUntil=0; beep('jump'); }
 
-  // integrate
-  const prevX = player.x, prevY = player.y;
-  player.x += player.vx * m;
-  player.y += player.vy * m;
-  scroll   += worldScroll * m;
+  const prevX=player.x, prevY=player.y;
+  player.x += player.vx*m; player.y += player.vy*m; scroll += worldScroll*m;
 
-  // generate/cull
   spawnAhead(scroll+W*2.3);
   const cut=scroll-140;
   segments=segments.filter(s=>s.x+s.w>cut);
@@ -644,199 +517,90 @@ function update(u){
   for(const s of segments){
     if(s.type!=='ground') continue;
     if(wx+player.w < s.x-8 || wx > s.x+s.w+8) continue;
-
-    const a={x:wx,y:player.y,w:player.w,h:player.h};
-    const b={x:s.x,y:floorY,w:s.w,h:48};
-    const collided = (a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y);
-    if(!collided) continue;
-
-    // landing on top
-    if (player.vy > 0 && (prevY + player.h) <= floorY) {
-      player.y = floorY - player.h;
-      player.vy = 0;
-      player.on = true;
-      continue;
-    }
-    // underside
-    if (player.vy < 0 && prevY >= floorY + 48) {
-      player.y = floorY + 48;
-      player.vy = 0;
-      continue;
-    }
-    // horizontal push-out
-    if (player.vx > 0 && (prevX + player.w + scroll) <= s.x) {
-      player.x = (s.x - scroll) - player.w;
-      player.vx = 0;
-    } else if (player.vx < 0 && (prevX + scroll) >= (s.x + s.w)) {
-      player.x = (s.x + s.w - scroll);
-      player.vx = 0;
-    }
+    const a={x:wx,y:player.y,w:player.w,h:player.h}, b={x:s.x,y:floorY,w:s.w,h:48};
+    if(!(a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y)) continue;
+    if(player.vy>0 && (prevY+player.h)<=floorY){ player.y=floorY-player.h; player.vy=0; player.on=true; continue; }
+    if(player.vy<0 && prevY>=floorY+48){ player.y=floorY+48; player.vy=0; continue; }
+    if(player.vx>0 && (prevX+player.w+scroll)<=s.x){ player.x=(s.x-scroll)-player.w; player.vx=0; }
+    else if(player.vx<0 && (prevX+scroll)>=(s.x+s.w)){ player.x=(s.x+s.w-scroll); player.vx=0; }
   }
 
-  // abyss
-  if(player.y>H+40){
-    if(player.shields>0){
-      useShield();
-      player.y=floorY-player.h-2; player.vy=-JUMP*0.8;
-    } else gameOver();
-  }
+  if(player.y>H+40){ if(player.shield>0){player.shield=0;player.y=floorY-player.h-2;player.vy=-JUMP*0.8;beep('hit');} else gameOver(); }
 
-  // entities
   const frame=(performance.now()/120|0);
   for(const e of entities){
     if(e.kind==='alien'){
-      e.x+=e.dir*0.7*m;
-      if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
+      e.x+=e.dir*0.7*m; if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
       if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
-        if(player.shields>0){
-          useShield();
-          // small knock
-          player.vx -= Math.sign(player.vx||1)*0.8;
-          player.vy = -JUMP*0.5;
-        } else gameOver();
+        if(player.shield>0){player.shield=0;beep('hit'); e.x+=(e.dir*-1)*40;} else gameOver();
       }
     }else if(e.kind==='spike'){
       if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
-        if(player.shields>0){
-          useShield();
-          player.vy = -JUMP*0.5;
-        } else gameOver();
+        if(player.shield>0){player.shield=0;beep('hit');} else gameOver();
       }
     }
   }
 
-  // items (with animations)
   for(let k=items.length-1;k>=0;k--){
     const it=items[k];
-    // bob animation using it.phase
-    const bob = Math.sin((timeMs/260) + (it.phase||0)) * 2;
-
-    const rect={x:it.x, y:it.y + bob, w:it.w, h:it.h};
-    if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:rect.x,y:rect.y,w:rect.w,h:rect.h})){
-      if(it.kind==='chip'){ score += (COIN_BASE * scoreMul); beep('coin'); }
-      if(it.kind==='shield'){
-        if(player.shields<3){ player.shields++; updateShieldHUD(); beep('shield'); }
-        else { score += (COIN_BASE * 0.5 * scoreMul); beep('coin'); } // small convert if full
-      }
-      if(it.kind==='slow'){ player.slow=180; beep('coin'); }
+    if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:it.x,y:it.y,w:it.w,h:it.h})){
+      if(it.kind==='chip'){score+=100*scoreMul; beep('coin');}
+      if(it.kind==='shield'){player.shield=1; beep('coin');}
+      if(it.kind==='slow'){player.slow=180; beep('coin');)}
       items.splice(k,1);
-    }else{
-      // keep animated position
-      it._drawY = rect.y;
     }
   }
 
-  // aura pulse/flash timers
-  player.auraPulse = (player.auraPulse + m) % 360;
-  if(player.auraFlash>0) player.auraFlash = Math.max(0, player.auraFlash - m*8);
-
-  if(player.slow>0) player.slow=Math.max(0, player.slow - m);
-
-  // Distance scoring (Option B): +15% base
-  score += (0.069 * m + Math.max(0,player.vx) * 0.03 * m) * scoreMul;
+  if(player.slow>0) player.slow=Math.max(0,player.slow-m);
+  score += (0.06 * m + Math.max(0,player.vx) * 0.03 * m) * scoreMul;
 }
 
-/* ===== Draw ===== */
+/* Draw */
 function draw(){
   const f=FG(),b=BG(); ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
-
-  // stars
   ctx.fillStyle=f;
   for(let n=0;n<100;n++){
     const x1=((n*83)%2000)-(scroll*0.25%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
     const x2=((n*211)%2400)-(scroll*0.10%2400), y2=(n*97)%H;  const xx2=((x2+2400)%2400)-100; if(xx2>=0&&xx2<W) ctx.fillRect(i(xx2),i(y2),1,1);
   }
-
-  // ground
-  for(const s of segments){
-    if(s.type!=='ground') continue;
-    const x=i(s.x-scroll), w=i(s.w); if(x>W||x+w<-50) continue;
-    tileGround(x,floorY,w);
-  }
-
-  // entities
-  const blink = ((performance.now()/1500|0)%2)===0; // slow blink boolean
-  for(const e of entities){
-    const x=i(e.x-scroll), y=i(e.y);
-    if(e.kind==='alien') alien(x,y,blink); else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
-  }
-
-  // items (animated)
-  for(const it of items){
-    const x=i2(it.x - scroll), y=i2((it._drawY ?? it.y));
-    if(it.kind==='chip'){ // twinkle 2-frame + bob already applied
-      FILL(x,y,10,10,f);
-      const tw = ((performance.now()/120)|0)%2;
-      if(tw){ FILL(x+3,y+3,4,4,BG()); } else { // simple sparkle cross
-        FILL(x+4,y+2,2,2,BG()); FILL(x+4,y+6,2,2,BG()); FILL(x+2,y+4,2,2,BG()); FILL(x+6,y+4,2,2,BG());
-      }
-    }
-    if(it.kind==='shield'){ // slow breathing border
-      const pulse = (Math.sin((timeMs/500)+(it.phase||0))*0.5+0.5)|0;
-      FILL(x,y,12,12,f);
-      FILL(x+2,y+2,8,8,BG());
-      if(pulse){ FILL(x+5,y+5,2,2,f); } // tiny core blink
-    }
-    if(it.kind==='slow'){ // scan line
-      FILL(x,y,12,12,f);
-      FILL(x+2,y+2,8,8,BG());
-      const scan = ((timeMs/120 + (it.phase||0))%10)|0;
-      FILL(x+2,y+2+scan,8,1,f);
-    }
-  }
-
-  // player + shield aura
+  for(const s of segments){ if(s.type!=='ground') continue; const x=i(s.x-scroll), w=i(s.w); if(x>W||x+w<-50) continue; tileGround(x,floorY,w); }
   const frame=(performance.now()/120|0);
-  const pose = player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
-
-  // aura (subtle): thin rectangle ring around player box
-  if(player.shields>0){
-    const intense = player.auraFlash>0 ? 1 : 0;
-    const th = intense ? 3 : 2; // thicker on hit
-    const ax=player.x-3, ay=player.y-3, aw=player.w+6, ah=player.h+6;
-    for(let t=0;t<th;t++){
-      // outer ring
-      FILL(ax-t, ay-t, aw+2*t, 1, f);
-      FILL(ax-t, ay+ah+t, aw+2*t, 1, f);
-      FILL(ax-t, ay-t, 1, ah+2*t, f);
-      FILL(ax+aw+t, ay-t, 1, ah+2*t, f);
-    }
+  for(const e of entities){ const x=i(e.x-scroll), y=i(e.y); if(e.kind==='alien') alien(x,y,frame); else if(e.kind==='spike') FILL(x,y,e.w,e.h,f); }
+  for(const it of items){ const x=i2(it.x-scroll), y=i2(it.y);
+    if(it.kind==='chip'){ FILL(x,y,10,10,f); FILL(x+3,y+3,4,4,b); }
+    if(it.kind==='shield'){ FILL(x,y,12,12,f); FILL(x+2,y+2,8,8,b); }
+    if(it.kind==='slow'){ FILL(x,y,12,12,f); FILL(x+2,y+5,8,2,b); }
   }
-
+  const pose=player.on?(frame%2?'run1':'run2'):(player.vy<0?'jump':'idle');
   astronaut(player.x,player.y,pose);
-
-  // HUD
+  if(player.shield>0){ FILL(player.x-2,player.y-2,player.w+4,2,f); FILL(player.x-2,player.y+player.h,player.w+4,2,f); FILL(player.x-2,player.y-2,2,player.h+4,f); FILL(player.x+player.w,player.y-2,2,player.h+4,f); }
   ctx.fillStyle=f; ctx.font="12px 'Press Start 2P', monospace";
   const hud=`SCORE ${pad(Math.floor(score))}    BEST ${pad(best)}    MODE ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   ctx.fillText(hud,10,18);
 
-  // Menu UFO/beam animation
   if(state==='menu'){
-    const t=performance.now(); const cx=i(W/2), cy=i(H*0.30);
+    const t=performance.now(), cx=i(W/2), cy=i(H*0.30);
     const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
-
     ctx.font="22px 'Press Start 2P',monospace"; const title="MKHKASG: MOONRUNNER";
     ctx.fillText(title,i((W-ctx.measureText(title).width)/2),cy+64);
     ctx.font="10px 'Press Start 2P',monospace";
-    const t1="Press SPACE to start • ←/→ move • W/↑/Space jump • Esc pause";
-    const t2="Collect: 💠 Chips (+200 × mode), 🛡 Shields (max 3), ⏳ Slow Field (3s)";
-    const t3="Avoid: Aliens & Spikes. Survive as long as you can.";
+    const t1="Press SPACE / CLICK to start • ←/→ move • W/↑/Space jump • Esc pause";
+    const t2="Goal: survive. Chips +100. Shield = 1 hit. Slow-mo = 3s.";
     ctx.fillText(t1,i((W-ctx.measureText(t1).width)/2),cy+86);
     ctx.fillText(t2,i((W-ctx.measureText(t2).width)/2),cy+104);
-    ctx.fillText(t3,i((W-ctx.measureText(t3).width)/2),cy+122);
   }
 }
 
-/* ===== Boot & Loop ===== */
+/* Boot & Loop */
+let last=performance.now();
 async function boot(){
-  try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1200))]); }catch(e){}
   resetWorld(); setMode(speedMode); state='menu'; statusEl.textContent=`Menu — ready`;
-  requestAnimationFrame(loop);
-  showUI('menu');
+  requestAnimationFrame(loop); showUI('menu');
 }
 function loop(now){
-  const dtSec = (now - last) / 1000; last = now;
-  const u = Math.min(dtSec, 0.10) * TARGET_FPS; // clamp big spikes
+  const dtSec=(now-last)/1000; last=now;
+  const u=Math.min(dtSec,0.10)*TARGET_FPS;
   if(state==='play') update(u);
   draw();
   requestAnimationFrame(loop);
