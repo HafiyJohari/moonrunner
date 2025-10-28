@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — v1.8.2 “Lunar Shields”</title>
+<title>MKHKASG: MoonRunner — v1.8.3 “Lunar Drift”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -20,6 +20,7 @@
   .hud .left,.hud .right{display:flex;gap:10px;align-items:center}
   .btn{padding:4px 10px;border:1px solid currentColor;cursor:pointer;user-select:none}
   .btn:active{transform:translateY(1px)}
+  .btn.active{outline:2px solid currentColor}
 
   /* Overlays */
   .ui{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10}
@@ -80,7 +81,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.8.2 — Lunar Shields • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.8.3 — Lunar Drift • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -198,7 +199,7 @@
 
 <script>
 /* ===== Config ===== */
-const GAME_VERSION = '1.8.2';
+const GAME_VERSION = '1.8.3';
 const API_URL = "https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
 
 /* ===== Canvas & DPR ===== */
@@ -371,7 +372,7 @@ function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits'].fo
 document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
 document.getElementById('howBtn').onclick=()=> showUI('how');
 document.getElementById('settingsBtn').onclick=()=>{ document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
-document.getElementById('lbBtn').onclick=()=>{ uiReturn='menu'; showUI('lb'); loadLeaderboard(20); };
+document.getElementById('lbBtn').onclick=()=>{ uiReturn='menu'; showUI('lb'); lbSetActive(document.getElementById('lb20')); loadLeaderboard(20); };
 document.getElementById('creditsBtn').onclick=()=> showUI('credits');
 
 document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
@@ -381,7 +382,7 @@ document.getElementById('exitBtn').onclick=()=>{ hideUI('pause'); showUI('menu')
 
 document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
 document.getElementById('overMenuBtn').onclick=()=>{ hideUI('over'); showUI('menu'); state='menu'; };
-document.getElementById('overLbBtn').onclick=()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); loadLeaderboard(20); };
+document.getElementById('overLbBtn').onclick=()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); lbSetActive(document.getElementById('lb20')); loadLeaderboard(20); };
 
 document.getElementById('howClose').onclick=()=> hideUI('how');
 document.getElementById('creditsClose').onclick=()=> hideUI('credits');
@@ -394,20 +395,14 @@ document.getElementById('settingsClose').onclick=()=>{ localStorage.setItem('moo
 
 document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
 
-  // Leaderboard tabs
+/* Leaderboard tabs */
 const lbAllBtn = document.getElementById('lbAll');
 const lb20Btn  = document.getElementById('lb20');
 const lb10Btn  = document.getElementById('lb10');
-
-function lbSetActive(btn){
-  [lbAllBtn, lb20Btn, lb10Btn].forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
+function lbSetActive(btn){ [lbAllBtn,lb20Btn,lb10Btn].forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
 lbAllBtn.onclick = ()=>{ lbSetActive(lbAllBtn); loadLeaderboard(9999); };
 lb20Btn.onclick  = ()=>{ lbSetActive(lb20Btn);  loadLeaderboard(20);   };
 lb10Btn.onclick  = ()=>{ lbSetActive(lb10Btn);  loadLeaderboard(10);   };
-
 
 /* ===== Leaderboard ===== */
 async function loadLeaderboard(limit=20){
@@ -442,15 +437,19 @@ async function submitScore(name,score){
   }catch(e){ return false; }
 }
 
-/* ===== World & Difficulty (Option B from your 1.8.0) ===== */
+/* ===== World & Difficulty ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
 function getDiff(){
+  // Keep your original t-scaling for gaps, but world speed ramps purely by time (heat)
   const tScore = Math.min(1, (score/2800));
   const tTime  = Math.min(1, (timeMs/16000));
   const t = Math.min(1, tTime + tScore);
+
+  const heat = Math.min(1, timeMs / 120000); // 0→1 over 2 minutes
   const factor=0.6*(player.slow>0?0.6:1);
-  const worldScroll=(baseSpeed + t*1.2) * factor;
+  const worldScroll=(baseSpeed + 0.6 + 2.4*heat) * factor; // only change vs 1.8.2
+
   const gapMin=24;
   const gapMax=35+Math.min(54,t*60);
   const gMin=(timeMs<10000?300:200-t*18);
@@ -728,7 +727,6 @@ function draw(){
   const invBlink = (player.inv>0) && (frame % 2 === 0);
   if(!invBlink){ astronaut(player.x,player.y,pose); }
   else{
-    // 1-bit friendly outline blink
     FILL(player.x,player.y,player.w,1,f);
     FILL(player.x,player.y+player.h-1,player.w,1,f);
     FILL(player.x,player.y,1,player.h,f);
