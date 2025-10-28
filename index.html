@@ -140,7 +140,7 @@
     </div>
     <div class="mt12" id="lbSelf" class="ghost"></div>
     <div class="mt8" style="max-height:55vh;overflow:auto;">
-      <table id="lbTable"><thead><tr><th>#</th><th>Score</th><th>Name</th><th>Date</th></tr></thead><tbody></tbody></table>
+      <table id="lbTable"><thead><tr><th>#</th><th>Score</th><th>Name</th><th>Mode</th><th>Date</th></tr></thead><tbody></tbody></table>
     </div>
   </div>
 </div>
@@ -344,7 +344,15 @@ async function loadLeaderboard(limit=20){
     const res=await fetch(`${API_URL}?limit=${limit}`,{cache:'no-cache'});
     const rows=await res.json();
     const me=localStorage.getItem('moon_name')||'';
-    const tbody=rows.map((r,idx)=>`<tr><td>${idx+1}</td><td>${pad(r.score)}</td><td>${escapeHTML(r.name||'')}</td><td>${new Date(r.timestamp).toLocaleDateString()}</td></tr>`).join('')||'<tr><td colspan="4">No scores yet.</td></tr>';
+    const tbody = rows.map((r,idx)=>`
+  <tr>
+    <td>${idx+1}</td>
+    <td>${pad(r.score)}</td>
+    <td>${escapeHTML(r.name||'')}</td>
+    <td>${r.mode || '-'}</td>
+    <td>${new Date(r.timestamp).toLocaleDateString()}</td>
+  </tr>
+`).join('') || '<tr><td colspan="5">No scores yet.</td></tr>';
     document.querySelector('#lbTable tbody').innerHTML=tbody;
     document.getElementById('lbSelf').textContent= me ? `Your name: ${me}` : 'You have not set a name yet.';
   }catch(e){ document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="4">Failed to load.</td></tr>'; }
