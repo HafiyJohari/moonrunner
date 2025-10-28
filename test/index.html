@@ -394,6 +394,21 @@ document.getElementById('settingsClose').onclick=()=>{ localStorage.setItem('moo
 
 document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
 
+  // Leaderboard tabs
+const lbAllBtn = document.getElementById('lbAll');
+const lb20Btn  = document.getElementById('lb20');
+const lb10Btn  = document.getElementById('lb10');
+
+function lbSetActive(btn){
+  [lbAllBtn, lb20Btn, lb10Btn].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+lbAllBtn.onclick = ()=>{ lbSetActive(lbAllBtn); loadLeaderboard(9999); };
+lb20Btn.onclick  = ()=>{ lbSetActive(lb20Btn);  loadLeaderboard(20);   };
+lb10Btn.onclick  = ()=>{ lbSetActive(lb10Btn);  loadLeaderboard(10);   };
+
+
 /* ===== Leaderboard ===== */
 async function loadLeaderboard(limit=20){
   try{
