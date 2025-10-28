@@ -542,11 +542,10 @@ document.getElementById('submitBtn').onclick=async()=>{
 const GRAV_U = GRAV;            // per-unit gravity
 const ACCEL_U = 0.7;            // per-unit input acceleration
 function update(u){
-  // u = time units; at 75Hz steady, u ≈ 1 per frame
   timeMs += (u / TARGET_FPS) * 1000;
 
   const {worldScroll}=getDiff();
-  const m = u; // convenience
+  const m = u;
 
   // input
   const left=keys['ArrowLeft']||keys['a']||keys['A'];
@@ -555,11 +554,11 @@ function update(u){
   if(left)  player.vx -= ACCEL_U * m;
   if(right) player.vx += ACCEL_U * m;
 
-  // physics (friction compounding over variable time)
+  // physics
   player.vx *= Math.pow(FRICTION, m);
   player.vy += GRAV_U * m;
 
-  // coyote & jump buffer (stay in ms with performance.now)
+  // coyote & jump buffer (keep in ms)
   const now = performance.now();
   if(player.on) coyoteUntil=now+COYOTE_MS;
   if(jump)     jumpBufferUntil=now+JUMP_BUFFER_MS;
@@ -568,31 +567,94 @@ function update(u){
     player.on=false; jumpBufferUntil=0; coyoteUntil=0; beep('jump');
   }
 
+  // --- store previous position BEFORE moving ---
+  const prevX = player.x, prevY = player.y;
+
   // integrate
   player.x += player.vx * m;
   player.y += player.vy * m;
   scroll   += worldScroll * m;
 
-  // generate ahead & cull
+  // generate/cull
   spawnAhead(scroll+W*2.3);
   const cut=scroll-140;
   segments=segments.filter(s=>s.x+s.w>cut);
   entities=entities.filter(e=>e.x+(e.w||0)>cut);
   items=items.filter(i=>i.x+(i.w||0)>cut);
 
-  // ground resolve
+  // ground resolve (use prevY to detect a crossing of the floor)
   player.on=false;
   const wx=player.x+scroll;
   for(const s of segments){
     if(s.type!=='ground') continue;
     if(wx+player.w < s.x-8 || wx > s.x+s.w+8) continue;
-    const a={x:wx,y:player.y,w:player.w,h:player.h}, b={x:s.x,y:floorY,w:s.w,h:48};
-    if(AABB(a,b)){
-      if(player.vy>0 && player.y+player.h-player.vy<=floorY){ player.y=floorY-player.h; player.vy=0; player.on=true; }
-      else if(player.vy<0 && player.y-player.vy>=floorY+48){ player.y=floorY+48; player.vy=0; }
-      else { if(player.vx>0) player.x=(s.x-scroll)-player.w; else if(player.vx<0) player.x=(s.x+s.w-scroll); player.vx=0; }
+
+    const a={x:wx,y:player.y,w:player.w,h:player.h};
+    const b={x:s.x,y:floorY,w:s.w,h:48};
+    const collided = (a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y);
+    if(!collided) continue;
+
+    // coming down onto the top surface?
+    if (player.vy > 0 && (prevY + player.h) <= floorY) {
+      player.y = floorY - player.h;
+      player.vy = 0;
+      player.on = true;
+      continue;
+    }
+    // jumping up into the underside?
+    if (player.vy < 0 && prevY >= floorY + 48) {
+      player.y = floorY + 48;
+      player.vy = 0;
+      continue;
+    }
+    // horizontal push-out based on previous x
+    if (player.vx > 0 && (prevX + player.w + scroll) <= s.x) {
+      player.x = (s.x - scroll) - player.w;
+      player.vx = 0;
+    } else if (player.vx < 0 && (prevX + scroll) >= (s.x + s.w)) {
+      player.x = (s.x + s.w - scroll);
+      player.vx = 0;
     }
   }
+
+  // fell into abyss
+  if(player.y>H+40){
+    if(player.shield>0){player.shield=0;player.y=floorY-player.h-2;player.vy=-JUMP*0.8;beep('hit');}
+    else gameOver();
+  }
+
+  // entities (patrol uses m)
+  const frame=(performance.now()/120|0);
+  for(const e of entities){
+    if(e.kind==='alien'){
+      e.x+=e.dir*0.7*m;
+      if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
+      if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
+        if(player.shield>0){player.shield=0;beep('hit'); e.x+=(e.dir*-1)*40;}
+        else gameOver();
+      }
+    }else if(e.kind==='spike'){
+      if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
+        if(player.shield>0){player.shield=0;beep('hit');} else gameOver();
+      }
+    }
+  }
+
+  // items
+  for(let k=items.length-1;k>=0;k--){
+    const it=items[k];
+    if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:it.x,y:it.y,w:it.w,h:it.h})){
+      if(it.kind==='chip'){score+=100;beep('coin');}
+      if(it.kind==='shield'){player.shield=1;beep('coin');}
+      if(it.kind==='slow'){player.slow=180;beep('coin');}
+      items.splice(k,1);
+    }
+  }
+
+  if(player.slow>0) player.slow=Math.max(0, player.slow - m);
+  score += 0.06 * m + Math.max(0,player.vx) * 0.03 * m;
+}
+
 
   // fell into abyss
   if(player.y>H+40){
