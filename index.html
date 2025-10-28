@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — v1.8 “Lunar Shields”</title>
+<title>MKHKASG: MoonRunner — v1.8.2 “Lunar Shields”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -79,7 +79,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.8 — Lunar Shields • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.8.2 — Lunar Shields • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -197,7 +197,7 @@
 
 <script>
 /* ===== Config ===== */
-const GAME_VERSION = '1.8';
+const GAME_VERSION = '1.8.2';
 const API_URL = "https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
 
 /* ===== Canvas & DPR ===== */
@@ -285,7 +285,7 @@ let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%100
 const TARGET_FPS=75; let last=performance.now(), timeMs=0;
 
 /* ===== State ===== */
-let state='boot', score=0, best=Number(localStorage.getItem('moon_best')||0);
+let state='menu', score=0, best=Number(localStorage.getItem('moon_best')||0);
 let scroll=0;
 const statusEl=document.getElementById('status');
 
@@ -415,7 +415,6 @@ async function submitScore(name,score){
     if(!r.ok) throw new Error('bad status');
     return true;
   }catch(e){
-    // silent retry once
     try{ await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:payload}); return true; }
     catch(_){ return false; }
   }
@@ -426,19 +425,15 @@ function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 const floorY=H-84;
 let segments=[],entities=[],items=[];
 function getDiff(){
-  // Time + score ramps; slightly softer curve
   const tScore = Math.min(1, (score/3200));
   const tTime  = Math.min(1, (timeMs/17000));
   const t = Math.min(1, tTime + tScore);
-  // Slow-mo reduces world scroll a bit (not too strong)
   const factor=0.7*(player.slow>0?0.6:1);
   const worldScroll=(baseSpeed + t*1.2) * factor;
 
-  // Smoother early platforms, controlled gaps
   const gapMin=24;
   const gapMax=35+Math.min(54,t*60);
 
-  // Ground widths: longer runway at start, softer ramp
   const gMin=(timeMs<10000?320:200 - t*18);
   const gMax=gMin+140;
   return {worldScroll,gapMin,gapMax,gMin,gMax};
@@ -454,11 +449,10 @@ let coyoteUntil=0;
 function resetWorld(){
   segments=[];entities=[];items=[];scroll=0;timeMs=0;score=0;
   Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0});
-  // longer starting runway
-  segments.push({x:0,w:440,type:'ground'});
+  segments.push({x:0,w:440,type:'ground'}); // longer starting runway
   spawnAhead(W*2.4);
 }
-function lastEnd(){ return segments.length?segments[segments.length-1].x+segments[segments-1].w:0; }
+function lastEnd(){ return segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0; }
 function spawnAhead(targetX){
   while(lastEnd()<targetX){
     const {gapMin,gapMax,gMin,gMax}=getDiff();
@@ -468,22 +462,19 @@ function spawnAhead(targetX){
     segments.push({x:gx,w:segW,type:'ground'});
 
     if(afterTutorial){
-      // Hazards per segment (Option B): spike 0.19, alien 0.38
       if(RND()<0.19 && segW>120){ const cx=gx+40+Math.floor(RND()*(segW-80)); entities.push({kind:'spike',x:cx,y:floorY-60,w:40,h:10}); }
       if(RND()<0.38 && segW>100){ const ax=gx+40+Math.floor(RND()*(segW-100)); entities.push({kind:'alien',x:ax,y:floorY-14,w:22,h:14,dir:(RND()<0.5?-1:1),baseX:ax,range:36+Math.floor(RND()*44)}); }
     }
 
-    // Items
     if(RND()<0.6){ const ix=gx+30+Math.floor(RND()*(segW-60)); items.push({kind:'chip',x:ix,y:floorY-40,w:10,h:10,phase:(RND()*6.28)}); }
     if(afterTutorial && RND()<0.12){ const ix=gx+segW-60; const type=(RND()<0.6?'shield':'slow'); items.push({kind:type,x:ix,y:floorY-48,w:12,h:12,phase:(RND()*6.28)}); }
 
-    // Gap
     const gap=afterTutorial?Math.floor(gapMin+RND()*gapMax):Math.floor(20+RND()*30);
     segments.push({x:lastEnd(),w:gap,type:'gap'});
   }
 }
 
-/* ===== Sprites (players/enemies/props) ===== */
+/* ===== Sprites ===== */
 function astronaut(x,y,pose='idle'){
   const f=FG(),b=BG(); x=i(x); y=i(y);
   FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
@@ -493,7 +484,7 @@ function astronaut(x,y,pose='idle'){
 }
 function alienEnemy(x,y,blink=false){
   const f=FG(),b=BG(); x=i(x); y=i(y);
-  FILL(x,y,22,14,f); if(!blink){ FILL(x+4,y+4,4,4,b); FILL(x+14,y+4,2,2,b); } // eyes
+  FILL(x,y,22,14,f); if(!blink){ FILL(x+4,y+4,4,4,b); FILL(x+14,y+4,2,2,b); }
 }
 function ufo(x,y){ const f=FG(); x=i(x); y=i(y); FILL(x-28,y,56,8,f); FILL(x-22,y-8,44,6,f); FILL(x-4,y-14,8,6,f); }
 function beamScan(cx,topY,t){ const f=FG(); cx=i2(cx); topY=i2(topY); const wob=(Math.sin(t/420)+1)*1.2; for(let k=0;k<56;k+=6){ const y=topY+14+k; const half=8+((k/56)*9)|0; FILL(cx-(half+wob),y,(half+wob)*2,2,f);} }
@@ -578,7 +569,6 @@ function update(u){
   if(player.y>H+40){ if(player.shields>0){ useShield(); player.y=floorY-player.h-2; player.vy=-JUMP*0.8; } else gameOver(); }
 
   // enemies
-  const blink = ((performance.now()/1500|0)%2)===0; // alien eye blink
   for(const e of entities){
     if(e.kind==='alien'){
       e.x+=e.dir*0.7*m; if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
@@ -595,7 +585,6 @@ function update(u){
   // items
   for(let k=items.length-1;k>=0;k--){
     const it=items[k];
-    // animations
     const bob = Math.sin((timeMs/260) + (it.phase||0)) * 2; // 2px bob
     const rect={x:it.x, y:it.y + bob, w:it.w, h:it.h};
     if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:rect.x,y:rect.y,w:rect.w,h:rect.h})){
@@ -677,7 +666,7 @@ function draw(){
   ctx.fillText(`🛡 ${dots.join(' ')}`, W-10, 18);
   ctx.textAlign='left';
 
-  // menu title + tutorial (drawn AFTER beam to avoid white fringe look)
+  // MENU art + tutorial (drawn in menu state)
   if(state==='menu'){
     const t=performance.now(), cx=i(W/2), cy=i(H*0.30);
     const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
@@ -696,10 +685,12 @@ function draw(){
 }
 
 /* ===== Boot & Loop ===== */
-async function boot(){
-  try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
-  resetWorld(); setMode(speedMode); state='menu'; statusEl.textContent=`Menu — ready`;
-  requestAnimationFrame(loop); showUI('menu');
+function boot(){
+  // Start directly in menu and draw immediately so UFO is visible
+  state='menu';
+  statusEl.textContent='Menu — ready';
+  showUI('menu');
+  requestAnimationFrame(loop);
 }
 function loop(now){
   const dtSec=(now-last)/1000; last=now;
@@ -710,9 +701,11 @@ function loop(now){
 }
 let last=performance.now();
 
+/* ===== Wire a couple extra starts ===== */
+document.addEventListener('keydown', e=>{ if((e.key===' '||e.key==='Enter') && state==='menu'){ hideUI('menu'); start(); }});
+CV.addEventListener('keydown', e=>{ if((e.key===' '||e.key==='Enter') && state==='menu'){ hideUI('menu'); start(); }});
+
 /* ===== Utilities wired after boot ===== */
-CV.addEventListener('keydown', e=>{ if(e.key===' ' && state==='menu'){ start(); }});
-/* Settings buttons already wired above */
 boot();
 </script>
 </body>
