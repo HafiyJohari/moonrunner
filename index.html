@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — 1-bit Endless (v1.7)</title>
+<title>MKHKASG: MoonRunner — 1-bit Endless (v1.7.1)</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -39,7 +39,7 @@
   .jump{width:31vw;height:16vh}
   @media (max-width:820px){ .mobile{display:flex} .hud .right{display:none} }
 
-  /* === Contrast-safe UI (auto adapts to theme) === */
+  /* Contrast-safe overlays */
   body:not(.invert) .ui { background: rgba(0,0,0,.78); }
   body:not(.invert) .ui .card { background: rgba(0,0,0,.96); color:#fff; border-color:#fff; box-shadow:0 0 0 2px #fff inset; }
   body.invert .ui { background: rgba(255,255,255,.75); }
@@ -75,7 +75,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.7 • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.7.1 • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -202,8 +202,7 @@ const pad=(n,w=5)=>String(n).padStart(w,'0');
 
 /* ===== WebAudio: buses, mix, ducking ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
-// --- MIX BUSSES + DEFAULT VOLUMES (kept from your last tweak) ---
-let musicVol = 0.05;  // quieter
+let musicVol = 0.05;  // quieter (kept from your tweak)
 let sfxVol   = 0.28;  // punchier
 let musicBus = null, sfxBus = null;
 
@@ -233,17 +232,17 @@ function beep(kind='jump'){
   o.connect(g); g.connect(sfxBus||ac.destination);
   o.start(); o.stop(t+dur);
 
-  // Duck music harder so SFX is clear
+  // Music ducking (strong)
   if(musicBus && !musicMuted){
     const back = musicVol;
-    const duck = musicVol * 0.25; // 75% dip
+    const duck = musicVol * 0.25;
     musicBus.gain.cancelScheduledValues(t);
-    musicBus.gain.setTargetAtTime(duck, t, 0.008);     // fast dip
-    musicBus.gain.setTargetAtTime(back, t+0.35, 0.25); // slow release
+    musicBus.gain.setTargetAtTime(duck, t, 0.008);
+    musicBus.gain.setTargetAtTime(back, t+0.35, 0.25);
   }
 }
 
-/* Simple chiptune sequencer (original melody), routed through music bus */
+/* Simple chiptune sequencer */
 let musicRunning=false, musicTimer=null, musicStep=0;
 const bpm=140, stepSec=60/bpm/2; // 8th notes
 const NT=(n)=>440*Math.pow(2,(n-69)/12);
@@ -261,7 +260,7 @@ function bassPattern(){
   for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]);
   return seq;
 }
-function playNote(freq, mul, type='square', vol=0.10){ // lead 0.10 (lowered)
+function playNote(freq, mul, type='square', vol=0.10){
   ensureAC();
   const t=ac.currentTime, osc=ac.createOscillator(), g=ac.createGain();
   osc.type=type; osc.frequency.setValueAtTime(freq,t);
@@ -273,7 +272,7 @@ function playNote(freq, mul, type='square', vol=0.10){ // lead 0.10 (lowered)
   osc.connect(g).connect(musicBus || ac.destination);
   osc.start(t); osc.stop(end+0.1);
 }
-function playBass(freq, mul){ playNote(freq, mul, 'triangle', 0.07); } // bass even lower
+function playBass(freq, mul){ playNote(freq, mul, 'triangle', 0.07); }
 function startMusic(){
   if(musicRunning||musicMuted) return;
   musicRunning=true; musicStep=0;
@@ -297,9 +296,9 @@ function stopMusic(){ musicRunning=false; if(musicTimer){clearTimeout(musicTimer
 let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
 
 /* ===== Timebase (frame-rate independent @ 75Hz feel) ===== */
-const TARGET_FPS = 75; // your monitor pace
+const TARGET_FPS = 75;
 let last = performance.now();
-let timeMs = 0; // absolute ms clock for difficulty/tutorial timing
+let timeMs = 0;
 
 /* ===== Game State ===== */
 let state='boot'; // boot | menu | play | paused | over
@@ -334,7 +333,7 @@ bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
 bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
 bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+JUMP_BUFFER_MS; }, ()=>{ keys[' ']=false; });
 
-/* Toolbar (wired to buses) */
+/* Toolbar */
 document.getElementById('music').onclick = (e)=>{
   musicMuted = !musicMuted; ensureAC();
   e.currentTarget.textContent = musicMuted ? '♪ Music Off' : '♪ Music';
@@ -408,7 +407,7 @@ async function loadLeaderboard(limit=20){
 }
 async function submitScore(name,score){
   try{
-    const body = new URLSearchParams({name,score:String(Math.floor(score)),version:'1.7'}).toString();
+    const body = new URLSearchParams({name,score:String(Math.floor(score)),version:'1.7.1'}).toString();
     await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body});
     return true;
   }catch(e){ return false; }
@@ -429,7 +428,7 @@ let coyoteUntil=0,jumpBufferUntil=0;
 function getDiff(){
   const t=Math.min(1,(timeMs/16000)+(score/2200));
   const factor=0.6*(player.slow>0?0.6:1);
-  const worldScroll=(baseSpeed+t*1.2)*factor; // pixels per "unit" (we'll multiply by m)
+  const worldScroll=(baseSpeed+t*1.2)*factor; // per time-unit
   const gapMin=24;
   const gapMax=35+Math.min(60,t*60);
   const gMin=(timeMs<10000?260:180-t*20);
@@ -538,10 +537,11 @@ document.getElementById('submitBtn').onclick=async()=>{
   document.getElementById('nameGate').style.display='none';
 };
 
-/* ===== Update (time-units based) ===== */
-const GRAV_U = GRAV;            // per-unit gravity
-const ACCEL_U = 0.7;            // per-unit input acceleration
+/* ===== Update (frame-rate independent) ===== */
+const GRAV_U = GRAV;
+const ACCEL_U = 0.7;
 function update(u){
+  // u ~ 1 per frame at 75Hz
   timeMs += (u / TARGET_FPS) * 1000;
 
   const {worldScroll}=getDiff();
@@ -558,7 +558,7 @@ function update(u){
   player.vx *= Math.pow(FRICTION, m);
   player.vy += GRAV_U * m;
 
-  // coyote & jump buffer (keep in ms)
+  // coyote & jump buffer (ms)
   const now = performance.now();
   if(player.on) coyoteUntil=now+COYOTE_MS;
   if(jump)     jumpBufferUntil=now+JUMP_BUFFER_MS;
@@ -567,7 +567,7 @@ function update(u){
     player.on=false; jumpBufferUntil=0; coyoteUntil=0; beep('jump');
   }
 
-  // --- store previous position BEFORE moving ---
+  // previous position (for robust collision resolution)
   const prevX = player.x, prevY = player.y;
 
   // integrate
@@ -582,7 +582,7 @@ function update(u){
   entities=entities.filter(e=>e.x+(e.w||0)>cut);
   items=items.filter(i=>i.x+(i.w||0)>cut);
 
-  // ground resolve (use prevY to detect a crossing of the floor)
+  // ground resolve (use prevY to detect crossing)
   player.on=false;
   const wx=player.x+scroll;
   for(const s of segments){
@@ -594,20 +594,20 @@ function update(u){
     const collided = (a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y);
     if(!collided) continue;
 
-    // coming down onto the top surface?
+    // landing on top
     if (player.vy > 0 && (prevY + player.h) <= floorY) {
       player.y = floorY - player.h;
       player.vy = 0;
       player.on = true;
       continue;
     }
-    // jumping up into the underside?
+    // hit underside
     if (player.vy < 0 && prevY >= floorY + 48) {
       player.y = floorY + 48;
       player.vy = 0;
       continue;
     }
-    // horizontal push-out based on previous x
+    // horizontal push-out
     if (player.vx > 0 && (prevX + player.w + scroll) <= s.x) {
       player.x = (s.x - scroll) - player.w;
       player.vx = 0;
@@ -617,52 +617,13 @@ function update(u){
     }
   }
 
-  // fell into abyss
+  // abyss
   if(player.y>H+40){
     if(player.shield>0){player.shield=0;player.y=floorY-player.h-2;player.vy=-JUMP*0.8;beep('hit');}
     else gameOver();
   }
 
-  // entities (patrol uses m)
-  const frame=(performance.now()/120|0);
-  for(const e of entities){
-    if(e.kind==='alien'){
-      e.x+=e.dir*0.7*m;
-      if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
-      if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
-        if(player.shield>0){player.shield=0;beep('hit'); e.x+=(e.dir*-1)*40;}
-        else gameOver();
-      }
-    }else if(e.kind==='spike'){
-      if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
-        if(player.shield>0){player.shield=0;beep('hit');} else gameOver();
-      }
-    }
-  }
-
-  // items
-  for(let k=items.length-1;k>=0;k--){
-    const it=items[k];
-    if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:it.x,y:it.y,w:it.w,h:it.h})){
-      if(it.kind==='chip'){score+=100;beep('coin');}
-      if(it.kind==='shield'){player.shield=1;beep('coin');}
-      if(it.kind==='slow'){player.slow=180;beep('coin');}
-      items.splice(k,1);
-    }
-  }
-
-  if(player.slow>0) player.slow=Math.max(0, player.slow - m);
-  score += 0.06 * m + Math.max(0,player.vx) * 0.03 * m;
-}
-
-
-  // fell into abyss
-  if(player.y>H+40){
-    if(player.shield>0){player.shield=0;player.y=floorY-player.h-2;player.vy=-JUMP*0.8;beep('hit');}
-    else gameOver();
-  }
-
-  // entities (scale patrol with m)
+  // entities
   const frame=(performance.now()/120|0);
   for(const e of entities){
     if(e.kind==='alien'){
@@ -760,8 +721,7 @@ async function boot(){
 }
 function loop(now){
   const dtSec = (now - last) / 1000; last = now;
-  // clamp big spikes and convert to 75Hz "units"
-  const u = Math.min(dtSec, 0.10) * TARGET_FPS; // max ~7.5 units step
+  const u = Math.min(dtSec, 0.10) * TARGET_FPS; // clamp big spikes
   if(state==='play') update(u);
   draw();
   requestAnimationFrame(loop);
