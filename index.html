@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — 1-bit Endless</title>
+<title>MKHKASG: MoonRunner — 1-bit Endless (v1.7)</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -75,7 +75,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.6 • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.7 • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -192,7 +192,7 @@ const W=960,H=540; let DPR=1;
 function resizeCanvas(){ DPR=Math.min(2,Math.max(1,window.devicePixelRatio||1)); CV.width=(W*DPR)|0; CV.height=(H*DPR)|0; ctx.setTransform(DPR,0,0,DPR,0,0); }
 addEventListener('resize',resizeCanvas); resizeCanvas();
 
-/* ===== Helpers / Colors ===== */
+/* ===== Colors & helpers ===== */
 function inverted(){ return document.body.classList.contains('invert'); }
 function FG(){ return inverted()?'#000':'#fff'; }
 function BG(){ return inverted()?'#fff':'#000'; }
@@ -200,59 +200,50 @@ const i=v=>v|0, i2=v=>(v>>1)<<1;
 const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
 const pad=(n,w=5)=>String(n).padStart(w,'0');
 
-/* ===== WebAudio: SFX + CHiPTUNE ===== */
+/* ===== WebAudio: buses, mix, ducking ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
-// --- MIX BUSSES + DEFAULT VOLUMES ---
-let musicVol = 0.05;  // was ~0.16 per note — make music quieter overall
-let sfxVol   = 0.28;  // a bit louder so jumps/coins pop
+// --- MIX BUSSES + DEFAULT VOLUMES (kept from your last tweak) ---
+let musicVol = 0.05;  // quieter
+let sfxVol   = 0.28;  // punchier
 let musicBus = null, sfxBus = null;
 
 function ensureAC(){
   if(!ac){
     ac = new (window.AudioContext||window.webkitAudioContext)();
-    // route through buses so we can balance/duck
     musicBus = ac.createGain();
     sfxBus   = ac.createGain();
-    musicBus.gain.value = musicVol;
-    sfxBus.gain.value   = sfxVol;
+    musicBus.gain.value = musicMuted ? 0 : musicVol;
+    sfxBus .gain.value  = sfxMuted  ? 0 : sfxVol;
     musicBus.connect(ac.destination);
     sfxBus.connect(ac.destination);
   }
 }
-  
-function ensureAC(){ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); }
 
-/* SFX */
+// SFX with sidechain ducking
 function beep(kind='jump'){
   if(sfxMuted) return; ensureAC();
-
   const o=ac.createOscillator(), g=ac.createGain(); o.type='square';
   const t=ac.currentTime;
-  const T={jump:[440,220,.13,.08], coin:[660,440,.12,.10], hit:[110,55,.16,.10]};
+  const T={jump:[440,220,.13,.10], coin:[660,440,.12,.12], hit:[110,55,.16,.12]};
   const [f1,f2,dur,vol]=T[kind]||T.jump;
-
-  // Envelope
   o.frequency.setValueAtTime(f1,t);
   o.frequency.exponentialRampToValueAtTime(f2,t+dur);
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
-
-  // Route to SFX bus
   o.connect(g); g.connect(sfxBus||ac.destination);
   o.start(); o.stop(t+dur);
 
-  // --- Sidechain duck the music a bit so SFX is clear ---
+  // Duck music harder so SFX is clear
   if(musicBus && !musicMuted){
     const back = musicVol;
-    const duck = musicVol * 0.25; // 50% dip
+    const duck = musicVol * 0.25; // 75% dip
     musicBus.gain.cancelScheduledValues(t);
-    musicBus.gain.setTargetAtTime(duck, t, 0.008);     // quick dip
-    musicBus.gain.setTargetAtTime(back, t+0.35, 0.25); // smooth return
+    musicBus.gain.setTargetAtTime(duck, t, 0.008);     // fast dip
+    musicBus.gain.setTargetAtTime(back, t+0.35, 0.25); // slow release
   }
 }
 
-
-/* Simple chiptune sequencer (original melody) */
+/* Simple chiptune sequencer (original melody), routed through music bus */
 let musicRunning=false, musicTimer=null, musicStep=0;
 const bpm=140, stepSec=60/bpm/2; // 8th notes
 const NT=(n)=>440*Math.pow(2,(n-69)/12);
@@ -270,7 +261,7 @@ function bassPattern(){
   for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]);
   return seq;
 }
-function playNote(freq, mul, type='square', vol=0.18){
+function playNote(freq, mul, type='square', vol=0.10){ // lead 0.10 (lowered)
   ensureAC();
   const t=ac.currentTime, osc=ac.createOscillator(), g=ac.createGain();
   osc.type=type; osc.frequency.setValueAtTime(freq,t);
@@ -279,12 +270,10 @@ function playNote(freq, mul, type='square', vol=0.18){
   g.gain.linearRampToValueAtTime(vol*0.6, t+0.06);
   const end=t+mul*stepSec;
   g.gain.exponentialRampToValueAtTime(0.0001, end+0.08);
-
-  // route to music bus (not directly to destination)
   osc.connect(g).connect(musicBus || ac.destination);
   osc.start(t); osc.stop(end+0.1);
 }
-
+function playBass(freq, mul){ playNote(freq, mul, 'triangle', 0.07); } // bass even lower
 function startMusic(){
   if(musicRunning||musicMuted) return;
   musicRunning=true; musicStep=0;
@@ -295,7 +284,7 @@ function startMusic(){
       const l=lead[musicStep % lead.length];
       const b=bass[musicStep % bass.length];
       if(l) playNote(NT(l[0]), l[1],'square',0.10);
-      if(b) playNote(NT(b[0]), b[1],'triangle',0.07);
+      if(b) playBass(NT(b[0]), b[1]);
       musicStep++;
     }
     musicTimer=setTimeout(tick, stepSec*1000*4);
@@ -307,10 +296,15 @@ function stopMusic(){ musicRunning=false; if(musicTimer){clearTimeout(musicTimer
 /* ===== RNG ===== */
 let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
 
+/* ===== Timebase (frame-rate independent @ 75Hz feel) ===== */
+const TARGET_FPS = 75; // your monitor pace
+let last = performance.now();
+let timeMs = 0; // absolute ms clock for difficulty/tutorial timing
+
 /* ===== Game State ===== */
 let state='boot'; // boot | menu | play | paused | over
 let score=0, best=Number(localStorage.getItem('moon_best')||0);
-let baseSpeed=2.8, time=0, scroll=0;
+let baseSpeed=2.8, scroll=0;
 const statusEl=document.getElementById('status');
 
 /* ===== Input ===== */
@@ -340,20 +334,18 @@ bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
 bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
 bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+JUMP_BUFFER_MS; }, ()=>{ keys[' ']=false; });
 
-/* Toolbar */
+/* Toolbar (wired to buses) */
 document.getElementById('music').onclick = (e)=>{
   musicMuted = !musicMuted; ensureAC();
   e.currentTarget.textContent = musicMuted ? '♪ Music Off' : '♪ Music';
   if(musicBus) musicBus.gain.value = musicMuted ? 0 : musicVol;
   if(musicMuted) stopMusic(); else startMusic();
 };
-
 document.getElementById('mute').onclick = (e)=>{
   sfxMuted = !sfxMuted; ensureAC();
   e.currentTarget.textContent = sfxMuted ? '🔇 SFX' : '🔈 SFX';
   if(sfxBus) sfxBus.gain.value = sfxMuted ? 0 : sfxVol;
 };
-
 document.getElementById('invert').onclick = ()=> document.body.classList.toggle('invert');
 document.getElementById('fs').onclick = ()=> CV.requestFullscreen?.();
 document.getElementById('speedup').onclick = ()=>{ baseSpeed=Math.min(7, baseSpeed*1.05); statusEl.textContent=`Speed ${baseSpeed.toFixed(2)}`; };
@@ -382,8 +374,8 @@ document.getElementById('overLbBtn').onclick=()=>{ hideUI('over'); showUI('lb');
 document.getElementById('howClose').onclick=()=> hideUI('how');
 document.getElementById('creditsClose').onclick=()=> hideUI('credits');
 
-document.getElementById('setSound').onclick=(e)=>{ sfxMuted=!sfxMuted; e.currentTarget.textContent=sfxMuted?'🔇 SFX: Off':'🔈 SFX: On'; };
-document.getElementById('setMusic').onclick=(e)=>{ musicMuted=!musicMuted; e.currentTarget.textContent=musicMuted?'♪ Music: Off':'♪ Music: On'; if(musicMuted) stopMusic(); else startMusic(); };
+document.getElementById('setSound').onclick=(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent=sfxMuted?'🔇 SFX: Off':'🔈 SFX: On'; if(sfxBus) sfxBus.gain.value = sfxMuted ? 0 : sfxVol; };
+document.getElementById('setMusic').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent=musicMuted?'♪ Music: Off':'♪ Music: On'; if(musicBus) musicBus.gain.value = musicMuted ? 0 : musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('setContrast').onclick=()=> document.body.classList.toggle('invert');
 document.getElementById('setSpeed').onclick=(e)=>{
   if(baseSpeed<3){ baseSpeed=3.2; e.currentTarget.textContent='Speed: Normal'; }
@@ -416,7 +408,7 @@ async function loadLeaderboard(limit=20){
 }
 async function submitScore(name,score){
   try{
-    const body = new URLSearchParams({name,score:String(Math.floor(score)),version:'1.6'}).toString();
+    const body = new URLSearchParams({name,score:String(Math.floor(score)),version:'1.7'}).toString();
     await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body});
     return true;
   }catch(e){ return false; }
@@ -435,19 +427,19 @@ let coyoteUntil=0,jumpBufferUntil=0;
 
 /* ===== Difficulty ===== */
 function getDiff(){
-  const t=Math.min(1,(time/16000)+(score/2200));
+  const t=Math.min(1,(timeMs/16000)+(score/2200));
   const factor=0.6*(player.slow>0?0.6:1);
-  const worldScroll=(baseSpeed+t*1.2)*factor;
+  const worldScroll=(baseSpeed+t*1.2)*factor; // pixels per "unit" (we'll multiply by m)
   const gapMin=24;
   const gapMax=35+Math.min(60,t*60);
-  const gMin=(time<10000?260:180-t*20);
+  const gMin=(timeMs<10000?260:180-t*20);
   const gMax=gMin+140;
   return {worldScroll,gapMin,gapMax,gMin,gMax};
 }
 
 /* ===== Generation ===== */
 function resetWorld(){
-  segments=[];entities=[];items=[];scroll=0;time=0;score=0;
+  segments=[];entities=[];items=[];scroll=0;timeMs=0;score=0;
   Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,shield:0,slow:0});
   segments.push({x:0,w:380,type:'ground'}); // runway
   spawnAhead(W*2.4);
@@ -456,7 +448,7 @@ function lastEnd(){ return segments.length?segments[segments.length-1].x+segment
 function spawnAhead(targetX){
   while(lastEnd()<targetX){
     const {gapMin,gapMax,gMin,gMax}=getDiff();
-    const afterTutorial=(time>10000);
+    const afterTutorial=(timeMs>10000);
 
     const segW=Math.floor(gMin+RND()*(gMax-gMin));
     const gx=lastEnd();
@@ -479,7 +471,7 @@ function spawnAhead(targetX){
     }
     if(afterTutorial && RND()<0.08){
       const ix=gx+segW-60;
-      items.push({kind:(RND()<0.5?'shield':'slow'),x:ix,y:floorY-48,w:12,h:12}); /* fixed */
+      items.push({kind:(RND()<0.5?'shield':'slow'),x:ix,y:floorY-48,w:12,h:12});
     }
 
     const gap=afterTutorial?Math.floor(gapMin+RND()*gapMax):Math.floor(20+RND()*30);
@@ -546,33 +538,47 @@ document.getElementById('submitBtn').onclick=async()=>{
   document.getElementById('nameGate').style.display='none';
 };
 
-/* ===== Update ===== */
-function update(dt){
-  if(state!=='play') return;
-  time+=dt;
-  const {worldScroll}=getDiff();
-  scroll+=worldScroll;
+/* ===== Update (time-units based) ===== */
+const GRAV_U = GRAV;            // per-unit gravity
+const ACCEL_U = 0.7;            // per-unit input acceleration
+function update(u){
+  // u = time units; at 75Hz steady, u ≈ 1 per frame
+  timeMs += (u / TARGET_FPS) * 1000;
 
+  const {worldScroll}=getDiff();
+  const m = u; // convenience
+
+  // input
+  const left=keys['ArrowLeft']||keys['a']||keys['A'];
+  const right=keys['ArrowRight']||keys['d']||keys['D'];
+  const jump=keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
+  if(left)  player.vx -= ACCEL_U * m;
+  if(right) player.vx += ACCEL_U * m;
+
+  // physics (friction compounding over variable time)
+  player.vx *= Math.pow(FRICTION, m);
+  player.vy += GRAV_U * m;
+
+  // coyote & jump buffer (stay in ms with performance.now)
+  const now = performance.now();
+  if(player.on) coyoteUntil=now+COYOTE_MS;
+  if(jump)     jumpBufferUntil=now+JUMP_BUFFER_MS;
+  if(jumpBufferUntil>now && coyoteUntil>now){
+    player.vy = -JUMP;
+    player.on=false; jumpBufferUntil=0; coyoteUntil=0; beep('jump');
+  }
+
+  // integrate
+  player.x += player.vx * m;
+  player.y += player.vy * m;
+  scroll   += worldScroll * m;
+
+  // generate ahead & cull
   spawnAhead(scroll+W*2.3);
   const cut=scroll-140;
   segments=segments.filter(s=>s.x+s.w>cut);
   entities=entities.filter(e=>e.x+(e.w||0)>cut);
   items=items.filter(i=>i.x+(i.w||0)>cut);
-
-  const left=keys['ArrowLeft']||keys['a']||keys['A'];
-  const right=keys['ArrowRight']||keys['d']||keys['D'];
-  const jump=keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
-
-  if(left) player.vx-=0.7;
-  if(right) player.vx+=0.7;
-  player.vx*=FRICTION; player.vy+=GRAV;
-
-  const now=performance.now();
-  if(player.on) coyoteUntil=now+COYOTE_MS;
-  if(jump) jumpBufferUntil=now+JUMP_BUFFER_MS;
-  if(jumpBufferUntil>now && coyoteUntil>now){ player.vy=-JUMP; player.on=false; jumpBufferUntil=0; coyoteUntil=0; beep('jump'); }
-
-  player.x+=player.vx; player.y+=player.vy;
 
   // ground resolve
   player.on=false;
@@ -588,13 +594,21 @@ function update(dt){
     }
   }
 
-  if(player.y>H+40){ if(player.shield>0){player.shield=0;player.y=floorY-player.h-2;player.vy=-JUMP*0.8;beep('hit');} else gameOver(); }
+  // fell into abyss
+  if(player.y>H+40){
+    if(player.shield>0){player.shield=0;player.y=floorY-player.h-2;player.vy=-JUMP*0.8;beep('hit');}
+    else gameOver();
+  }
 
+  // entities (scale patrol with m)
+  const frame=(performance.now()/120|0);
   for(const e of entities){
     if(e.kind==='alien'){
-      e.x+=e.dir*0.7; if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
+      e.x+=e.dir*0.7*m;
+      if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
       if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
-        if(player.shield>0){player.shield=0;beep('hit'); e.x+=(e.dir*-1)*40;} else gameOver();
+        if(player.shield>0){player.shield=0;beep('hit'); e.x+=(e.dir*-1)*40;}
+        else gameOver();
       }
     }else if(e.kind==='spike'){
       if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
@@ -603,6 +617,7 @@ function update(dt){
     }
   }
 
+  // items
   for(let k=items.length-1;k>=0;k--){
     const it=items[k];
     if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:it.x,y:it.y,w:it.w,h:it.h})){
@@ -613,8 +628,8 @@ function update(dt){
     }
   }
 
-  if(player.slow>0) player.slow--;
-  score += dt*0.06 + Math.max(0,player.vx)*0.03;
+  if(player.slow>0) player.slow=Math.max(0, player.slow - m);
+  score += 0.06 * m + Math.max(0,player.vx) * 0.03 * m;
 }
 
 /* ===== Draw ===== */
@@ -659,7 +674,7 @@ function draw(){
   ctx.fillStyle=f; ctx.font="12px 'Press Start 2P', monospace";
   const hud=`SCORE ${pad(Math.floor(score))}    BEST ${pad(best)}`; ctx.fillText(hud,10,18);
 
-  // Menu UFO/beam animation (behind overlay)
+  // Menu UFO/beam animation
   if(state==='menu'){
     const t=performance.now(); const cx=i(W/2), cy=i(H*0.30);
     const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
@@ -681,8 +696,14 @@ async function boot(){
   requestAnimationFrame(loop);
   showUI('menu');
 }
-let last=performance.now();
-function loop(now){ const dt=Math.min(33,now-last); last=now; if(state==='play') update(dt); draw(); requestAnimationFrame(loop); }
+function loop(now){
+  const dtSec = (now - last) / 1000; last = now;
+  // clamp big spikes and convert to 75Hz "units"
+  const u = Math.min(dtSec, 0.10) * TARGET_FPS; // max ~7.5 units step
+  if(state==='play') update(u);
+  draw();
+  requestAnimationFrame(loop);
+}
 boot();
 </script>
 </body>
