@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — v1.9 “Milestone Update”</title>
+<title>MKHKASG: MoonRunner — v1.9.1 “Lunar Stable”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -103,7 +103,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.9 — Milestone Update • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.9.1 “Lunar Stable” • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -203,11 +203,13 @@
     <div class="row" style="justify-content:space-between;align-items:center;">
       <h2>Leaderboard <span id="lbSub" class="ghost" style="font:12px 'Press Start 2P',monospace;margin-left:8px;"></span></h2>
       <div class="row">
-        <div id="lbToday" class="btn">Today</div>
-        <div id="lbAll" class="btn">All-time</div>
-        <div id="lb20" class="btn">Top 20</div>
-        <div id="lb10" class="btn">Top 10</div>
-        <div id="lbClose" class="btn">Back</div>
+<div id="lbToday"   class="btn">Daily</div>
+<div id="lbWeekly"  class="btn">Weekly</div>   <!-- NEW -->
+<div id="lbMonthly" class="btn">Monthly</div>  <!-- NEW -->
+<div id="lbAll"     class="btn">All-time</div>
+<div id="lb20"      class="btn">Top 20</div>
+<div id="lb10"      class="btn">Top 10</div>
+<div id="lbClose"   class="btn">Back</div>
       </div>
     </div>
     <div class="mt12" id="lbSelf" class="ghost"></div>
@@ -246,8 +248,8 @@
 
 <script>
 /* ===== Config ===== */
-const GAME_VERSION='1.9';
-const API_URL="https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
+const GAME_VERSION='1.9.1';
+const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
 
 /* ===== Canvas & DPR ===== */
 const CV=document.getElementById('cv');
@@ -468,61 +470,101 @@ document.querySelectorAll('#avatars .btn[data-skin]').forEach(b=>{
 document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
 
 /* Leaderboard tabs */
-const lbSub=document.getElementById('lbSub');
-const lbTodayBtn=document.getElementById('lbToday');
-const lbAllBtn  =document.getElementById('lbAll');
-const lb20Btn   =document.getElementById('lb20');
-const lb10Btn   =document.getElementById('lb10');
-function lbSetActive(btn){ [lbTodayBtn,lbAllBtn,lb20Btn,lb10Btn].forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-lbTodayBtn.onclick=()=> lbActivate('daily');
-lbAllBtn.onclick  =()=> lbActivate('all');
-lb20Btn.onclick   =()=> lbActivate('top20');
-lb10Btn.onclick   =()=> lbActivate('top10');
+const lbSub     = document.getElementById('lbSub');
+const lbToday   = document.getElementById('lbToday');
+const lbWeekly  = document.getElementById('lbWeekly');   // NEW
+const lbMonthly = document.getElementById('lbMonthly');  // NEW
+const lbAll     = document.getElementById('lbAll');
+const lb20      = document.getElementById('lb20');
+const lb10      = document.getElementById('lb10');
+
+function lbSetActive(btn){
+  [lbToday, lbWeekly, lbMonthly, lbAll, lb20, lb10].forEach(b=> b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+lbToday .onclick = () => lbActivate('daily');
+lbWeekly.onclick = () => lbActivate('weekly');   // NEW
+lbMonthly.onclick= () => lbActivate('monthly');  // NEW
+lbAll   .onclick = () => lbActivate('all');
+lb20    .onclick = () => lbActivate('top20');
+lb10    .onclick = () => lbActivate('top10');
+
 function lbActivate(kind){
-  if(kind==='daily'){ lbSetActive(lbTodayBtn); loadLeaderboard({period:'daily',limit:20}); }
-  else if(kind==='all'){ lbSetActive(lbAllBtn); loadLeaderboard({period:'all',limit:200}); }
-  else if(kind==='top20'){ lbSetActive(lb20Btn); loadLeaderboard({period:'all',limit:20}); }
-  else { lbSetActive(lb10Btn); loadLeaderboard({period:'all',limit:10}); }
+  if (kind === 'daily') {
+    lbSetActive(lbToday);
+    loadLeaderboard({ period:'daily',   limit:20,  unique:false }); // raw daily
+  } else if (kind === 'weekly') {
+    lbSetActive(lbWeekly);
+    loadLeaderboard({ period:'weekly',  limit:50,  unique:true  }); // best per player
+  } else if (kind === 'monthly') {
+    lbSetActive(lbMonthly);
+    loadLeaderboard({ period:'monthly', limit:100, unique:true  }); // best per player
+  } else if (kind === 'all') {
+    lbSetActive(lbAll);
+    loadLeaderboard({ period:'all',     limit:200, unique:true  });
+  } else if (kind === 'top20') {
+    lbSetActive(lb20);
+    loadLeaderboard({ period:'all',     limit:20,  unique:true  });
+  } else { // top10
+    lbSetActive(lb10);
+    loadLeaderboard({ period:'all',     limit:10,  unique:true  });
+  }
 }
 
 /* ===== Leaderboard (device included) ===== */
-async function loadLeaderboard({period='daily',limit=20}={}){
+async function loadLeaderboard({period='daily',limit=20,unique=false}={}){
   try{
-    document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="6">Loading…</td></tr>';
-    const res=await fetch(`${API_URL}?action=list&period=${encodeURIComponent(period)}&limit=${limit}`,{cache:'no-store'});
-    const data=await res.json();
-    if(!data.ok) throw new Error('LB failed');
-    lbSub.textContent=(period==='daily')?`Today (${data.tz||''})`:'All-time';
-    const rows=data.rows||[];
-    const tbody=rows.length?rows.map((r,idx)=>`<tr>
+    const tbodyEl = document.querySelector('#lbTable tbody');
+    tbodyEl.innerHTML = '<tr><td colspan="6">Loading…</td></tr>';
+
+    const url = `${API_URL}?action=list&period=${encodeURIComponent(period)}&limit=${limit}&unique=${unique?1:0}`;
+    const res = await fetch(url, { cache:'no-store' });
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error||'LB failed');
+
+    const label =
+      period==='daily'   ? `Today (${data.tz||''})` :
+      period==='weekly'  ? `This Week (${data.tz||''})` :
+      period==='monthly' ? `This Month (${data.tz||''})` :
+                           `All-time${unique?' — Best per player':''}`;
+    lbSub.textContent = label;
+
+    const rows = data.rows || [];
+    const tbody = rows.length ? rows.map((r,idx)=>`<tr>
       <td>${idx+1}</td>
-      <td>${pad(r.score)}</td>
-      <td>${esc(r.name||'')}</td>
-      <td>${esc(r.mode||'-')}</td>
-      <td>${esc(r.device||'-')}</td>
+      <td>${String(r.score).padStart(5,'0')}</td>
+      <td>${(r.name||'').replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</td>
+      <td>${(r.mode||'-')}</td>
+      <td>${(r.device||'-')}</td>
       <td>${(new Date(r.ts)).toLocaleDateString()}</td>
-    </tr>`).join(''):'<tr><td colspan="6">No scores yet — be the first!</td></tr>';
-    document.querySelector('#lbTable tbody').innerHTML=tbody;
-    const me=cleanName(localStorage.getItem('moon_name')||'');
-    document.getElementById('lbSelf').textContent=me?`Your name: ${me}`:'You have not set a name yet.';
+    </tr>`).join('') : '<tr><td colspan="6">No scores yet — be the first!</td></tr>';
+    tbodyEl.innerHTML = tbody;
   }catch(e){
-    document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="6">Failed to load.</td></tr>';
+    document.querySelector('#lbTable tbody').innerHTML = '<tr><td colspan="6">Failed to load.</td></tr>';
   }
 }
+
 async function submitScore(name,score){
   try{
     const device=/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)?'Mobile':'Desktop';
-    const body=new URLSearchParams({
-      name:cleanName(name),
-      score:String(Math.floor(score)),
-      version:GAME_VERSION,
-      mode:speedModes[speedMode].name,
+    const body = new URLSearchParams({
+      name: cleanName(name),
+      score: String(Math.floor(score)),
+      version: GAME_VERSION,
+      mode: speedModes[speedMode].name,
       device
-    }).toString();
-    const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
-    if(!r.ok) throw new Error('bad status');
-    return true;
-  }catch{ return false; }
+    });
+    const r = await fetch(API_URL, { method:'POST', body });
+    const j = await r.json().catch(()=>({ok:false,error:'bad_json'}));
+    if(!j.ok){
+      // Pass back the reason so caller can display it
+      return { ok:false, error: j.error || 'submit_failed' };
+    }
+    return { ok:true };
+  }catch(err){
+    return { ok:false, error: 'network' };
+  }
 }
 
 /* ===== World & Difficulty (unchanged) ===== */
@@ -688,7 +730,14 @@ function gameOver(){
   document.getElementById('recap').innerHTML = `Run Recap — 💠 ${coinsPicked} • 🛡 ${shieldsPicked} • ⏳ ${slowUsed}`;
   const saved=cleanName(localStorage.getItem('moon_name')||'');
   if(saved){
-    submitScore(saved,score).then(ok=>{ const m=document.getElementById('submitMsg'); m.style.display='block'; m.textContent=ok?'Submitted ✓':'Submit failed'; });
+submitScore(saved,score).then(res=>{
+  const m=document.getElementById('submitMsg');
+  m.style.display='block';
+  m.textContent = res.ok ? 'Submitted ✓'
+    : (res.error==='rate_limited' ? 'Too fast — try again in a moment'
+    : (res.error==='bad_name' ? 'Name rejected — change it in Settings'
+    : 'Submit failed'));
+});
     document.getElementById('nameGate').style.display='none';
   }else{
     document.getElementById('nameGate').style.display='block';
@@ -700,8 +749,13 @@ function gameOver(){
 document.getElementById('submitBtn').onclick=async()=>{
   const nm=cleanName(document.getElementById('nameInput').value||''); if(!nm) return;
   localStorage.setItem('moon_name',nm);
-  const ok=await submitScore(nm,score);
-  const m=document.getElementById('submitMsg'); m.style.display='block'; m.textContent=ok?'Submitted ✓':'Submit failed';
+const res=await submitScore(nm,score);
+const m=document.getElementById('submitMsg'); 
+m.style.display='block'; 
+m.textContent = res.ok ? 'Submitted ✓'
+  : (res.error==='rate_limited' ? 'Too fast — try again in a moment'
+  : (res.error==='bad_name' ? 'Name rejected — change it in Settings'
+  : 'Submit failed'));
   document.getElementById('nameGate').style.display='none';
 };
 
