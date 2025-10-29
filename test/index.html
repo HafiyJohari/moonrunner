@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — v1.8.7 “Daily & Skins — hotfix”</title>
+<title>MKHKASG: MoonRunner — v1.8.8 “Chars & Flyby”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -50,6 +50,7 @@
   /* Character modal */
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .cardBtn{display:grid;place-items:center;border:2px solid currentColor;background:transparent;color:inherit;padding:8px;cursor:pointer}
+  .cardBtn.active{box-shadow:0 0 0 2px currentColor inset}
   .skinPrev{background:#000;border:1px solid currentColor}
   body.invert .skinPrev{background:#fff}
 </style>
@@ -88,7 +89,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.8.7 — Daily & Skins (hotfix) • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.8.8 — Chars & Flyby • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -231,7 +232,7 @@
 
 <script>
 /* ===== Config ===== */
-const GAME_VERSION = '1.8.7';
+const GAME_VERSION = '1.8.8';
 const API_URL = "https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
 
 /* ===== Canvas & DPR ===== */
@@ -370,7 +371,7 @@ addEventListener('keydown',e=>{
     else if(state==='paused'){ hideUI('pause'); state='play'; document.getElementById('menuBtn').style.display='none'; }
   }
   if(state==='menu'&&(e.key===' '||e.key==='Enter'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')) start();
-  if(state==='over'&&(e.key===' '||e.key==='Enter')) { hideUI('over'); start(); } // FIX
+  if(state==='over'&&(e.key===' '||e.key==='Enter')) { hideUI('over'); start(); } // keep
 });
 addEventListener('keyup',e=>{ if (document.activeElement && document.activeElement.tagName === 'INPUT') return; keys[e.key]=false; });
 
@@ -424,7 +425,7 @@ document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
 document.getElementById('pauseSettingsBtn').onclick=()=>{ hideUI('pause'); document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
 document.getElementById('exitBtn').onclick=()=>{ hideUI('pause'); showUI('menu'); state='menu'; };
 
-document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); }; // FIX
+document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
 document.getElementById('overMenuBtn').onclick=()=>{ hideUI('over'); showUI('menu'); state='menu'; };
 document.getElementById('overLbBtn').onclick=()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); lbActivate('daily'); };
 
@@ -501,15 +502,18 @@ async function submitScore(name,score){
   }catch(e){ return false; }
 }
 
-/* ===== World & Difficulty (same) ===== */
+/* ===== World & Difficulty ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
+
+/* v1.8.8: make slow-mo more obvious by stronger factor */
 function getDiff(){
   const tScore = Math.min(1, (score/2800));
   const tTime  = Math.min(1, (timeMs/16000));
   const t = Math.min(1, tTime + tScore);
   const heat = Math.min(1, timeMs / 120000);
-  const factor=0.6*(player.slow>0?0.6:1);
+  /* when slow active, halve overall scroll */
+  const factor=0.6*(player.slow>0?0.5:1); /* was 0.6*(player.slow?0.6:1) */
   const worldScroll=(baseSpeed + 0.6 + 2.4*heat) * factor;
   const gapMin=24;
   const gapMax=35+Math.min(54,t*60);
@@ -530,13 +534,13 @@ function resetWorld(){
   segments.push({x:0,w:440,type:'ground'}); // runway
   spawnAhead(W*2.4);
 }
-function lastEnd(){ return segments.length?segments[segments.length-1].x+segments[segments-1].w:0; } // (unused)
+function lastEnd(){ return segments.length?segments[segments.length-1].x+segments[segments-1].w:0; }
 function spawnAhead(targetX){
-  while((segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0)<targetX){
+  while((segments.length?segments[segments.length-1].x+segments[segments-1].w:0)<targetX){
     const {gapMin,gapMax,gMin,gMax}=getDiff();
     const afterTutorial=(timeMs>10000);
     const segW=Math.floor(gMin+RND()*(gMax-gMin));
-    const gx=(segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0);
+    const gx=(segments.length?segments[segments.length-1].x+segments[segments-1].w:0);
     segments.push({x:gx,w:segW,type:'ground'});
 
     if(afterTutorial){
@@ -584,13 +588,19 @@ function tileGround(x,y,w){ const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w); FILL(x
 /* ===== Collisions ===== */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
 
-/* ===== Character Select (fixed previews) ===== */
-function openChars(){ showUI('chars'); drawSkinPreviews(); }
+/* ===== Character Select (improved) ===== */
+function openChars(){ showUI('chars'); drawSkinPreviews(); markActiveSkin(); }
 document.getElementById('charsClose').onclick=()=> hideUI('chars');
+function markActiveSkin(){
+  document.querySelectorAll('#chars .cardBtn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.skin===skin);
+  });
+}
 document.querySelectorAll('#chars .cardBtn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     skin = btn.dataset.skin;
     localStorage.setItem(SKIN_KEY, skin);
+    markActiveSkin();
     hideUI('chars');
   });
 });
@@ -600,20 +610,16 @@ function drawSkinPreviews(){
     const kind = card.dataset.skin;
     const cv = card.querySelector('canvas');
     const c = cv.getContext('2d');
-    const f = '#fff', b = '#000';
     c.imageSmoothingEnabled=false;
     c.fillStyle = document.body.classList.contains('invert') ? '#fff' : '#000';
     c.fillRect(0,0,64,64);
     c.fillStyle = document.body.classList.contains('invert') ? '#000' : '#fff';
-
-    // tiny local drawer (no global ctx usage)
     const RF=(x,y,w,h,col)=>{c.fillStyle=col; c.fillRect(x|0,y|0,w|0,h|0);};
     if(kind==='alien'){
-      RF(21,30,22,14,f); RF(25,34,4,4,b); RF(35,34,2,2,b); RF(23,44,18,2,f);
+      RF(21,30,22,14,'#fff'); RF(25,34,4,4,'#000'); RF(35,34,2,2,'#000'); RF(23,44,18,2,'#fff');
     }else{
-      // astronaut silhouette + visor
-      if(kind==='invert'){ RF(21,26,18,26,b); }
-      RF(24,28,16,22,f); RF(21,34,3,10,f); RF(29,34,6,6,b);
+      if(kind==='invert'){ RF(21,26,18,26,'#000'); }
+      RF(24,28,16,22,'#fff'); RF(21,34,3,10,'#fff'); RF(29,34,6,6,'#000');
     }
   });
 }
@@ -634,10 +640,41 @@ function drawCallouts(){
   ctx.restore(); ctx.globalAlpha=1;
 }
 
+/* ===== Background UFO Flyby (v1.8.8) ===== */
+let bgShip=null, lastShipMilestone=0;
+function maybeSpawnFlyby(){
+  const milestone = Math.floor(score/5000);
+  if(milestone>lastShipMilestone){
+    lastShipMilestone=milestone;
+    const fromLeft = RND()<0.5;
+    bgShip = {
+      x: fromLeft ? -80 : W+80,
+      y: 60 + Math.floor(RND()*160),
+      dir: fromLeft ? 1 : -1,
+      speed: 1.4 + RND()*0.9,
+      life: 1200
+    };
+  }
+}
+function updateFlyby(u){
+  if(!bgShip) return;
+  bgShip.x += bgShip.dir * bgShip.speed * u; 
+  bgShip.life -= u;
+  if((bgShip.dir>0 && bgShip.x>W+100) || (bgShip.dir<0 && bgShip.x<-100) || bgShip.life<=0){
+    bgShip=null;
+  }
+}
+function drawFlyby(){
+  if(!bgShip) return;
+  const t=performance.now();
+  ufo(bgShip.x, bgShip.y);
+  if(((t/300)|0)%2===0) beamScan(bgShip.x, bgShip.y, t);
+}
+
 /* ===== Control ===== */
 let jumpBuffer=0;
 function start(){
-  hideAllUI();                       // FIX: clear any overlay before starting
+  hideAllUI();
   resetWorld(); state='play';
   statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   document.getElementById('menuBtn').style.display='none';
@@ -784,6 +821,10 @@ function update(u){
   // distance scoring
   score += (0.069 * m + Math.max(0,player.vx) * 0.03 * m) * scoreMul;
 
+  // background ship
+  maybeSpawnFlyby();
+  updateFlyby(m);
+
   updateCallouts(m);
 }
 
@@ -797,6 +838,9 @@ function draw(){
     const x1=((n*83)%2000)-(scroll*0.25%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
     const x2=((n*211)%2400)-(scroll*0.10%2400), y2=(n*97)%H;  const xx2=((x2+2400)%2400)-100; if(xx2>=0&&xx2<W) ctx.fillRect(i(xx2),i(y2),1,1);
   }
+
+  // background UFO flyby
+  drawFlyby();
 
   // ground
   for(const s of segments){
@@ -812,7 +856,7 @@ function draw(){
     if(e.kind==='alien') enemyAlien(x,y,blink); else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
   }
 
-  // items (small animations)
+  // items (improved visuals v1.8.8)
   for(const it of items){
     const x=i2(it.x - scroll), y=i2((it._drawY ?? it.y));
     if(it.kind==='chip'){
@@ -821,28 +865,55 @@ function draw(){
       if(tw){ FILL(x+3,y+3,4,4,BG()); } else { FILL(x+4,y+2,2,2,BG()); FILL(x+4,y+6,2,2,BG()); FILL(x+2,y+4,2,2,BG()); FILL(x+6,y+4,2,2,BG()); }
     }
     if(it.kind==='shield'){
-      const pulse = (Math.sin((timeMs/500)+(it.phase||0))*0.5+0.5)|0;
-      FILL(x,y,12,12,f); FILL(x+2,y+2,8,8,BG()); if(pulse){ FILL(x+5,y+5,2,2,f); }
+      // pulsing ring (diamond-ish) to read as DEFENSE
+      const t=((timeMs/160)+(it.phase||0));
+      const p = (Math.sin(t)+1)*0.5; // 0..1
+      const w=12,h=12;
+      FILL(x,y,w,h,BG()); // cutout
+      // outer ring
+      FILL(x,y, w,1,f); FILL(x,y+h-1,w,1,f); FILL(x,y,1,h,f); FILL(x+w-1,y,1,h,f);
+      // inner pulse (shrinks/expands)
+      const inset = 2 + (p*2|0);
+      FILL(x+inset,y+inset,w-2*inset,1,f);
+      FILL(x+inset,y+h-1-inset,w-2*inset,1,f);
+      FILL(x+inset,y+inset,1,h-2*inset,f);
+      FILL(x+w-1-inset,y+inset,1,h-2*inset,f);
     }
     if(it.kind==='slow'){
-      FILL(x,y,12,12,f); FILL(x+2,y+2,8,8,BG()); const scan=((timeMs/120+(it.phase||0))%10)|0; FILL(x+2,y+2+scan,8,1,f);
+      // scanning hourglass vibe to read as TIME/SLOW
+      FILL(x,y,12,12,f); 
+      FILL(x+2,y+2,8,8,BG());
+      const scan=((timeMs/90+(it.phase||0))%8)|0;
+      FILL(x+2,y+2+scan,8,1,f);
+      FILL(x+2,y+2+(7-scan),8,1,f);
     }
   }
 
-  // player (with skins)
-  const frame=(performance.now()/120|0);
-  const pose = player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
+  // player aura: shields & i-frames
+  // v1.8.8: if shields>0 draw thicker rotating frame to pop visually
   if(player.shields>0){
-    const intense = player.auraFlash>0 ? 1 : 0;
-    const th = intense ? 3 : 2;
+    const fcol=f;
+    const phase = ((performance.now()/120)|0)%4; // simple rotate
     const ax=player.x-3, ay=player.y-3, aw=player.w+6, ah=player.h+6;
-    for(let t=0;t<th;t++){
-      FILL(ax-t, ay-t, aw+2*t, 1, f);
-      FILL(ax-t, ay+ah+t, aw+2*t, 1, f);
-      FILL(ax-t, ay-t, 1, ah+2*t, f);
-      FILL(ax+aw+t, ay-t, 1, ah+2*t, f);
+    // base frame
+    FILL(ax, ay, aw, 1, fcol); FILL(ax, ay+ah, aw, 1, fcol);
+    FILL(ax, ay, 1, ah, fcol); FILL(ax+aw, ay, 1, ah+1, fcol);
+    // rotating corners
+    if(phase===0){ FILL(ax-1,ay-1,2,2,fcol); FILL(ax+aw-1,ay-1,2,2,fcol); }
+    if(phase===1){ FILL(ax+aw-1,ay-1,2,2,fcol); FILL(ax+aw-1,ay+ah-1,2,2,fcol); }
+    if(phase===2){ FILL(ax+aw-1,ay+ah-1,2,2,fcol); FILL(ax-1,ay+ah-1,2,2,fcol); }
+    if(phase===3){ FILL(ax-1,ay+ah-1,2,2,fcol); FILL(ax-1,ay-1,2,2,fcol); }
+    if(player.auraFlash>0){ // hit flash
+      FILL(ax-2, ay-2, aw+4, 1, fcol);
+      FILL(ax-2, ay+ah+2, aw+4, 1, fcol);
+      FILL(ax-2, ay-2, 1, ah+4, fcol);
+      FILL(ax+aw+2, ay-2, 1, ah+4, fcol);
     }
   }
+
+  // player (with skins + invuln blink)
+  const frame=(performance.now()/120|0);
+  const pose = player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
   const invBlink = (player.inv>0) && (frame % 2 === 0);
   if(!invBlink){
     if(skin==='alien'){ playerAlien(player.x,player.y); }
@@ -853,6 +924,14 @@ function draw(){
     FILL(player.x,player.y+player.h-1,player.w,1,f);
     FILL(player.x,player.y,1,player.h,f);
     FILL(player.x+player.w-1,player.y,1,player.h,f);
+  }
+
+  // slow-mo active overlay (scan-lines)
+  if(player.slow>0){
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = f;
+    for(let y=0;y<H;y+=6){ FILL(0,y,W,1,f); }
+    ctx.globalAlpha = 1;
   }
 
   // callouts
@@ -867,10 +946,14 @@ function draw(){
   ctx.fillText(`🛡 ${dots.join(' ')}`, W-10, 18);
   ctx.textAlign='left';
 
-  // Menu UFO / tutorial
+  // Menu scene uses current skin for clarity (v1.8.8)
   if(state==='menu'){
     const t=performance.now(); const cx=i(W/2), cy=i(H*0.30);
-    const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
+    const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0;
+    if(skin==='alien'){ playerAlien(cx-11,cy+18-pull); }
+    else if(skin==='invert'){ astronautInvert(cx-8,cy+18-pull,'idle'); }
+    else { astronaut(cx-8,cy+18-pull,'idle'); }
+
     ctx.font="22px 'Press Start 2P',monospace"; const title="MKHKASG: MOONRUNNER";
     ctx.fillText(title,i((W-ctx.measureText(title).width)/2),cy+64);
     ctx.font="10px 'Press Start 2P',monospace";
