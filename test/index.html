@@ -122,32 +122,37 @@
 
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
+  
 /* === PORTRAIT FIX: make game larger and keep pads clear === */
-@media (hover:none) and (pointer:coarse) and (orientation:portrait){
+@media (orientation:portrait){
 
-  /* Grow by viewport height; keep 16:9; only add bottom margin while playing */
-  .playing canvas{
-    height:78vh;                              /* bump to taste: 76–82vh */
-    width: min(96vw, calc(78vh * (16/9)));
-    margin-bottom:108px;                      /* space for pads */
+  /* Grow by viewport height; keep 16:9; add space for pads only while playing */
+  body.playing canvas{
+    height:82vh;                              /* try 80–84vh if you want */
+    width:min(96vw, calc(82vh * (16/9)));
+    margin-bottom:120px;                      /* space for pads row */
   }
 
   /* Match HUD width to canvas width */
-  .hud{ width: min(96vw, calc(78vh * (16/9))); }
+  .hud{ width:min(96vw, calc(82vh * (16/9))); }
 
   /* Pads smaller + tucked into corners */
   .pad{ width:64px; height:64px; font-size:18px; border-radius:14px; }
   .jump{ width:72px; height:72px; }
   .mobile .leftGrp  { left:10px;  bottom:10px; }
   .mobile .rightGrp { right:10px; bottom:10px; }
+
+  /* Always show pads while playing in portrait (regardless of hover/pointer quirks) */
+  body.playing .mobile{ display:block; }
 }
 
 /* If the device is very short even in portrait, shrink once more */
-@media (hover:none) and (pointer:coarse) and (orientation:portrait) and (max-height:700px){
+@media (orientation:portrait) and (max-height:700px){
   .pad{ width:58px; height:58px; }
   .jump{ width:66px; height:66px; }
-  .playing canvas{ margin-bottom:96px; }
+  body.playing canvas{ margin-bottom:96px; height:78vh; width:min(96vw, calc(78vh * (16/9))); }
 }
+
 
 </style>
 </head>
@@ -174,11 +179,7 @@
     </div> <!-- .right -->
   </div> <!-- .hud -->
 
-  <!-- Mobile buttons (inside #stage) -->
-  <div class="mobile">
-
-  
-    <!-- Mobile buttons (moved INSIDE #stage) -->
+  <!-- Mobile buttons (moved INSIDE #stage) -->
   <div class="mobile">
     <div class="leftGrp">
       <div id="btnLeft"  class="pad">◀</div>
