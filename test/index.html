@@ -51,25 +51,40 @@
   .hud .right{ display:none; } /* keep bottom buttons from overlapping on touch */
 }
 
-/* === PORTRAIT: keep 16:9 size; leave canvas logic alone; reserve space for pads === */
+/* ===== PORTRAIT: bigger canvas (16:9), corner pads ===== */
 @media (orientation:portrait){
-  /* Do NOT touch canvas size; keep the v1.9.1 scaling rules */
-  body.playing #stage{ padding-bottom:120px; }   /* space for pads */
 
-  /* Pad sizing and safe placement */
-  .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
+  /* Make the game large. Set only height so aspect ratio stays perfect. */
+  body.playing canvas{
+    height:80vh;          /* tweak 78–82vh to taste */
+    width:auto;
+    max-width:96vw;
+    margin-bottom:0;      /* canvas itself doesn't add extra space */
+  }
+
+  /* Reserve space for pads below the canvas */
+  body.playing #stage{ padding-bottom:120px; }
+
+  /* Corner pads a bit smaller in portrait */
+  .pad { width:68px; height:68px; font-size:18px; border-radius:14px; }
   .jump{ width:76px; height:76px; }
-  .mobile .leftGrp{ left:10px; bottom:10px; }
-  .mobile .rightGrp{ right:10px; bottom:10px; }
 
-  /* Always show pads while playing on phones */
+  /* Tuck pads into corners */
+  .mobile .leftGrp  { left:10px;  bottom:10px; }
+  .mobile .rightGrp { right:10px; bottom:10px; }
+
+  /* Ensure pads show while playing even if device misreports input type */
   body.playing .mobile{ display:block; }
 }
+
+/* Very short portrait screens: one step smaller */
 @media (orientation:portrait) and (max-height:700px){
   body.playing #stage{ padding-bottom:96px; }
-  .pad{ width:60px; height:60px; }
-  .jump{ width:68px; height:68px; }
+  .pad { width:62px; height:62px; }
+  .jump{ width:70px; height:70px; }
+  body.playing canvas{ height:76vh; }
 }
+
   
 /* Ensure pads also show while fullscreen on iOS/Safari */
 :fullscreen .mobile{display:block}
@@ -170,7 +185,11 @@
   body.playing canvas{ margin-bottom:96px; height:78vh; width:min(96vw, calc(78vh * (16/9))); }
 }
 
-
+/* PORTRAIT: always hide the bottom HUD toolbar so it doesn't overlap pads */
+@media (orientation:portrait){
+  .hud .right{ display:none !important; }
+}
+  
 </style>
 </head>
 <body>
