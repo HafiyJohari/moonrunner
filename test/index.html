@@ -153,7 +153,7 @@
   }
 
   /* Trim bottom padding so pads stay visible but close */
-  body.playing #stage{ padding-bottom:34px; } /* was ~64–84px */
+  body.playing #stage{ padding-bottom:8px; } /* was ~64–84px */
 
   /* Hide HUD toolbar to prevent overlap */
   body.playing .hud{ display:none !important; }
@@ -161,7 +161,7 @@
   /* Keep safe area for bottom bar */
   .mobile .leftGrp,
   .mobile .rightGrp{
-    bottom:max(env(safe-area-inset-bottom,0px), 6px);
+    bottom:max(env(safe-area-inset-bottom,2px), 6px);
   }
 }
 
