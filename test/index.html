@@ -290,6 +290,7 @@ const TARGET_FPS=75; let last=performance.now(); let timeMs=0;
 let state='boot'; // boot | menu | play | paused | over
 let score=0, best=Number(localStorage.getItem('moon_best')||0);
 let scroll=0; let uiReturn='menu';
+let returnFromSettings = 'menu'; // 'menu' or 'play'
 const statusEl=document.getElementById('status');
 
 /* ===== Speed Modes (same) ===== */
@@ -356,13 +357,22 @@ function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits'].fo
 /* Menu wiring */
 document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
 document.getElementById('howBtn').onclick =()=> showUI('how');
-document.getElementById('settingsBtn').onclick=()=>{ document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
+document.getElementById('settingsBtn').onclick = () => {
+  document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
+  returnFromSettings = 'menu';
+  showUI('settings');
+};
 document.getElementById('lbBtn').onclick  =()=>{ uiReturn='menu'; showUI('lb'); lbActivate('daily'); };
 document.getElementById('creditsBtn').onclick=()=> showUI('credits');
 
 document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
 document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
-document.getElementById('pauseSettingsBtn').onclick=()=>{ hideUI('pause'); document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
+document.getElementById('pauseSettingsBtn').onclick = () => {
+  hideUI('pause');
+  document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
+  returnFromSettings = 'play';
+  showUI('settings');
+};
 document.getElementById('exitBtn').onclick=()=>{ hideUI('pause'); showUI('menu'); state='menu'; };
 
 document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
@@ -376,7 +386,19 @@ document.getElementById('setSound').onclick=(e)=>{ sfxMuted=!sfxMuted; ensureAC(
 document.getElementById('setMusic').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent=musicMuted?'♪ Music: Off':'♪ Music: On'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('setContrast').onclick=()=> document.body.classList.toggle('invert');
 document.getElementById('setSpeed').onclick =()=> setMode(speedMode+1);
-document.getElementById('settingsClose').onclick=()=>{ const nm=cleanName(document.getElementById('setName').value||''); localStorage.setItem('moon_name',nm); hideUI('settings'); };
+document.getElementById('settingsClose').onclick = () => {
+  const nm = cleanName(document.getElementById('setName').value || '');
+  localStorage.setItem('moon_name', nm);
+  hideUI('settings');
+
+  if (returnFromSettings === 'play') {
+    state = 'play';                 // resume gameplay
+    document.getElementById('menuBtn').style.display = 'none';
+  } else {
+    showUI('menu');                 // back to title screen
+    state = 'menu';
+  }
+};
 
 document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
 
