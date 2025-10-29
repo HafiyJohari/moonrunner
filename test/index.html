@@ -139,37 +139,38 @@
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
   
-/* === PORTRAIT FIX PACK (pads always visible, no huge gap) === */
+/* === PORTRAIT VIEWPORT REBALANCE === */
 @media (orientation:portrait){
 
-  /* 1) Give the canvas just enough bottom space for the pads (smaller than before) */
-  body.playing #stage{ padding-bottom:64px; }  /* was ~84–120px */
+  /* Push the game upward, reduce empty top/bottom space */
+  body.playing canvas{
+    width:100vw;
+    height:auto;
+    aspect-ratio:16 / 9;
+    display:block;
+    margin:0 auto;
+    transform:translateY(-4vh);   /* shift up slightly */
+  }
 
-  /* 2) Hide the HUD toolbar while playing on phones to remove the big empty band */
+  /* Trim bottom padding so pads stay visible but close */
+  body.playing #stage{ padding-bottom:54px; } /* was ~64–84px */
+
+  /* Hide HUD toolbar to prevent overlap */
   body.playing .hud{ display:none !important; }
 
-  /* 3) Keep pads tight to the bottom/safe-area */
-  .mobile .leftGrp{  left:10px;  bottom:max(env(safe-area-inset-bottom,0px), 8px); }
-  .mobile .rightGrp{ right:10px; bottom:max(env(safe-area-inset-bottom,0px), 8px); }
-
-  /* 4) Modest pad size so they stay on-screen on most phones */
-  .pad{  width:66px; height:66px; font-size:18px; border-radius:14px; }
-  .jump{ width:74px; height:74px; }
+  /* Keep safe area for bottom bar */
+  .mobile .leftGrp,
+  .mobile .rightGrp{
+    bottom:max(env(safe-area-inset-bottom,0px), 6px);
+  }
 }
 
-/* Extra safety for short portrait screens */
+/* For shorter phones, tweak a bit less */
 @media (orientation:portrait) and (max-height:760px){
-  body.playing #stage{ padding-bottom:56px; }
-  .pad{  width:60px; height:60px; }
-  .jump{ width:68px; height:68px; }
+  body.playing canvas{ transform:translateY(-2vh); }
+  body.playing #stage{ padding-bottom:48px; }
 }
 
-/* If the device is very short even in portrait, shrink once more */
-@media (orientation:portrait) and (max-height:700px){
-  .pad{ width:58px; height:58px; }
-  .jump{ width:66px; height:66px; }
-  body.playing canvas{ margin-bottom:96px; height:78vh; width:min(96vw, calc(78vh * (16/9))); }
-}
 
 /* PORTRAIT: always hide the bottom HUD toolbar so it doesn't overlap pads */
 @media (orientation:portrait){
