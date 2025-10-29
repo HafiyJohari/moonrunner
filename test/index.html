@@ -139,38 +139,27 @@
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
   
-/* === PORTRAIT VIEWPORT — SAFE FIT, NO STRETCH === */
-@media (orientation:portrait){
+/* keep pads visible but closer to the game */
+body.playing #stage{ padding-bottom:72px; }   /* was ~110px */
 
-  /* Leave room for the pads; keep the game visible without cropping */
-  body.playing #stage{
-    /* adjust this number only if pads overlap (bigger = more room at bottom) */
-    padding-bottom: 110px;
-  }
-
-  body.playing canvas{
-    /* keep aspect; fill width but never over-grow the available height */
-    width: calc(100vw - 16px);
-    height: auto;
-    max-height: calc(100vh - 220px); /* top HUD + hint + pads space */
-    aspect-ratio: 16 / 9;
-    display: block;
-    margin: 0 auto;
-    transform: none;          /* kill the vertical shift that caused the zoom */
-  }
-
-  /* keep the pads a touch smaller in portrait so they don’t push the canvas */
-  .mobile .pad  { width:84px; height:84px; }
-  .mobile .jump { width:96px; height:96px; }
-
-  /* hide the bottom HUD strip so it doesn't steal space from pads */
-  .hud  { display:none !important; }
-  .hud_right { display:none !important; }
+/* fit the canvas without stretching, use more of the screen height */
+body.playing canvas{
+  width: 100vw;
+  height: auto;
+  max-height: calc(100vh - 150px);  /* was ~200–220px -> less empty space */
+  aspect-ratio: 16 / 9;
+  display:block;
+  margin:0 auto;
+  transform:none;                   /* no zoom / shift */
 }
 
-/* PORTRAIT: always hide the bottom HUD toolbar so it doesn't overlap pads */
-@media (orientation:portrait){
-  .hud .right{ display:none !important; }
+/* keep pads a bit smaller in portrait so they don’t push the canvas */
+.mobile .pad  { width:76px; height:76px; }
+.mobile .jump { width:90px; height:90px; }
+
+/* hide bottom HUD row so it doesn't steal space from pads */
+.hud, .hud_right { display:none !important; }
+
 }
   
 </style>
