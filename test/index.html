@@ -51,38 +51,41 @@
   .hud .right{ display:none; } /* keep bottom buttons from overlapping on touch */
 }
 
-/* ===== PORTRAIT: bigger canvas (16:9), corner pads ===== */
+/* === PORTRAIT FIX — keep 16:9, full width, no stretch === */
 @media (orientation:portrait){
 
-  /* Make the game large. Set only height so aspect ratio stays perfect. */
+  /* Let canvas use full screen width but keep aspect ratio automatically */
   body.playing canvas{
-    height:80vh;          /* tweak 78–82vh to taste */
-    width:auto;
-    max-width:96vw;
-    margin-bottom:0;      /* canvas itself doesn't add extra space */
+    width:96vw;
+    height:auto;
+    aspect-ratio:16 / 9;
+    display:block;
+    margin:0 auto;
   }
 
-  /* Reserve space for pads below the canvas */
-  body.playing #stage{ padding-bottom:120px; }
+  /* Give space for pads below the game */
+  body.playing #stage{ padding-bottom:110px; }
 
-  /* Corner pads a bit smaller in portrait */
-  .pad { width:68px; height:68px; font-size:18px; border-radius:14px; }
+  /* Hide bottom HUD toolbar (buttons like SFX, etc.) */
+  .hud .right{ display:none !important; }
+
+  /* Resize pads for portrait */
+  .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
   .jump{ width:76px; height:76px; }
 
-  /* Tuck pads into corners */
+  /* Corner placement */
   .mobile .leftGrp  { left:10px;  bottom:10px; }
   .mobile .rightGrp { right:10px; bottom:10px; }
 
-  /* Ensure pads show while playing even if device misreports input type */
+  /* Always show pads when playing on touch */
   body.playing .mobile{ display:block; }
 }
 
-/* Very short portrait screens: one step smaller */
+/* Shorter screens: shrink slightly */
 @media (orientation:portrait) and (max-height:700px){
-  body.playing #stage{ padding-bottom:96px; }
-  .pad { width:62px; height:62px; }
+  body.playing #stage{ padding-bottom:90px; }
+  .pad{ width:62px; height:62px; }
   .jump{ width:70px; height:70px; }
-  body.playing canvas{ height:76vh; }
 }
 
   
