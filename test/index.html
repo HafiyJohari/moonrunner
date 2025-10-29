@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>MKHKASG: MoonRunner — v1.8.8</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MKHKASG: MoonRunner — v1.8.7 “Daily — device”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -80,7 +80,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.8.8 — Device leaderboard • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.8.7 — Daily (device added) • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -179,7 +179,7 @@
     <h2>Credits</h2>
     <div class="mt8">Design & code: <b>MkhkAsg</b></div>
     <div class="mt6">Font: <b>Press Start 2P</b> (CodeMan38) — SIL Open Font License 1.1</div>
-    <div class="mt6">Music & SFX: in-engine chiptune via Web Audio API</div>
+    <div class="mt6">Music & SFX: <b>Original in-engine chiptune</b> via Web Audio API</div>
     <div class="mt6">Assisted by <b>Mira</b> (AI collaborator)</div>
     <div class="mt6 ghost">Scores go to a Google Sheet leaderboard. Keep names clean.</div>
     <div class="row mt12"><div id="creditsClose" class="btn">Close</div></div>
@@ -199,7 +199,7 @@
 
 <script>
 /* ===== Config ===== */
-const GAME_VERSION='1.8.8';
+const GAME_VERSION='1.8.7';
 const API_URL="https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
 
 /* ===== Canvas & DPR ===== */
@@ -219,7 +219,7 @@ const pad=(n,w=5)=>String(n).padStart(w,'0');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function esc(s){return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-/* ===== WebAudio (chiptune + ducking) ===== */
+/* ===== WebAudio: buses, mix, ducking ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
 let musicVol=0.045, sfxVol=0.28;
 let musicBus=null, sfxBus=null;
@@ -249,7 +249,7 @@ function beep(kind='jump'){
     musicBus.gain.setTargetAtTime(back,t+0.35,0.25);
   }
 }
-/* simple loop */
+/* Simple chiptune loop (unchanged) */
 let musicRunning=false, musicTimer=null, musicStep=0;
 const bpm=140, stepSec=60/bpm/2;
 const NT=n=>440*Math.pow(2,(n-69)/12);
@@ -282,17 +282,17 @@ function startMusic(){
 }
 function stopMusic(){ musicRunning=false; if(musicTimer){clearTimeout(musicTimer); musicTimer=null;} }
 
-/* ===== RNG & time ===== */
+/* ===== RNG & timebase ===== */
 let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
 const TARGET_FPS=75; let last=performance.now(); let timeMs=0;
 
-/* ===== State ===== */
-let state='boot';
+/* ===== Game State ===== */
+let state='boot'; // boot | menu | play | paused | over
 let score=0, best=Number(localStorage.getItem('moon_best')||0);
 let scroll=0; let uiReturn='menu';
 const statusEl=document.getElementById('status');
 
-/* ===== Modes ===== */
+/* ===== Speed Modes (same) ===== */
 const speedModes=[
   {name:'Casual', speed:2.4, score:1.0, coin:200},
   {name:'Normal', speed:3.2, score:1.5, coin:300},
@@ -300,13 +300,14 @@ const speedModes=[
   {name:'Insane', speed:5.4, score:2.3, coin:400},
 ];
 let speedMode=1, baseSpeed=speedModes[1].speed, scoreMul=speedModes[1].score, coinValue=speedModes[1].coin;
-function setMode(i){ speedMode=( (i%speedModes.length)+speedModes.length)%speedModes.length;
+function setMode(idx){
+  speedMode=( (idx%speedModes.length)+speedModes.length)%speedModes.length;
   baseSpeed=speedModes[speedMode].speed; scoreMul=speedModes[speedMode].score; coinValue=speedModes[speedMode].coin;
   statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
-  const sb=document.getElementById('setSpeed'); if(sb) sb.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
+  const setBtn=document.getElementById('setSpeed'); if(setBtn) setBtn.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
 }
 
-/* ===== Name ===== */
+/* ===== Name sanitize ===== */
 const NAME_RE=/[^A-Za-z0-9 _\-.]/g;
 function cleanName(s){ return (s||'').toString().trim().replace(/\s+/g,' ').replace(NAME_RE,'').slice(0,12)||'Player'; }
 
@@ -397,7 +398,7 @@ function lbActivate(kind){
   else { lbSetActive(lb10Btn); loadLeaderboard({period:'all',limit:10}); }
 }
 
-/* Leaderboard core */
+/* ===== Leaderboard (Device added) ===== */
 async function loadLeaderboard({period='daily',limit=20}={}){
   try{
     document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="6">Loading…</td></tr>';
@@ -437,7 +438,7 @@ async function submitScore(name,score){
   }catch{ return false; }
 }
 
-/* ===== World ===== */
+/* ===== World & Difficulty (unchanged) ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
 function getDiff(){
@@ -454,9 +455,12 @@ function getDiff(){
   return {worldScroll,gapMin,gapMax,gMin,gMax};
 }
 
-/* Player & physics */
+/* ===== Player & physics ===== */
 const GRAV=0.65,JUMP=11.6,FRICTION=0.86;
+const JUMP_BUFFER_MS=120;
 const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0};
+
+/* ===== Generation ===== */
 function resetWorld(){
   segments=[];entities=[];items=[];scroll=0;timeMs=0;score=0;
   Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0});
@@ -464,17 +468,18 @@ function resetWorld(){
   spawnAhead(W*2.4);
 }
 function spawnAhead(targetX){
-  while((segments.length?segments[segments.length-1].x+segments[segments-1].w:0)<targetX){
+  while((segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0)<targetX){
     const {gapMin,gapMax,gMin,gMax}=getDiff();
     const afterTutorial=(timeMs>10000);
     const segW=Math.floor(gMin+RND()*(gMax-gMin));
-    const gx=(segments.length?segments[segments.length-1].x+segments[segments-1].w:0);
+    const gx=(segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0);
     segments.push({x:gx,w:segW,type:'ground'});
 
     if(afterTutorial){
       if(RND()<0.19 && segW>120){ const cx=gx+40+Math.floor(RND()*(segW-80)); entities.push({kind:'spike',x:cx,y:floorY-60,w:40,h:10}); }
       if(RND()<0.38 && segW>100){ const ax=gx+40+Math.floor(RND()*(segW-100)); entities.push({kind:'alien',x:ax,y:floorY-14,w:22,h:14,dir:(RND()<0.5?-1:1),baseX:ax,range:36+Math.floor(RND()*44)}); }
     }
+
     if(RND()<0.6){ const ix=gx+30+Math.floor(RND()*(segW-60)); items.push({kind:'chip',x:ix,y:floorY-40,w:10,h:10,phase:(RND()*6.28)}); }
     if(afterTutorial && RND()<0.12){ const ix=gx+segW-60; const type=(RND()<0.6?'shield':'slow'); items.push({kind:type,x:ix,y:floorY-48,w:12,h:12,phase:(RND()*6.28)}); }
 
@@ -483,7 +488,7 @@ function spawnAhead(targetX){
   }
 }
 
-/* Sprites */
+/* ===== Sprites ===== */
 function astronaut(x,y,pose='idle'){
   const f=FG(),b=BG(); x=i(x); y=i(y);
   FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
@@ -498,16 +503,16 @@ function tileGround(x,y,w){ const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w); FILL(x
   for(let dx=0;dx<w;dx+=8) for(let dy=0;dy<44;dy+=8) if(((dx+dy)>>3)&1) FILL(x+dx,y+dy,4,4,b);
 }
 
-/* Collision */
+/* ===== Collision ===== */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
 
-/* Callouts */
+/* ===== Callouts ===== */
 const callouts=[];
 function addCall(text,x,y){ callouts.push({x,y,vy:-0.35,life:60,text}); }
 function updateCallouts(u){ for(let i=callouts.length-1;i>=0;i--){ const c=callouts[i]; c.y+=c.vy*u; c.life-=u; if(c.life<=0) callouts.splice(i,1);} }
 function drawCallouts(){ ctx.save(); ctx.fillStyle=FG(); ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.font="12px 'Press Start 2P', monospace"; for(const c of callouts){ ctx.globalAlpha=Math.max(0,c.life/60); ctx.fillText(c.text,c.x,c.y); } ctx.restore(); ctx.globalAlpha=1; }
 
-/* Control */
+/* ===== Control ===== */
 let jumpBuffer=0;
 function start(){
   hideAllUI(); resetWorld(); state='play';
@@ -540,7 +545,7 @@ document.getElementById('submitBtn').onclick=async()=>{
   document.getElementById('nameGate').style.display='none';
 };
 
-/* Update (frame-rate independent) */
+/* ===== Update (frame-rate independent) ===== */
 const GRAV_U=GRAV, ACCEL_U=0.7;
 function update(u){
   timeMs += (u / TARGET_FPS) * 1000;
@@ -555,7 +560,7 @@ function update(u){
   player.vy += GRAV_U*m;
 
   const now=performance.now();
-  if(player.on) jumpBuffer=now+120;
+  if(player.on) jumpBuffer=now+JUMP_BUFFER_MS;
   if(jump && now<=jumpBuffer){ player.vy=-JUMP; player.on=false; jumpBuffer=0; beep('jump'); }
 
   const prevX=player.x, prevY=player.y;
@@ -580,7 +585,7 @@ function update(u){
     else if(player.vx<0 && (prevX+scroll)>=(s.x+s.w)){ player.x=(s.x+s.w-scroll); player.vx=0; }
   }
 
-  // fall / shields
+  // Abyss protection + shields
   if(player.y>H+40){
     if(player.inv>0){ player.y=floorY-player.h-2; player.vy=-JUMP*0.8; }
     else if(player.shields>0){ useShield(); player.y=floorY-player.h-2; player.vy=-JUMP*0.8; }
@@ -628,7 +633,7 @@ function update(u){
   updateCallouts(m);
 }
 
-/* Draw */
+/* ===== Draw ===== */
 function draw(){
   const f=FG(),b=BG(); ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
 
@@ -670,7 +675,7 @@ function draw(){
     }
   }
 
-  // player (with shield aura / i-frames blink)
+  // player
   const frame=(performance.now()/120|0);
   const pose=player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
   if(player.shields>0){
@@ -710,7 +715,7 @@ function draw(){
   }
 }
 
-/* Boot & Loop */
+/* ===== Boot & Loop ===== */
 async function boot(){
   try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
   resetWorld(); setMode(speedMode); state='menu'; statusEl.textContent='Menu — ready';
