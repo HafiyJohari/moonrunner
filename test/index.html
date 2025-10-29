@@ -87,6 +87,52 @@ canvas{
   .hud .right{ display:none }     /* already there, keeps HUD minimal on phones */
 }
 
+  /* === Rotate overlay (portrait) === */
+.rotatePrompt{
+  position: fixed; inset: 0; z-index: 20;
+  display: grid; place-items: center;
+  background: rgba(0,0,0,.75); color:#fff;
+}
+.rotateCard{
+  border:1px solid #fff; border-radius:16px; padding:14px 18px;
+  text-align:center; width:min(92vw,420px); background:#000;
+}
+.rotateCard .icon{ font-size:42px; line-height:1; margin-bottom:6px }
+.rotateCard .msg{ font-size:14px; letter-spacing:.5px }
+
+/* === Top controls bar (landscape on phones) === */
+.mobileTop{
+  position: fixed; left:50%; transform:translateX(-50%);
+  top: 8px; z-index: 15; display: none; gap: 10px;
+}
+.mobileTop .pad.sm{
+  pointer-events:auto;
+  background: rgba(0,0,0,.25);
+  backdrop-filter: blur(2px);
+  color:#fff; border:1px solid #fff; border-radius:12px;
+  width: 72px; height: 48px; font-size:20px;
+  display:flex; align-items:center; justify-content:center;
+  user-select:none; touch-action:none;
+}
+.mobileTop .pad.sm:active{ transform: translateY(1px) }
+
+/* Show top controls only in landscape on small screens */
+@media (orientation: landscape) and (max-width: 920px){
+  .mobileTop{ display:flex }
+}
+
+/* Use more of the height in landscape (phone) */
+@media (orientation: landscape) and (max-width: 920px){
+  canvas{
+    height: 82svh;          /* tune 78–86 if you like */
+    width: auto;            /* keep aspect ratio; no stretch */
+    max-width: 100vw;
+  }
+  .wrap{ padding: 0; gap: 6px; }
+  .hud{ font-size: 10px; }
+}
+
+
   /* Contrast-safe overlays */
   body:not(.invert) .ui { background: rgba(0,0,0,.78); }
   body:not(.invert) .ui .card { background: rgba(0,0,0,.96); color:#fff; border-color:#fff; box-shadow:0 0 0 2px #fff inset; }
@@ -294,6 +340,22 @@ canvas{
   </div>
 </div>
 
+  <!-- Rotate prompt (portrait only) -->
+<div id="rotatePrompt" class="rotatePrompt" hidden>
+  <div class="rotateCard">
+    <div class="icon">↻</div>
+    <div class="msg">Rotate your phone for a bigger playfield</div>
+  </div>
+</div>
+
+<!-- Top mobile controls (shown in landscape on phones) -->
+<div class="mobileTop" id="mobileTop" hidden>
+  <button class="pad sm" id="topLeft"  aria-label="Left">◄</button>
+  <button class="pad sm" id="topRight" aria-label="Right">►</button>
+  <button class="pad sm" id="topJump"  aria-label="Jump">⇧</button>
+</div>
+
+  
 <script>
 /* ===== Config ===== */
 const GAME_VERSION='1.9.2';
@@ -301,6 +363,21 @@ const API_URL="https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9y
 
 /* ===== Canvas & DPR ===== */
 const CV=document.getElementById('cv');
+  // === Mobile rotate/controls helpers ===
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const rotatePrompt = document.getElementById('rotatePrompt');
+const mobileTop    = document.getElementById('mobileTop');
+
+function updateRotateUI(){
+  const portrait = window.matchMedia('(orientation: portrait)').matches;
+  // show prompt only if mobile + portrait
+  rotatePrompt.hidden = !(isMobile && portrait);
+  // show top controls only if mobile + landscape
+  mobileTop.hidden = !(isMobile && !portrait);
+}
+window.addEventListener('orientationchange', updateRotateUI);
+window.addEventListener('resize', updateRotateUI);
+
 const ctx=CV.getContext('2d',{alpha:false}); ctx.imageSmoothingEnabled=false;
 const W=960,H=540; let DPR=1;
 function resizeCanvas(){ DPR=Math.min(2,Math.max(1,window.devicePixelRatio||1)); CV.width=(W*DPR)|0; CV.height=(H*DPR)|0; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -438,6 +515,33 @@ bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
 let jumpBufferUntil=0;
 bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+120; }, ()=>{ keys[' ']=false; });
 
+  // === Top controls (landscape) use same key map ===
+function bindPad(el, onDown, onUp){
+  const d = e => { e.preventDefault(); onDown(); };
+  const u = e => { e.preventDefault(); onUp(); };
+  el.addEventListener('touchstart', d, {passive:false});
+  el.addEventListener('touchend',   u, {passive:false});
+  el.addEventListener('touchcancel',u, {passive:false});
+  el.addEventListener('mousedown',  d);
+  el.addEventListener('mouseup',    u);
+  el.addEventListener('mouseleave', u);
+}
+bindPad(document.getElementById('topLeft'),
+  ()=> keys['ArrowLeft'] = true,
+  ()=> keys['ArrowLeft'] = false
+);
+bindPad(document.getElementById('topRight'),
+  ()=> keys['ArrowRight'] = true,
+  ()=> keys['ArrowRight'] = false
+);
+bindPad(document.getElementById('topJump'),
+  ()=> { keys[' '] = true; keys['KeyW'] = true; },
+  ()=> { keys[' '] = false; keys['KeyW'] = false; }
+);
+
+// initialize orientation UI once on load
+updateRotateUI();
+
 /* Toolbar */
 document.getElementById('music').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent = musicMuted?'♪ Music Off':'♪ Music'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('mute').onclick =(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent = sfxMuted?'🔇 SFX':'🔈 SFX'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
@@ -453,7 +557,26 @@ function hideUI(id){ document.getElementById(id).style.display='none'; }
 function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','avatars'].forEach(hideUI); }
 
 /* Menu wiring */
-document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
+document.getElementById('playBtn').onclick = async () => {
+  hideUI('menu');
+  start();
+
+  if (!isMobile) { updateRotateUI(); return; }
+
+  try {
+    // 1) request fullscreen (browser allows after user gesture)
+    const el = document.documentElement;  // or CV
+    if (el.requestFullscreen) await el.requestFullscreen();
+
+    // 2) try to lock orientation to landscape
+    if (screen.orientation && screen.orientation.lock) {
+      await screen.orientation.lock('landscape');
+    }
+  } catch (e) {
+    // iOS/Safari may reject — we’ll just show the rotate overlay
+  }
+  updateRotateUI();
+};
 document.getElementById('howBtn').onclick =()=> showUI('how');
 document.getElementById('avatarsBtn').onclick=()=>{ showUI('avatars'); drawPreviews(); };
 document.getElementById('avatarsClose').onclick=()=> hideUI('avatars');
