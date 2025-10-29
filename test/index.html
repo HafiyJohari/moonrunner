@@ -139,37 +139,41 @@
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
   
-/* === PORTRAIT VIEWPORT REBALANCE === */
+/* === PORTRAIT: use full vertical space (no big black borders) === */
 @media (orientation:portrait){
 
-  /* Push the game upward, reduce empty top/bottom space */
-  body.playing canvas{
-    width:96vw;
-    height:auto;
-    aspect-ratio:16 / 9;
-    display:block;
-    margin:0 auto;
-    transform:translateY(-1vh);   /* shift up slightly */
-  }
+  /* Amount of vertical space we keep for the pads + safe area */
+  :root{ --padZone: 128px; } /* tweak to 120/136 later if needed */
 
-  /* Trim bottom padding so pads stay visible but close */
-  body.playing #stage{ padding-bottom:1px; } /* was ~64–84px */
-
-  /* Hide HUD toolbar to prevent overlap */
+  /* Hide the bottom HUD only while playing => frees space for the game */
   body.playing .hud{ display:none !important; }
 
-  /* Keep safe area for bottom bar */
+  /* We don't need extra spacer now; let the canvas own the height */
+  body.playing #stage{ padding-bottom:0 !important; }
+
+  /* Make the canvas fill viewport height minus the pad zone, keep 16:9 */
+  body.playing canvas{
+    aspect-ratio:16/9;
+    height: calc(100vh - var(--padZone));
+    width: auto;
+    display:block;
+    margin: 0 auto;
+    transform: translateY(-1.5vh); /* nudge up a bit */
+  }
+
+  /* Keep pads close but clear of the phone bar */
   .mobile .leftGrp,
   .mobile .rightGrp{
-    bottom:max(env(safe-area-inset-bottom,10px), 16px);
+    bottom: max(env(safe-area-inset-bottom,0px), 12px);
   }
 }
 
-/* For shorter phones, tweak a bit less */
+/* Shorter phones: slightly smaller pad zone, smaller upward nudge */
 @media (orientation:portrait) and (max-height:760px){
-  body.playing canvas{ transform:translateY(-2vh); }
-  body.playing #stage{ padding-bottom:48px; }
+  :root{ --padZone: 110px; }
+  body.playing canvas{ transform: translateY(-1vh); }
 }
+
 
 
 /* PORTRAIT: always hide the bottom HUD toolbar so it doesn't overlap pads */
