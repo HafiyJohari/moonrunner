@@ -11,8 +11,8 @@
   body.invert{background:#fff;color:#000}
   .wrap{display:grid;place-items:center;height:100%;gap:8px;padding:10px}
 
-/* Stage: create a stacking context so pads can sit above the canvas */
-#stage{ position:relative; }
+#stage{ position:relative; }        /* lets pads sit above the canvas */
+.ui[style*="display: none"]{ pointer-events:none !important; }
 
 /* Mobile HUD overlay (hidden by default; we show it only while playing) */
 .mobile{
@@ -139,42 +139,34 @@
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
   
-/* === PORTRAIT: use full vertical space (no big black borders) === */
+/* === PORTRAIT VIEWPORT — SAFE FIT, NO STRETCH === */
 @media (orientation:portrait){
 
-  /* Amount of vertical space we keep for the pads + safe area */
-  :root{ --padZone: 128px; } /* tweak to 120/136 later if needed */
+  /* Leave room for the pads; keep the game visible without cropping */
+  body.playing #stage{
+    /* adjust this number only if pads overlap (bigger = more room at bottom) */
+    padding-bottom: 110px;
+  }
 
-  /* Hide the bottom HUD only while playing => frees space for the game */
-  body.playing .hud{ display:none !important; }
-
-  /* We don't need extra spacer now; let the canvas own the height */
-  body.playing #stage{ padding-bottom:0 !important; }
-
-  /* Make the canvas fill viewport height minus the pad zone, keep 16:9 */
   body.playing canvas{
-    aspect-ratio:16/9;
-    height: calc(100vh - var(--padZone));
-    width: auto;
-    display:block;
+    /* keep aspect; fill width but never over-grow the available height */
+    width: calc(100vw - 16px);
+    height: auto;
+    max-height: calc(100vh - 220px); /* top HUD + hint + pads space */
+    aspect-ratio: 16 / 9;
+    display: block;
     margin: 0 auto;
-    transform: translateY(-1.5vh); /* nudge up a bit */
+    transform: none;          /* kill the vertical shift that caused the zoom */
   }
 
-  /* Keep pads close but clear of the phone bar */
-  .mobile .leftGrp,
-  .mobile .rightGrp{
-    bottom: max(env(safe-area-inset-bottom,0px), 12px);
-  }
+  /* keep the pads a touch smaller in portrait so they don’t push the canvas */
+  .mobile .pad  { width:84px; height:84px; }
+  .mobile .jump { width:96px; height:96px; }
+
+  /* hide the bottom HUD strip so it doesn't steal space from pads */
+  .hud  { display:none !important; }
+  .hud_right { display:none !important; }
 }
-
-/* Shorter phones: slightly smaller pad zone, smaller upward nudge */
-@media (orientation:portrait) and (max-height:760px){
-  :root{ --padZone: 110px; }
-  body.playing canvas{ transform: translateY(-1vh); }
-}
-
-
 
 /* PORTRAIT: always hide the bottom HUD toolbar so it doesn't overlap pads */
 @media (orientation:portrait){
