@@ -175,9 +175,12 @@
     <div class="mt12" id="lbSelf" class="ghost"></div>
     <div class="mt8" style="max-height:55vh;overflow:auto;">
       <table id="lbTable">
-        <thead><tr><th>#</th><th>Score</th><th>Name</th><th>Mode</th><th>Date</th></tr></thead>
-        <tbody></tbody>
-      </table>
+  <thead>
+    <tr><th>#</th><th>Score</th><th>Name</th><th>Mode</th><th>Device</th><th>Date</th></tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
     </div>
   </div>
 </div>
@@ -473,13 +476,14 @@ async function loadLeaderboard({period='daily',limit=20}={}){
     lbSub.textContent = (period==='daily') ? `Today (${data.tz||''})` : 'All-time';
 
     const rows = data.rows||[];
-    const tbody = rows.length ? rows.map((r,idx)=>`<tr>
-      <td>${idx+1}</td>
-      <td>${pad(r.score)}</td>
-      <td>${escapeHTML(r.name||'')}</td>
-      <td>${escapeHTML(r.mode||'-')}</td>
-      <td>${escapeHTML(r.date||'')}</td>
-    </tr>`).join('') : '<tr><td colspan="5">No scores yet — be the first!</td></tr>';
+const tbody = rows.length ? rows.map((r,idx)=>`<tr>
+  <td>${idx+1}</td>
+  <td>${pad(r.score)}</td>
+  <td>${escapeHTML(r.name||'')}</td>
+  <td>${escapeHTML(r.mode||'-')}</td>
+  <td>${escapeHTML(r.device||'-')}</td>
+  <td>${escapeHTML(r.date||'')}</td>
+</tr>`).join('') : '<tr><td colspan="6">No scores yet — be the first!</td></tr>';
     document.querySelector('#lbTable tbody').innerHTML = tbody;
 
     const me = cleanName(localStorage.getItem('moon_name')||'');
@@ -488,19 +492,27 @@ async function loadLeaderboard({period='daily',limit=20}={}){
     document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="5">Failed to load.</td></tr>';
   }
 }
-async function submitScore(name,score){
+async function submitScore(name, score){
   try{
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop';
     const body = new URLSearchParams({
       name: cleanName(name),
-      score:String(Math.floor(score)),
-      version:GAME_VERSION,
-      mode:speedModes[speedMode].name
+      score: String(Math.floor(score)),
+      version: GAME_VERSION,
+      mode: speedModes[speedMode].name,
+      device: isMobile
     }).toString();
-    const r = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body});
+
+    const r = await fetch(API_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body
+    });
     if(!r.ok) throw new Error('bad status');
     return true;
   }catch(e){ return false; }
 }
+
 
 /* ===== World & Difficulty (same tuning) ===== */
 const floorY=H-84;
