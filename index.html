@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — v1.8.3 “Lunar Drift”</title>
+<title>MKHKASG: MoonRunner — v1.8.3+ “Daily & Skins”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -46,6 +46,10 @@
   body.invert .ui { background: rgba(255,255,255,.75); }
   body.invert .ui .card { background: rgba(255,255,255,.98); color:#000; border-color:#000; box-shadow:0 0 0 2px #000 inset; }
   .ui .btn{border-color:currentColor}
+
+  /* Character modal (new) */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .cardBtn{display:grid;place-items:center;border:2px solid currentColor;background:transparent;color:inherit;padding:8px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -77,11 +81,12 @@
     <div class="row mt12">
       <div id="playBtn" class="btn">▶ Play</div>
       <div id="howBtn" class="btn">? How to Play</div>
+      <div id="charBtn" class="btn">👤 Characters</div> <!-- NEW -->
       <div id="settingsBtn" class="btn">☼ Settings</div>
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.8.3 — Lunar Drift • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.8.3+ — Daily & Skins • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -106,7 +111,7 @@
     <div id="nameGate" class="mt12">
       <div class="ghost">Enter name to submit score:</div>
       <div class="row mt8">
-        <input id="nameInput" type="text" maxlength="24" placeholder="Your Name"/>
+        <input id="nameInput" type="text" maxlength="12" placeholder="Your Name"/> <!-- 12 max -->
         <div id="submitBtn" class="btn">Submit</div>
       </div>
     </div>
@@ -129,7 +134,7 @@
       <div id="setContrast" class="btn">⬛/⬜ Contrast</div>
       <div id="setSpeed" class="btn">Speed: Normal (×1.5)</div>
     </div>
-    <div class="mt12">Name: <input id="setName" type="text" maxlength="24" style="width:260px"/></div>
+    <div class="mt12">Name: <input id="setName" type="text" maxlength="12" style="width:260px"/></div> <!-- 12 max -->
     <div class="row mt12">
       <div id="settingsClose" class="btn">Close</div>
     </div>
@@ -155,8 +160,9 @@
 <div id="lb" class="ui">
   <div class="card">
     <div class="row" style="justify-content:space-between;align-items:center;">
-      <h2>Leaderboard</h2>
+      <h2>Leaderboard <span id="lbSub" class="ghost" style="font:12px 'Press Start 2P',monospace;margin-left:8px;"></span></h2>
       <div class="row">
+        <div id="lbToday" class="btn">Today</div>   <!-- NEW default -->
         <div id="lbAll" class="btn">All-time</div>
         <div id="lb20" class="btn">Top 20</div>
         <div id="lb10" class="btn">Top 10</div>
@@ -186,6 +192,30 @@
   </div>
 </div>
 
+<!-- Character Select (NEW) -->
+<div id="chars" class="ui">
+  <div class="card">
+    <h2>Character Select</h2>
+    <div class="grid3 mt12">
+      <button class="cardBtn" data-skin="astro">
+        <canvas class="skinPrev" width="64" height="64"></canvas>
+        <div class="mt6">Astronaut</div>
+      </button>
+      <button class="cardBtn" data-skin="invert">
+        <canvas class="skinPrev" width="64" height="64"></canvas>
+        <div class="mt6">Astro (Invert)</div>
+      </button>
+      <button class="cardBtn" data-skin="alien">
+        <canvas class="skinPrev" width="64" height="64"></canvas>
+        <div class="mt6">Alien</div>
+      </button>
+    </div>
+    <div class="row mt12" style="justify-content:flex-end;">
+      <div id="charsClose" class="btn">Close</div>
+    </div>
+  </div>
+</div>
+
 <!-- Mobile buttons -->
 <div class="mobile">
   <div style="display:flex;gap:8px;padding-left:8px;">
@@ -199,7 +229,7 @@
 
 <script>
 /* ===== Config ===== */
-const GAME_VERSION = '1.8.3';
+const GAME_VERSION = '1.8.3+';
 const API_URL = "https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
 
 /* ===== Canvas & DPR ===== */
@@ -217,11 +247,11 @@ const i=v=>v|0, i2=v=>(v>>1)<<1;
 const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
 const pad=(n,w=5)=>String(n).padStart(w,'0');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function escapeHTML(s){return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 /* ===== WebAudio: buses, mix, ducking ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
-let musicVol = 0.045, sfxVol = 0.28;  // quieter music by default
+let musicVol = 0.045, sfxVol = 0.28;
 let musicBus=null, sfxBus=null;
 function ensureAC(){
   if(!ac){
@@ -301,7 +331,9 @@ const speedModes=[
   {name:'Casual', speed:2.4, score:1.0, coin:200},
   {name:'Normal', speed:3.2, score:1.5, coin:300},
   {name:'Hard',   speed:4.4, score:2.0, coin:400},
+  {name:'Insane', speed:5.4, score:2.3, coin:400}, // NEW — faster base, higher score mult, same coin as Hard
 ];
+
 let speedMode=1; // default Normal
 let baseSpeed=speedModes[speedMode].speed;
 let scoreMul = speedModes[speedMode].score;
@@ -314,6 +346,16 @@ function setMode(idx){
   statusEl.textContent = `Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   const setBtn=document.getElementById('setSpeed');
   if(setBtn) setBtn.textContent = `Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
+}
+
+/* ===== Character skin (NEW) ===== */
+const SKIN_KEY='moon_skin';
+let skin = localStorage.getItem(SKIN_KEY)||'astro'; // 'astro'|'invert'|'alien'
+
+/* ===== Name sanitize (NEW) ===== */
+const NAME_RE = /[^A-Za-z0-9 _\-.]/g;
+function cleanName(s){
+  return (s||'').toString().trim().replace(/\s+/g,' ').replace(NAME_RE,'').slice(0,12) || 'Player';
 }
 
 /* ===== Input ===== */
@@ -366,13 +408,14 @@ document.getElementById('menuBtn').onclick  = ()=>{ hideAllUI(); showUI('menu');
 /* ===== UI helpers ===== */
 function showUI(id,lock=false){ document.getElementById(id).style.display='flex'; if(lock&&state==='play') state='paused'; }
 function hideUI(id){ document.getElementById(id).style.display='none'; }
-function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits'].forEach(hideUI); }
+function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','chars'].forEach(hideUI); }
 
 /* Menu wiring */
 document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
 document.getElementById('howBtn').onclick=()=> showUI('how');
+document.getElementById('charBtn').onclick=()=> openChars(); // NEW
 document.getElementById('settingsBtn').onclick=()=>{ document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
-document.getElementById('lbBtn').onclick=()=>{ uiReturn='menu'; showUI('lb'); lbSetActive(document.getElementById('lb20')); loadLeaderboard(20); };
+document.getElementById('lbBtn').onclick=()=>{ uiReturn='menu'; showUI('lb'); lbActivate('daily'); }; // default Today
 document.getElementById('creditsBtn').onclick=()=> showUI('credits');
 
 document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
@@ -382,7 +425,7 @@ document.getElementById('exitBtn').onclick=()=>{ hideUI('pause'); showUI('menu')
 
 document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
 document.getElementById('overMenuBtn').onclick=()=>{ hideUI('over'); showUI('menu'); state='menu'; };
-document.getElementById('overLbBtn').onclick=()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); lbSetActive(document.getElementById('lb20')); loadLeaderboard(20); };
+document.getElementById('overLbBtn').onclick=()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); lbActivate('daily'); }; // default Today
 
 document.getElementById('howClose').onclick=()=> hideUI('how');
 document.getElementById('creditsClose').onclick=()=> hideUI('credits');
@@ -391,33 +434,53 @@ document.getElementById('setSound').onclick=(e)=>{ sfxMuted=!sfxMuted; ensureAC(
 document.getElementById('setMusic').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent=musicMuted?'♪ Music: Off':'♪ Music: On'; if(musicBus) musicBus.gain.value = musicMuted ? 0 : musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('setContrast').onclick=()=> document.body.classList.toggle('invert');
 document.getElementById('setSpeed').onclick=()=> setMode(speedMode+1);
-document.getElementById('settingsClose').onclick=()=>{ localStorage.setItem('moon_name', (document.getElementById('setName').value||'').trim()); hideUI('settings'); };
+document.getElementById('settingsClose').onclick=()=>{ 
+  const nm=cleanName(document.getElementById('setName').value||'');
+  localStorage.setItem('moon_name', nm);
+  hideUI('settings'); 
+};
 
 document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
 
-/* Leaderboard tabs */
-const lbAllBtn = document.getElementById('lbAll');
-const lb20Btn  = document.getElementById('lb20');
-const lb10Btn  = document.getElementById('lb10');
-function lbSetActive(btn){ [lbAllBtn,lb20Btn,lb10Btn].forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-lbAllBtn.onclick = ()=>{ lbSetActive(lbAllBtn); loadLeaderboard(9999); };
-lb20Btn.onclick  = ()=>{ lbSetActive(lb20Btn);  loadLeaderboard(20);   };
-lb10Btn.onclick  = ()=>{ lbSetActive(lb10Btn);  loadLeaderboard(10);   };
+/* Leaderboard tabs (UPDATED) */
+const lbSub = document.getElementById('lbSub');
+const lbTodayBtn = document.getElementById('lbToday');
+const lbAllBtn   = document.getElementById('lbAll');
+const lb20Btn    = document.getElementById('lb20');
+const lb10Btn    = document.getElementById('lb10');
+function lbSetActive(btn){ [lbTodayBtn,lbAllBtn,lb20Btn,lb10Btn].forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+lbTodayBtn.onclick=()=> lbActivate('daily');
+lbAllBtn.onclick  =()=> lbActivate('all');
+lb20Btn.onclick   =()=> lbActivate('top20');
+lb10Btn.onclick   =()=> lbActivate('top10');
 
-/* ===== Leaderboard ===== */
-async function loadLeaderboard(limit=20){
+function lbActivate(kind){
+  if(kind==='daily'){ lbSetActive(lbTodayBtn); loadLeaderboard({period:'daily',limit:20}); }
+  else if(kind==='all'){ lbSetActive(lbAllBtn); loadLeaderboard({period:'all',limit:200}); }
+  else if(kind==='top20'){ lbSetActive(lb20Btn); loadLeaderboard({period:'all',limit:20}); }
+  else { lbSetActive(lb10Btn); loadLeaderboard({period:'all',limit:10}); }
+}
+
+/* ===== Leaderboard (UPDATED to new API) ===== */
+async function loadLeaderboard({period='daily',limit=20}={}){
   try{
     document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="5">Loading…</td></tr>';
-    const res = await fetch(`${API_URL}?limit=${limit}`, {cache:'no-cache'});
-    const rows = await res.json();
-    const me = localStorage.getItem('moon_name')||'';
-    const tbody = rows.map((r,idx)=>`<tr>
-      <td>${idx+1}</td><td>${pad(r.score)}</td>
+    const res = await fetch(`${API_URL}?action=list&period=${encodeURIComponent(period)}&limit=${limit}`, {cache:'no-store'});
+    const data = await res.json();
+    if(!data.ok){ throw new Error('LB failed'); }
+    lbSub.textContent = (period==='daily') ? `Today (${data.tz||''})` : 'All-time';
+
+    const rows = data.rows||[];
+    const tbody = rows.length ? rows.map((r,idx)=>`<tr>
+      <td>${idx+1}</td>
+      <td>${pad(r.score)}</td>
       <td>${escapeHTML(r.name||'')}</td>
-      <td>${r.mode || '-'}</td>
-      <td>${new Date(r.timestamp).toLocaleDateString()}</td>
-    </tr>`).join('') || '<tr><td colspan="5">No scores yet.</td></tr>';
+      <td>${escapeHTML(r.mode||'-')}</td>
+      <td>${escapeHTML(r.date||'')}</td>
+    </tr>`).join('') : '<tr><td colspan="5">No scores yet — be the first!</td></tr>';
     document.querySelector('#lbTable tbody').innerHTML = tbody;
+
+    const me = cleanName(localStorage.getItem('moon_name')||'');
     document.getElementById('lbSelf').textContent = me ? `Your name: ${me}` : 'You have not set a name yet.';
   }catch(e){
     document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="5">Failed to load.</td></tr>';
@@ -426,7 +489,7 @@ async function loadLeaderboard(limit=20){
 async function submitScore(name,score){
   try{
     const body = new URLSearchParams({
-      name,
+      name: cleanName(name),
       score:String(Math.floor(score)),
       version:GAME_VERSION,
       mode:speedModes[speedMode].name
@@ -437,19 +500,16 @@ async function submitScore(name,score){
   }catch(e){ return false; }
 }
 
-/* ===== World & Difficulty ===== */
+/* ===== World & Difficulty (same as your 1.8.3) ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
 function getDiff(){
-  // Keep your original t-scaling for gaps, but world speed ramps purely by time (heat)
   const tScore = Math.min(1, (score/2800));
   const tTime  = Math.min(1, (timeMs/16000));
   const t = Math.min(1, tTime + tScore);
-
-  const heat = Math.min(1, timeMs / 120000); // 0→1 over 2 minutes
+  const heat = Math.min(1, timeMs / 120000);
   const factor=0.6*(player.slow>0?0.6:1);
-  const worldScroll=(baseSpeed + 0.6 + 2.4*heat) * factor; // only change vs 1.8.2
-
+  const worldScroll=(baseSpeed + 0.6 + 2.4*heat) * factor;
   const gapMin=24;
   const gapMax=35+Math.min(54,t*60);
   const gMin=(timeMs<10000?300:200-t*18);
@@ -492,7 +552,7 @@ function spawnAhead(targetX){
   }
 }
 
-/* ===== Sprites ===== */
+/* ===== Sprites (add player skins) ===== */
 function astronaut(x,y,pose='idle'){
   const f=FG(),b=BG(); x=i(x); y=i(y);
   FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
@@ -500,14 +560,23 @@ function astronaut(x,y,pose='idle'){
   if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+9,y+18,6,2,b);}
   if(pose==='jump'){FILL(x+3,y+18,10,2,b);}
 }
-function alien(x,y,blink=false){
+function astronautInvert(x,y,pose='idle'){
+  const f=FG(),b=BG(); x=i(x); y=i(y);
+  FILL(x-1,y-2,18,26,b); // silhouette
+  astronaut(x,y,pose);  // edges stay crisp
+}
+function playerAlien(x,y){
+  const f=FG(),b=BG(); x=i(x); y=i(y);
+  FILL(x,y,22,14,f); FILL(x+4,y+4,4,4,b); FILL(x+14,y+4,2,2,b);
+  FILL(x+2,y+14,18,2,f);
+}
+function enemyAlien(x,y,blink=false){
   const f=FG(),b=BG(); x=i(x); y=i(y);
   FILL(x,y,22,14,f);
   if(!blink){ FILL(x+4,y+4,4,4,b); FILL(x+14,y+4,2,2,b); }
 }
 function ufo(x,y){ const f=FG(); x=i(x); y=i(y); FILL(x-28,y,56,8,f); FILL(x-22,y-8,44,6,f); FILL(x-4,y-14,8,6,f); }
 function beamScan(cx,topY,t){ const f=FG(); cx=i2(cx); topY=i2(topY); const wob=(Math.sin(t/420)+1)*1.2; for(let k=0;k<56;k+=6){ const y=topY+14+k; const half=8+((k/56)*9)|0; FILL(cx-(half+wob),y,(half+wob)*2,2,f);} }
-/* Ground with 2px lip to avoid hairline */
 function tileGround(x,y,w){ const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w); FILL(x,y-2,w,2,f); FILL(x,y,w,44,f);
   for(let dx=0;dx<w;dx+=8) for(let dy=0;dy<44;dy+=8) if(((dx+dy)>>3)&1) FILL(x+dx,y+dy,4,4,b);
 }
@@ -515,16 +584,63 @@ function tileGround(x,y,w){ const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w); FILL(x
 /* ===== Collisions ===== */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
 
+/* ===== Character Select (NEW) ===== */
+function openChars(){ showUI('chars'); drawSkinPreviews(); }
+document.getElementById('charsClose').onclick=()=> hideUI('chars');
+document.querySelectorAll('#chars .cardBtn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    skin = btn.dataset.skin;
+    localStorage.setItem(SKIN_KEY, skin);
+    hideUI('chars');
+  });
+});
+function drawSkinPreviews(){
+  document.querySelectorAll('.skinPrev').forEach((cv,idx)=>{
+    const kind=['astro','invert','alien'][idx];
+    const c=cv.getContext('2d'); c.imageSmoothingEnabled=false; c.fillStyle='#000'; c.fillRect(0,0,64,64); c.fillStyle='#fff';
+    c.save(); c.translate(32,40);
+    if(kind==='alien'){ playerAlien(-8,-18); }
+    else if(kind==='invert'){ astronautInvert(-8,-22); }
+    else { astronaut(-8,-22); }
+    c.restore();
+  });
+}
+
+/* ===== Pickup Callouts (NEW) ===== */
+const callouts=[]; // {x,y,vy,life,text}
+function addCall(text, x, y){ callouts.push({ x, y, vy:-0.35, life:60, text }); }
+function updateCallouts(u){
+  for(let i=callouts.length-1;i>=0;i--){
+    const c=callouts[i];
+    c.y += c.vy * u;
+    c.life -= u;
+    if(c.life<=0) callouts.splice(i,1);
+  }
+}
+function drawCallouts(){
+  ctx.save();
+  ctx.fillStyle=FG(); ctx.textAlign='center'; ctx.textBaseline='bottom';
+  ctx.font="12px 'Press Start 2P', monospace";
+  for(const c of callouts){
+    ctx.globalAlpha = Math.max(0, c.life/60);
+    ctx.fillText(c.text, c.x, c.y);
+  }
+  ctx.restore();
+  ctx.globalAlpha=1;
+}
+
 /* ===== Control ===== */
+let jumpBuffer=0;
 function start(){
-  resetWorld(); state='play'; hideUI('over'); hideUI('menu'); statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
+  resetWorld(); state='play'; statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   document.getElementById('menuBtn').style.display='none';
   if(!musicMuted) startMusic(); beep('coin');
 }
 function useShield(){
   player.shields = clamp(player.shields-1,0,3);
   player.auraFlash = 180;
-  player.inv = 150; // ~2s of i-frames at 75 fps
+  player.inv = 150; // ~2s i-frames
+  addCall('HIT!', player.x+8, player.y-6);
   beep('hit');
 }
 function gameOver(){
@@ -533,7 +649,7 @@ function gameOver(){
   statusEl.textContent='Game Over';
   document.getElementById('overScore').textContent=`Score: ${pad(Math.floor(score))} • Best: ${pad(best)}`;
 
-  const savedName=(localStorage.getItem('moon_name')||'').trim();
+  const savedName=cleanName(localStorage.getItem('moon_name')||'');
   if(savedName){
     submitScore(savedName,score).then(ok=>{
       const msg=document.getElementById('submitMsg');
@@ -550,7 +666,7 @@ function gameOver(){
   document.getElementById('menuBtn').style.display='';
 }
 document.getElementById('submitBtn').onclick=async()=>{
-  const nm=(document.getElementById('nameInput').value||'').trim().slice(0,24);
+  const nm=cleanName(document.getElementById('nameInput').value||'');
   if(!nm) return;
   localStorage.setItem('moon_name',nm);
   const ok=await submitScore(nm,score);
@@ -560,7 +676,7 @@ document.getElementById('submitBtn').onclick=async()=>{
   document.getElementById('nameGate').style.display='none';
 };
 
-/* ===== Update (frame-rate independent) ===== */
+/* ===== Update (frame-rate independent, same base) ===== */
 const GRAV_U=GRAV, ACCEL_U=0.7, COIN_BASE=200;
 function update(u){
   timeMs += (u / TARGET_FPS) * 1000;
@@ -568,8 +684,8 @@ function update(u){
   const {worldScroll}=getDiff(); const m=u;
 
   const left=keys['ArrowLeft']||keys['a']||keys['A'];
-  const right=keys['ArrowRight']||keys['d']||keys['D'];
-  const jump=keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
+  const right= keys['ArrowRight']||keys['d']||keys['D'];
+  const jump= keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
   if(left)  player.vx -= ACCEL_U * m;
   if(right) player.vx += ACCEL_U * m;
 
@@ -577,11 +693,8 @@ function update(u){
   player.vy += GRAV_U * m;
 
   const now=performance.now();
-  if(player.on) coyoteUntil=now+COYOTE_MS;
-  if(jump)      jumpBufferUntil=now+JUMP_BUFFER_MS;
-  if(jumpBufferUntil>now && coyoteUntil>now){
-    player.vy=-JUMP; player.on=false; jumpBufferUntil=0; coyoteUntil=0; beep('jump');
-  }
+  if(player.on) jumpBuffer=now+JUMP_BUFFER_MS;
+  if(jump && now<=jumpBuffer){ player.vy=-JUMP; player.on=false; jumpBuffer=0; beep('jump'); }
 
   const prevX=player.x, prevY=player.y;
   player.x += player.vx*m; player.y += player.vy*m; scroll += worldScroll*m;
@@ -608,12 +721,9 @@ function update(u){
   // Abyss protection + shields + i-frames
   if(player.y>H+40){
     if(player.inv>0){
-      player.y = floorY - player.h - 2;
-      player.vy = -JUMP*0.8;
+      player.y = floorY - player.h - 2; player.vy = -JUMP*0.8;
     }else if(player.shields>0){
-      useShield();
-      player.y = floorY - player.h - 2;
-      player.vy = -JUMP*0.8;
+      useShield(); player.y = floorY - player.h - 2; player.vy = -JUMP*0.8;
     }else{
       gameOver();
     }
@@ -625,7 +735,7 @@ function update(u){
       e.x+=e.dir*0.7*m; if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
       if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
         if(player.inv>0){
-          player.vx *= 0.9; // soft nudge while invincible
+          player.vx *= 0.9;
         }else if(player.shields>0){
           useShield(); player.vx -= Math.sign(player.vx||1)*0.8; player.vy=-JUMP*0.5;
         }else{
@@ -635,7 +745,7 @@ function update(u){
     }else if(e.kind==='spike'){
       if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
         if(player.inv>0){
-          // ignore
+          // ignore during i-frames
         }else if(player.shields>0){
           useShield(); player.vy=-JUMP*0.5;
         }else{
@@ -645,15 +755,15 @@ function update(u){
     }
   }
 
-  // items
+  // items + callouts (NEW)
   for(let k=items.length-1;k>=0;k--){
     const it=items[k];
     const bob = Math.sin((timeMs/260) + (it.phase||0)) * 2;
     const rect={x:it.x, y:it.y + bob, w:it.w, h:it.h};
     if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:rect.x,y:rect.y,w:rect.w,h:rect.h})){
-      if(it.kind==='chip'){ score += (coinValue * scoreMul); beep('coin'); }
-      if(it.kind==='shield'){ if(player.shields<3){ player.shields++; beep('shield'); } else { score += Math.floor(coinValue*0.5*scoreMul); beep('coin'); } }
-      if(it.kind==='slow'){ player.slow=180; beep('coin'); }
+      if(it.kind==='chip'){ const add = Math.floor(coinValue * scoreMul); score += add; addCall(`+${add}`, player.x+8, player.y-6); beep('coin'); }
+      if(it.kind==='shield'){ if(player.shields<3){ player.shields++; addCall('Shield!', player.x+8, player.y-6); beep('shield'); } else { const bonus=Math.floor(coinValue*0.5*scoreMul); score+=bonus; addCall(`+${bonus}`, player.x+8, player.y-6); beep('coin'); } }
+      if(it.kind==='slow'){ player.slow=180; addCall('Slow-mo!', player.x+8, player.y-6); beep('coin'); }
       items.splice(k,1);
     }else{ it._drawY = rect.y; }
   }
@@ -666,6 +776,8 @@ function update(u){
 
   // distance scoring
   score += (0.069 * m + Math.max(0,player.vx) * 0.03 * m) * scoreMul;
+
+  updateCallouts(m);
 }
 
 /* ===== Draw ===== */
@@ -690,10 +802,10 @@ function draw(){
   const blink = ((performance.now()/1500|0)%2)===0;
   for(const e of entities){
     const x=i(e.x-scroll), y=i(e.y);
-    if(e.kind==='alien') alien(x,y,blink); else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
+    if(e.kind==='alien') enemyAlien(x,y,blink); else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
   }
 
-  // items
+  // items (with small animations)
   for(const it of items){
     const x=i2(it.x - scroll), y=i2((it._drawY ?? it.y));
     if(it.kind==='chip'){
@@ -710,7 +822,7 @@ function draw(){
     }
   }
 
-  // player + aura + blink while invincible
+  // player (with skins)
   const frame=(performance.now()/120|0);
   const pose = player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
   if(player.shields>0){
@@ -725,13 +837,19 @@ function draw(){
     }
   }
   const invBlink = (player.inv>0) && (frame % 2 === 0);
-  if(!invBlink){ astronaut(player.x,player.y,pose); }
-  else{
+  if(!invBlink){
+    if(skin==='alien'){ playerAlien(player.x,player.y); }
+    else if(skin==='invert'){ astronautInvert(player.x,player.y,pose); }
+    else { astronaut(player.x,player.y,pose); }
+  }else{
     FILL(player.x,player.y,player.w,1,f);
     FILL(player.x,player.y+player.h-1,player.w,1,f);
     FILL(player.x,player.y,1,player.h,f);
     FILL(player.x+player.w-1,player.y,1,player.h,f);
   }
+
+  // callouts (NEW)
+  drawCallouts();
 
   // HUD
   ctx.fillStyle=f; ctx.font="12px 'Press Start 2P', monospace";
