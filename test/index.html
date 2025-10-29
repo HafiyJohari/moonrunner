@@ -51,34 +51,25 @@
   .hud .right{ display:none; } /* keep bottom buttons from overlapping on touch */
 }
 
-  /* ===== PORTRAIT ONLY: bigger canvas (no stretch) + smaller corner pads ===== */
+/* === PORTRAIT: keep 16:9 size; leave canvas logic alone; reserve space for pads === */
 @media (orientation:portrait){
-  /* Grow by viewport height; keep 16:9 automatically by not forcing width */
-  body.playing canvas{
-    height:74vh;          /* try 72–78vh to taste */
-    width:auto;
-    max-width:96vw;
-    margin-bottom:108px;  /* reserve space for pads */
-  }
+  /* Do NOT touch canvas size; keep the v1.9.1 scaling rules */
+  body.playing #stage{ padding-bottom:120px; }   /* space for pads */
 
-  .hud{ max-width:96vw; }
-
+  /* Pad sizing and safe placement */
   .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
   .jump{ width:76px; height:76px; }
-  .mobile .leftGrp  { left:10px;  bottom:10px; }
-  .mobile .rightGrp { right:10px; bottom:10px; }
+  .mobile .leftGrp{ left:10px; bottom:10px; }
+  .mobile .rightGrp{ right:10px; bottom:10px; }
 
-  /* Ensure visibility even if device misreports hover/pointer */
+  /* Always show pads while playing on phones */
   body.playing .mobile{ display:block; }
 }
-
-/* Very short portrait screens: one more step down */
 @media (orientation:portrait) and (max-height:700px){
-  .pad{ width:62px; height:62px; }
-  .jump{ width:70px; height:70px; }
-  body.playing canvas{ height:70vh; margin-bottom:96px; }
+  body.playing #stage{ padding-bottom:96px; }
+  .pad{ width:60px; height:60px; }
+  .jump{ width:68px; height:68px; }
 }
-
   
 /* Ensure pads also show while fullscreen on iOS/Safari */
 :fullscreen .mobile{display:block}
