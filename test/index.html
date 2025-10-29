@@ -562,10 +562,20 @@ document.getElementById('pauseSettingsBtn').onclick = () => {
   returnFromSettings = 'play';
   showUI('settings');
 };
-document.getElementById('exitBtn').onclick=()=>{ hideUI('pause'); showUI('menu'); state='menu'; };
+document.getElementById('exitBtn').onclick=()=>{
+  hideUI('pause');
+  showUI('menu');
+  state='menu';
+  setPlaying(false); // hide pads when returning to menu
+};
 
 document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
-document.getElementById('overMenuBtn').onclick=()=>{ hideUI('over'); showUI('menu'); state='menu'; };
+document.getElementById('overMenuBtn').onclick=()=>{
+  hideUI('over');
+  showUI('menu');
+  state='menu';
+  setPlaying(false); // hide pads when returning to menu
+};
 document.getElementById('overLbBtn').onclick =()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); lbActivate('daily'); };
 
 document.getElementById('howClose').onclick=()=> hideUI('how');
@@ -587,7 +597,12 @@ document.getElementById('settingsClose').onclick = () => {
     state = 'menu';
   }
 };
-document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
+document.getElementById('lbClose').onclick=()=>{
+  hideUI('lb');
+  showUI(uiReturn);
+  if(uiReturn==='over') state='over'; else state='menu';
+  if(state==='menu') setPlaying(false); // pads hide if we land on menu
+};
 
 /* Leaderboard tabs (unchanged) */
 const lbSub     = document.getElementById('lbSub');
