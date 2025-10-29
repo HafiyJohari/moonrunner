@@ -140,13 +140,13 @@
   .ui[style*="display: none"]{pointer-events:none !important}
   
 /* keep pads visible but closer to the game */
-body.playing #stage{ padding-bottom:48px; }   /* was ~110px */
+body.playing #stage{ padding-bottom:10px; }   /* was ~110px */
 
 /* fit the canvas without stretching, use more of the screen height */
 body.playing canvas{
   width: 100vw;
   height: auto;
-  max-height: calc(100vh - 100px);  /* was ~200–220px -> less empty space */
+  max-height: calc(100vh - 60px);  /* was ~200–220px -> less empty space */
   aspect-ratio: 16 / 9;
   display:block;
   margin:0 auto;
