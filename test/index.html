@@ -446,15 +446,7 @@ function hideUI(id){ document.getElementById(id).style.display='none'; }
 function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','avatars'].forEach(hideUI); }
 
 /* Menu wiring */
-document.getElementById('playBtn').onclick = () => {
-  hideUI('menu');
-  start();
-
-  // Mobile: try fullscreen after a user gesture
-  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    CV.requestFullscreen?.().catch(()=>{ /* ignore */ });
-  }
-};
+document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
 document.getElementById('howBtn').onclick =()=> showUI('how');
 document.getElementById('avatarsBtn').onclick=()=>{ showUI('avatars'); drawPreviews(); };
 document.getElementById('avatarsClose').onclick=()=> hideUI('avatars');
