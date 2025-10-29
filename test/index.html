@@ -50,25 +50,6 @@
   body.playing .mobile{ display:block; }
   .hud .right{ display:none; } /* keep bottom buttons from overlapping on touch */
 }
-
-/* === PORTRAIT FIX — keep 16:9, full width, no stretch === */
-@media (orientation:portrait){
-
-  /* Let canvas use full screen width but keep aspect ratio automatically */
-  body.playing canvas{
-    width:96vw;
-    height:auto;
-    aspect-ratio:16 / 9;
-    display:block;
-    margin:0 auto;
-  }
-
-  /* Give space for pads below the game */
-  body.playing #stage{ padding-bottom:110px; }
-
-  /* Hide bottom HUD toolbar (buttons like SFX, etc.) */
-  .hud .right{ display:none !important; }
-
   /* Resize pads for portrait */
   .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
   .jump{ width:76px; height:76px; }
@@ -160,22 +141,13 @@
   
 /* === PORTRAIT: width-driven 16:9, no stretch, clear pads === */
 @media (orientation:portrait){
-
-  /* Keep 16:9 and let width control the size */
-  body.playing canvas{
-    width:100vw;           /* fill screen width */
-    max-width:960px;       /* do not exceed native width */
-    height:auto;           /* keep aspect ratio */
-    aspect-ratio:16 / 9;   /* belt & suspenders */
-    margin:0 auto;         /* center */
-    display:block;
-  }
-
-  /* Give space for on-screen pads */
-  body.playing #stage{ padding-bottom:120px; }
-
-  /* Toolbar off so it never collides with pads */
+  body.playing #stage{ padding-bottom:84px; }  /* was 110–120 */
+  .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
+  .jump{ width:76px; height:76px; }
+  .mobile .leftGrp{ left:10px; bottom:10px; }
+  .mobile .rightGrp{ right:10px; bottom:10px; }
   .hud .right{ display:none !important; }
+}
 
   /* Pads sizing/placement */
   .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
@@ -542,7 +514,7 @@ bindTouch('btnJump', ()=>{ keys[' ']=true; }, ()=>{ keys[' ']=false; });
 document.getElementById('music').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent = musicMuted?'♪ Music Off':'♪ Music'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('mute').onclick =(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent = sfxMuted?'🔇 SFX':'🔈 SFX'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
 document.getElementById('invert').onclick=()=> document.body.classList.toggle('invert');
-document.getElementById('fs').onclick     =()=> CV.requestFullscreen?.();
+document.getElementById('fs').onclick = () => document.documentElement.requestFullscreen?.();
 document.getElementById('landBtn').onclick=()=> goLandscape(); // NEW
 document.getElementById('speedup').onclick =()=> setMode(speedMode+1);
 document.getElementById('speeddown').onclick=()=> setMode(speedMode-1);
@@ -562,22 +534,24 @@ function showCaption(title='',sub='',ms=2400){
 /* ===== Orientation helper ===== */
 async function goLandscape(){
   try{
-    if (STAGE.requestFullscreen) await STAGE.requestFullscreen();  // <— wrapper, not canvas
+    // was: await STAGE.requestFullscreen();
+    if (document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+    }
     if (screen.orientation && screen.orientation.lock){
       await screen.orientation.lock('landscape');
     } else {
       showCaption('Rotate your phone','Landscape is easier to play.',2600);
     }
-  }catch(e){
+  } catch(e){
     showCaption('Rotate your phone','Landscape is easier to play.',2600);
   } finally {
-    // Force-show pads on phones in case a media query misses
     if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-      const pads = document.querySelector('.mobile');
-      if (pads) pads.classList.add('show');
+      document.querySelector('.mobile')?.classList.add('show');
     }
   }
 }
+
 
 
 /* UI helpers */
