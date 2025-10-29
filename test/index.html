@@ -3,20 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — v1.8.8 (Minimal Patch)</title>
+<title>MKHKASG: MoonRunner — v1.8.8 “Skins & Fly-by”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
   html,body{margin:0;height:100%;background:#000;color:#fff;font-family:ui-monospace,Consolas,Menlo,monospace}
   body.invert{background:#fff;color:#000}
   .wrap{display:grid;place-items:center;height:100%;gap:8px;padding:10px}
+  /* Slightly larger on phones */
   canvas{
-    width:min(96vw,96vh*(16/9));
-    height:calc(var(--h) * (min(96vw,96vh*(16/9)) / var(--w)));
+    width:min(98vw,98vh*(16/9));
+    height:calc(var(--h) * (min(98vw,98vh*(16/9)) / var(--w)));
     image-rendering:pixelated; image-rendering:crisp-edges;
     background:transparent;
   }
-  .hud{width:min(96vw,96vh*(16/9));display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.95}
+  .hud{width:min(98vw,98vh*(16/9));display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.95}
   .hud .left,.hud .right{display:flex;gap:10px;align-items:center}
   .btn{padding:4px 10px;border:1px solid currentColor;cursor:pointer;user-select:none}
   .btn:active{transform:translateY(1px)}
@@ -34,7 +35,7 @@
   table{width:100%;border-collapse:collapse;font:12px 'Press Start 2P',monospace}
   th,td{border-bottom:1px solid currentColor;padding:6px 4px;text-align:left}
 
-  /* Mobile */
+  /* Mobile pads */
   .mobile{position:fixed;left:0;right:0;bottom:10px;display:none;justify-content:space-between;pointer-events:none;padding:0 8px;z-index:5}
   .pad{pointer-events:auto;background:transparent;color:inherit;border:1px solid currentColor;border-radius:12px;width:31vw;height:16vh;display:flex;align-items:center;justify-content:center;font-size:18px;touch-action:none;opacity:.9}
   .jump{width:31vw;height:16vh}
@@ -50,7 +51,6 @@
   /* Character modal */
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .cardBtn{display:grid;place-items:center;border:2px solid currentColor;background:transparent;color:inherit;padding:8px;cursor:pointer}
-  .cardBtn.active{box-shadow:0 0 0 2px currentColor inset}
   .skinPrev{background:#000;border:1px solid currentColor}
   body.invert .skinPrev{background:#fff}
 </style>
@@ -89,7 +89,7 @@
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.8.8 — Minimal patch (chars, shield/slow, UFO flyby)</div>
+    <div class="ghost mt12">v1.8.8 — Skins & Fly-by • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -187,9 +187,9 @@
   <div class="card">
     <h2>Credits</h2>
     <div class="mt8">Design & code: <b>MkhkAsg</b></div>
-    <div class="mt6">Font: <b>Press Start 2P</b> (CodeMan38) — SIL Open Font License 1.1</div>
-    <div class="mt6">Music & SFX: <b>Original in-engine chiptune</b> via Web Audio API</div>
-    <div class="mt6">Assisted by <b>Mira</b> (AI collaborator)</div>
+    <div class="mt6">Font: <b>Press Start 2P</b> — SIL OFL 1.1</div>
+    <div class="mt6">Music & SFX: in-engine chiptune via Web Audio API</div>
+    <div class="mt6">Assisted by <b>Mira</b></div>
     <div class="mt6 ghost">Scores go to a Google Sheet leaderboard. Keep names clean.</div>
     <div class="row mt12"><div id="creditsClose" class="btn">Close</div></div>
   </div>
@@ -252,7 +252,7 @@ const pad=(n,w=5)=>String(n).padStart(w,'0');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function escapeHTML(s){return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-/* ===== WebAudio (same as your base) ===== */
+/* ===== WebAudio: buses, mix, ducking ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
 let musicVol = 0.045, sfxVol = 0.28;
 let musicBus=null, sfxBus=null;
@@ -283,7 +283,7 @@ function beep(kind='jump'){
   }
 }
 
-/* Tiny chiptune loop (unchanged) */
+/* Simple chiptune loop */
 let musicRunning=false, musicTimer=null, musicStep=0;
 const bpm=140, stepSec=60/bpm/2;
 const NT=n=>440*Math.pow(2,(n-69)/12);
@@ -371,7 +371,7 @@ addEventListener('keydown',e=>{
     else if(state==='paused'){ hideUI('pause'); state='play'; document.getElementById('menuBtn').style.display='none'; }
   }
   if(state==='menu'&&(e.key===' '||e.key==='Enter'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')) start();
-  if(state==='over'&&(e.key===' '||e.key==='Enter')) { hideUI('over'); start(); }
+  if(state==='over'&&(e.key===' '||e.key==='Enter')) { hideUI('over'); start(); } // restart from space
 });
 addEventListener('keyup',e=>{ if (document.activeElement && document.activeElement.tagName === 'INPUT') return; keys[e.key]=false; });
 
@@ -444,7 +444,7 @@ document.getElementById('settingsClose').onclick=()=>{
 
 document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
 
-/* Leaderboard tabs (unchanged) */
+/* Leaderboard tabs */
 const lbSub = document.getElementById('lbSub');
 const lbTodayBtn = document.getElementById('lbToday');
 const lbAllBtn   = document.getElementById('lbAll');
@@ -463,7 +463,7 @@ function lbActivate(kind){
   else { lbSetActive(lb10Btn); loadLeaderboard({period:'all',limit:10}); }
 }
 
-/* ===== Leaderboard (same) ===== */
+/* ===== Leaderboard ===== */
 async function loadLeaderboard({period='daily',limit=20}={}){
   try{
     document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="5">Loading…</td></tr>';
@@ -502,7 +502,7 @@ async function submitScore(name,score){
   }catch(e){ return false; }
 }
 
-/* ===== World & Difficulty (unchanged except slow factor) ===== */
+/* ===== World & Difficulty (same tuning) ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
 function getDiff(){
@@ -510,8 +510,8 @@ function getDiff(){
   const tTime  = Math.min(1, (timeMs/16000));
   const t = Math.min(1, tTime + tScore);
   const heat = Math.min(1, timeMs / 120000);
-  const factor=0.6*(player.slow>0?0.5:1); // stronger slow-mo read
-  const worldScroll=(baseSpeed + 0.6 + 2.4*heat) * factor;
+  const factor=0.6*(player.slow>0?0.6:1);
+  const worldScroll=(baseSpeed + 0.6 + 2.4*heat) * factor;  // gentle rise; capped by slow-mo
   const gapMin=24;
   const gapMax=35+Math.min(54,t*60);
   const gMin=(timeMs<10000?300:200-t*18);
@@ -519,25 +519,24 @@ function getDiff(){
   return {worldScroll,gapMin,gapMax,gMin,gMax};
 }
 
-/* ===== Player & physics (same) ===== */
+/* ===== Player & physics ===== */
 const GRAV=0.65,JUMP=11.6,FRICTION=0.86;
 const JUMP_BUFFER_MS=120;
 const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0};
 
-/* ===== Generation (same) ===== */
+/* ===== Generation ===== */
 function resetWorld(){
   segments=[];entities=[];items=[];scroll=0;timeMs=0;score=0;
   Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0});
   segments.push({x:0,w:440,type:'ground'}); // runway
   spawnAhead(W*2.4);
 }
-function lastEnd(){ return segments.length?segments[segments.length-1].x+segments[segments-1].w:0; }
 function spawnAhead(targetX){
-  while((segments.length?segments[segments.length-1].x+segments[segments-1].w:0)<targetX){
+  while((segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0)<targetX){
     const {gapMin,gapMax,gMin,gMax}=getDiff();
     const afterTutorial=(timeMs>10000);
     const segW=Math.floor(gMin+RND()*(gMax-gMin));
-    const gx=(segments.length?segments[segments.length-1].x+segments[segments-1].w:0);
+    const gx=(segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0);
     segments.push({x:gx,w:segW,type:'ground'});
 
     if(afterTutorial){
@@ -553,7 +552,7 @@ function spawnAhead(targetX){
   }
 }
 
-/* ===== Sprites (same base) ===== */
+/* ===== Sprites ===== */
 function astronaut(x,y,pose='idle'){
   const f=FG(),b=BG(); x=i(x); y=i(y);
   FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
@@ -585,19 +584,13 @@ function tileGround(x,y,w){ const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w); FILL(x
 /* ===== Collisions ===== */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
 
-/* ===== Character Select (patched) ===== */
-function openChars(){ showUI('chars'); drawSkinPreviews(); markActiveSkin(); }
+/* ===== Character Select (stable & previewed) ===== */
+function openChars(){ showUI('chars'); drawSkinPreviews(); }
 document.getElementById('charsClose').onclick=()=> hideUI('chars');
-function markActiveSkin(){
-  document.querySelectorAll('#chars .cardBtn').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.skin===skin);
-  });
-}
 document.querySelectorAll('#chars .cardBtn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     skin = btn.dataset.skin;
     localStorage.setItem(SKIN_KEY, skin);
-    markActiveSkin();
     hideUI('chars');
   });
 });
@@ -606,17 +599,15 @@ function drawSkinPreviews(){
   cards.forEach(card=>{
     const kind = card.dataset.skin;
     const cv = card.querySelector('canvas');
-    const c = cv.getContext('2d');
-    c.imageSmoothingEnabled=false;
-    c.fillStyle = document.body.classList.contains('invert') ? '#fff' : '#000';
-    c.fillRect(0,0,64,64);
-    c.fillStyle = document.body.classList.contains('invert') ? '#000' : '#fff';
+    const c = cv.getContext('2d'); c.imageSmoothingEnabled=false;
+    c.fillStyle = inverted() ? '#fff' : '#000'; c.fillRect(0,0,64,64);
+    const f = inverted() ? '#000' : '#fff', b = inverted() ? '#fff' : '#000';
     const RF=(x,y,w,h,col)=>{c.fillStyle=col; c.fillRect(x|0,y|0,w|0,h|0);};
     if(kind==='alien'){
-      RF(21,30,22,14,'#fff'); RF(25,34,4,4,'#000'); RF(35,34,2,2,'#000'); RF(23,44,18,2,'#fff');
+      RF(21,30,22,14,f); RF(25,34,4,4,b); RF(35,34,2,2,b); RF(23,44,18,2,f);
     }else{
-      if(kind==='invert'){ RF(21,26,18,26,'#000'); }
-      RF(24,28,16,22,'#fff'); RF(21,34,3,10,'#fff'); RF(29,34,6,6,'#000');
+      if(kind==='invert'){ RF(21,26,18,26,b); }
+      RF(24,28,16,22,f); RF(21,34,3,10,f); RF(29,34,6,6,b);
     }
   });
 }
@@ -637,35 +628,20 @@ function drawCallouts(){
   ctx.restore(); ctx.globalAlpha=1;
 }
 
-/* ===== Background UFO Flyby (new, isolated) ===== */
-let bgShip=null, lastShipMilestone=0;
-function maybeSpawnFlyby(){
-  const milestone = Math.floor(score/5000);
-  if(milestone>lastShipMilestone){
-    lastShipMilestone=milestone;
-    const fromLeft = RND()<0.5;
-    bgShip = {
-      x: fromLeft ? -80 : W+80,
-      y: 60 + Math.floor(RND()*160),
-      dir: fromLeft ? 1 : -1,
-      speed: 1.4 + RND()*0.9,
-      life: 1200
-    };
+/* ===== Background events (UFO fly-by) ===== */
+let lastFlyScore = 0;
+const fly = {active:false, x:-200, y:120, speed:1.1};
+function maybeFlyBy(){
+  if(!fly.active && score - lastFlyScore >= 5000){
+    fly.active = true; fly.x = -120; fly.y = 60 + Math.floor(RND()*80); lastFlyScore = score;
   }
 }
-function updateFlyby(u){
-  if(!bgShip) return;
-  bgShip.x += bgShip.dir * bgShip.speed * u; 
-  bgShip.life -= u;
-  if((bgShip.dir>0 && bgShip.x>W+100) || (bgShip.dir<0 && bgShip.x<-100) || bgShip.life<=0){
-    bgShip=null;
-  }
-}
-function drawFlyby(){
-  if(!bgShip) return;
-  const t=performance.now();
-  ufo(bgShip.x, bgShip.y);
-  if(((t/300)|0)%2===0) beamScan(bgShip.x, bgShip.y, t);
+function drawFlyBy(parallax=0.35){
+  if(!fly.active) return;
+  fly.x += fly.speed; const fx = i(fly.x - scroll*parallax);
+  if(fx > W+140){ fly.active = false; return; }
+  // tiny UFO silhouette
+  ufo(fx, fly.y);
 }
 
 /* ===== Control ===== */
@@ -717,7 +693,7 @@ document.getElementById('submitBtn').onclick=async()=>{
   document.getElementById('nameGate').style.display='none';
 };
 
-/* ===== Update (only minimal new calls) ===== */
+/* ===== Update (frame-rate independent) ===== */
 const GRAV_U=GRAV, ACCEL_U=0.7;
 function update(u){
   timeMs += (u / TARGET_FPS) * 1000;
@@ -759,6 +735,7 @@ function update(u){
     else if(player.vx<0 && (prevX+scroll)>=(s.x+s.w)){ player.x=(s.x+s.w-scroll); player.vx=0; }
   }
 
+  // pit & hazard handling with shields/i-frames
   if(player.y>H+40){
     if(player.inv>0){
       player.y = floorY - player.h - 2; player.vy = -JUMP*0.8;
@@ -768,32 +745,24 @@ function update(u){
       gameOver();
     }
   }
-
   for(const e of entities){
     if(e.kind==='alien'){
       e.x+=e.dir*0.7*m; if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
       if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
-        if(player.inv>0){
-          player.vx *= 0.9;
-        }else if(player.shields>0){
-          useShield(); player.vx -= Math.sign(player.vx||1)*0.8; player.vy=-JUMP*0.5;
-        }else{
-          gameOver();
-        }
+        if(player.inv>0){ /* ignore */ }
+        else if(player.shields>0){ useShield(); player.vx -= Math.sign(player.vx||1)*0.8; player.vy=-JUMP*0.5; }
+        else{ gameOver(); }
       }
     }else if(e.kind==='spike'){
       if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
-        if(player.inv>0){
-          // ignore during i-frames
-        }else if(player.shields>0){
-          useShield(); player.vy=-JUMP*0.5;
-        }else{
-          gameOver();
-        }
+        if(player.inv>0){ /* ignore */ }
+        else if(player.shields>0){ useShield(); player.vy=-JUMP*0.5; }
+        else{ gameOver(); }
       }
     }
   }
 
+  // pickups
   for(let k=items.length-1;k>=0;k--){
     const it=items[k];
     const bob = Math.sin((timeMs/260) + (it.phase||0)) * 2;
@@ -806,46 +775,48 @@ function update(u){
     }else{ it._drawY = rect.y; }
   }
 
+  // timers
   player.auraPulse = (player.auraPulse + m) % 360;
   if(player.auraFlash>0) player.auraFlash = Math.max(0, player.auraFlash - m*8);
   if(player.slow>0)      player.slow      = Math.max(0, player.slow - m);
   if(player.inv>0)       player.inv       = Math.max(0, player.inv - m);
 
+  // score (distance + tiny velocity bias)
   score += (0.069 * m + Math.max(0,player.vx) * 0.03 * m) * scoreMul;
 
-  maybeSpawnFlyby();
-  updateFlyby(m);
-
   updateCallouts(m);
+  maybeFlyBy();
 }
 
-/* ===== Draw (tiny visual tweaks only) ===== */
+/* ===== Draw ===== */
 function draw(){
   const f=FG(),b=BG(); ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
 
-  // stars (same)
+  // stars
   ctx.fillStyle=f;
   for(let n=0;n<100;n++){
     const x1=((n*83)%2000)-(scroll*0.25%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
     const x2=((n*211)%2400)-(scroll*0.10%2400), y2=(n*97)%H;  const xx2=((x2+2400)%2400)-100; if(xx2>=0&&xx2<W) ctx.fillRect(i(xx2),i(y2),1,1);
   }
 
-  // background UFO flyby (new)
-  drawFlyby();
+  // background UFO fly-by (parallaxed)
+  drawFlyBy(0.35);
 
-  // ground/entities (same)
+  // ground
   for(const s of segments){
     if(s.type!=='ground') continue;
     const x=i(s.x-scroll), w=i(s.w); if(x>W||x+w<-50) continue;
     tileGround(x,floorY,w);
   }
+
+  // enemies
   const blink = ((performance.now()/1500|0)%2)===0;
   for(const e of entities){
     const x=i(e.x-scroll), y=i(e.y);
     if(e.kind==='alien') enemyAlien(x,y,blink); else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
   }
 
-  // pickups (shield/slow visuals clearer)
+  // items (clearer animations)
   for(const it of items){
     const x=i2(it.x - scroll), y=i2((it._drawY ?? it.y));
     if(it.kind==='chip'){
@@ -853,43 +824,30 @@ function draw(){
       const tw = ((performance.now()/120)|0)%2;
       if(tw){ FILL(x+3,y+3,4,4,BG()); } else { FILL(x+4,y+2,2,2,BG()); FILL(x+4,y+6,2,2,BG()); FILL(x+2,y+4,2,2,BG()); FILL(x+6,y+4,2,2,BG()); }
     }
-    if(it.kind==='shield'){
-      const t=((timeMs/160)+(it.phase||0));
-      const p = (Math.sin(t)+1)*0.5; // 0..1
-      const w=12,h=12;
-      FILL(x,y,w,h,BG());
-      FILL(x,y,w,1,f); FILL(x,y+h-1,w,1,f); FILL(x,y,1,h,f); FILL(x+w-1,y,1,h,f);
-      const inset = 2 + (p*2|0);
-      FILL(x+inset,y+inset,w-2*inset,1,f);
-      FILL(x+inset,y+h-1-inset,w-2*inset,1,f);
-      FILL(x+inset,y+inset,1,h-2*inset,f);
-      FILL(x+w-1-inset,y+inset,1,h-2*inset,f);
+    if(it.kind==='shield'){ // breathing core + tiny blink
+      const pulse = (Math.sin((timeMs/350)+(it.phase||0))*0.5+0.5);
+      FILL(x,y,12,12,f); FILL(x+2,y+2,8,8,BG());
+      if(pulse>0.5){ FILL(x+5,y+5,2,2,f); }
     }
-    if(it.kind==='slow'){
-      FILL(x,y,12,12,f); 
-      FILL(x+2,y+2,8,8,BG());
-      const scan=((timeMs/90+(it.phase||0))%8)|0;
-      FILL(x+2,y+2+scan,8,1,f);
-      FILL(x+2,y+2+(7-scan),8,1,f);
+    if(it.kind==='slow'){ // moving scan line
+      FILL(x,y,12,12,f); FILL(x+2,y+2,8,8,BG()); const scan=((timeMs/120+(it.phase||0))%10)|0; FILL(x+2,y+2+scan,8,1,f);
     }
   }
 
-  // shield aura / i-frames (same feel)
-  if(player.shields>0){
-    const fcol=f;
-    const phase = ((performance.now()/120)|0)%4;
-    const ax=player.x-3, ay=player.y-3, aw=player.w+6, ah=player.h+6;
-    FILL(ax, ay, aw, 1, fcol); FILL(ax, ay+ah, aw, 1, fcol);
-    FILL(ax, ay, 1, ah, fcol); FILL(ax+aw, ay, 1, ah+1, fcol);
-    if(phase===0){ FILL(ax-1,ay-1,2,2,fcol); FILL(ax+aw-1,ay-1,2,2,fcol); }
-    if(phase===1){ FILL(ax+aw-1,ay-1,2,2,fcol); FILL(ax+aw-1,ay+ah-1,2,2,fcol); }
-    if(phase===2){ FILL(ax+aw-1,ay+ah-1,2,2,fcol); FILL(ax-1,ay+ah-1,2,2,fcol); }
-    if(phase===3){ FILL(ax-1,ay+ah-1,2,2,fcol); FILL(ax-1,ay-1,2,2,fcol); }
-  }
-
-  // player (skins) — unchanged drawing, but menu preview respects skin now
+  // player (skin + shield aura + i-frames blink)
   const frame=(performance.now()/120|0);
   const pose = player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
+  if(player.shields>0){
+    const intense = player.auraFlash>0 ? 1 : 0;
+    const th = intense ? 3 : 2;
+    const ax=player.x-3, ay=player.y-3, aw=player.w+6, ah=player.h+6;
+    for(let t=0;t<th;t++){
+      FILL(ax-t, ay-t, aw+2*t, 1, f);
+      FILL(ax-t, ay+ah+t, aw+2*t, 1, f);
+      FILL(ax-t, ay-t, 1, ah+2*t, f);
+      FILL(ax+aw+t, ay-t, 1, ah+2*t, f);
+    }
+  }
   const invBlink = (player.inv>0) && (frame % 2 === 0);
   if(!invBlink){
     if(skin==='alien'){ playerAlien(player.x,player.y); }
@@ -902,18 +860,10 @@ function draw(){
     FILL(player.x+player.w-1,player.y,1,player.h,f);
   }
 
-  // slow-mo overlay
-  if(player.slow>0){
-    ctx.globalAlpha = 0.18;
-    ctx.fillStyle = f;
-    for(let y=0;y<H;y+=6){ FILL(0,y,W,1,f); }
-    ctx.globalAlpha = 1;
-  }
-
   // callouts
   drawCallouts();
 
-  // HUD (same)
+  // HUD
   ctx.fillStyle=f; ctx.font="12px 'Press Start 2P', monospace";
   const hudL=`SCORE ${pad(Math.floor(score))}    BEST ${pad(best)}    MODE ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   ctx.fillText(hudL,10,18);
@@ -922,17 +872,10 @@ function draw(){
   ctx.fillText(`🛡 ${dots.join(' ')}`, W-10, 18);
   ctx.textAlign='left';
 
-  // START MENU scene — UFO restored, skin preview applied
+  // Menu UFO & tutorial text
   if(state==='menu'){
     const t=performance.now(); const cx=i(W/2), cy=i(H*0.30);
-    const hover=Math.sin(t/750)*2; 
-    ufo(cx,cy-40+hover); 
-    beamScan(cx,cy-40+hover,t); 
-    const pull=(Math.sin(t/900+1.2)*3)|0;
-    if(skin==='alien'){ playerAlien(cx-11,cy+18-pull); }
-    else if(skin==='invert'){ astronautInvert(cx-8,cy+18-pull,'idle'); }
-    else { astronaut(cx-8,cy+18-pull,'idle'); }
-
+    const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
     ctx.font="22px 'Press Start 2P',monospace"; const title="MKHKASG: MOONRUNNER";
     ctx.fillText(title,i((W-ctx.measureText(title).width)/2),cy+64);
     ctx.font="10px 'Press Start 2P',monospace";
@@ -945,7 +888,7 @@ function draw(){
   }
 }
 
-/* ===== Boot & Loop (same) ===== */
+/* ===== Boot & Loop ===== */
 async function boot(){
   try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
   resetWorld(); setMode(speedMode); state='menu'; statusEl.textContent=`Menu — ready`;
