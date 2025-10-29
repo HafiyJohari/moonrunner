@@ -467,31 +467,40 @@ function lbActivate(kind){
 }
 
 /* ===== Leaderboard ===== */
-async function loadLeaderboard({period='daily',limit=20}={}){
-  try{
-    document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="5">Loading…</td></tr>';
-    const res = await fetch(`${API_URL}?action=list&period=${encodeURIComponent(period)}&limit=${limit}`, {cache:'no-store'});
-    const data = await res.json();
-    if(!data.ok){ throw new Error('LB failed'); }
-    lbSub.textContent = (period==='daily') ? `Today (${data.tz||''})` : 'All-time';
+/* ===== Leaderboard ===== */
+async function loadLeaderboard({period='daily',limit=20}={}) {
+  try {
+    document.querySelector('#lbTable tbody').innerHTML =
+      '<tr><td colspan="6">Loading…</td></tr>';
 
-    const rows = data.rows||[];
-const tbody = rows.length ? rows.map((r,idx)=>`<tr>
-  <td>${idx+1}</td>
-  <td>${pad(r.score)}</td>
-  <td>${escapeHTML(r.name||'')}</td>
-  <td>${escapeHTML(r.mode||'-')}</td>
-  <td>${escapeHTML(r.device||'-')}</td>
-  <td>${escapeHTML(r.date||'')}</td>
-</tr>`).join('') : '<tr><td colspan="6">No scores yet — be the first!</td></tr>';
+    const res = await fetch(`${API_URL}?action=list&period=${encodeURIComponent(period)}&limit=${limit}`, { cache:'no-store' });
+    const data = await res.json();
+    if (!data.ok) throw new Error('LB failed');
+
+    lbSub.textContent = (period === 'daily') ? `Today (${data.tz||''})` : 'All-time';
+
+    const rows = data.rows || [];
+    const tbody = rows.length ? rows.map((r,idx)=>`
+      <tr>
+        <td>${idx+1}</td>
+        <td>${String(r.score).padStart(5,'0')}</td>
+        <td>${escapeHTML(r.name||'')}</td>
+        <td>${escapeHTML(r.mode||'-')}</td>
+        <td>${escapeHTML(r.device||'-')}</td>
+        <td>${(new Date(r.ts)).toLocaleDateString()}</td>
+      </tr>`).join('') 
+      : '<tr><td colspan="6">No scores yet — be the first!</td></tr>';
+
     document.querySelector('#lbTable tbody').innerHTML = tbody;
 
     const me = cleanName(localStorage.getItem('moon_name')||'');
     document.getElementById('lbSelf').textContent = me ? `Your name: ${me}` : 'You have not set a name yet.';
-  }catch(e){
-    document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="5">Failed to load.</td></tr>';
+  } catch {
+    document.querySelector('#lbTable tbody').innerHTML =
+      '<tr><td colspan="6">Failed to load.</td></tr>';
   }
 }
+
 async function submitScore(name, score){
   const device = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop';
   const body = new URLSearchParams({
@@ -504,7 +513,7 @@ async function submitScore(name, score){
 
   const r = await fetch(API_URL, {
     method: 'POST',
-    headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    headers: { 'Content-Type':'application/x-www-form-urlencoded' },
     body
   });
   return r.ok;
