@@ -41,7 +41,15 @@
   .mobile{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0) + 10px);display:none;justify-content:space-between;pointer-events:none;padding:0 8px;z-index:5}
   .pad{pointer-events:auto;background:transparent;color:inherit;border:1px solid currentColor;border-radius:12px;width:31vw;height:16vh;display:flex;align-items:center;justify-content:center;font-size:18px;touch-action:none;opacity:.9}
   .jump{width:31vw;height:16vh}
-  @media (max-width:820px){ .mobile{display:flex} .hud .right{display:none} }
+/* Show touch pads on any touch device, or when screen is small in either dimension */
+@media (hover:none) and (pointer:coarse), (max-width:820px), (max-height:520px){
+  .mobile{display:flex}
+  .hud .right{display:none}
+}
+
+/* Optional: manual override class we can toggle via JS */
+.mobile.show{ display:flex !important; }
+
 
   /* Contrast-safe overlays */
   body:not(.invert) .ui { background: rgba(0,0,0,.78); }
@@ -263,7 +271,7 @@
 <script>
 /* ===== Config ===== */
 const GAME_VERSION='1.9.1a';
-const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
+const API_URL="https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
 
 /* ===== Canvas & DPR ===== */
 const CV=document.getElementById('cv');
@@ -434,8 +442,15 @@ async function goLandscape(){
     }
   }catch(e){
     showCaption('Rotate your phone','Landscape is easier to play.',2600);
+  } finally {
+    // Ensure pads are visible on phones even if a CSS query misses
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      const pads = document.querySelector('.mobile');
+      if (pads) pads.classList.add('show');
+    }
   }
 }
+
 
 /* UI helpers */
 function showUI(id,lock=false){ document.getElementById(id).style.display='flex'; if(lock&&state==='play') state='paused'; }
@@ -664,6 +679,9 @@ let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:fal
 let jumpBuffer=0;
 function start(){
   hideAllUI(); resetWorld(); state='play';
+  // NEW: show tutorial popups again for each fresh run
+  seenTutorial = { coin:false, shield:false, slow:false, alien:false, spike:false };
+
   statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   document.getElementById('menuBtn').style.display='none';
   if(!musicMuted) startMusic(); beep('coin');
@@ -671,6 +689,7 @@ function start(){
   // Story beat
   showCaption('MoonRunner — keep moving…','Collect chips, avoid danger.',2200);
 }
+
 function useShield(){ player.shields=clamp(player.shields-1,0,3); player.auraFlash=180; player.inv=150; addCall('HIT!',player.x+8,player.y-6); beep('hit'); }
 function gameOver(){
   state='over';
