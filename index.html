@@ -203,11 +203,13 @@
     <div class="row" style="justify-content:space-between;align-items:center;">
       <h2>Leaderboard <span id="lbSub" class="ghost" style="font:12px 'Press Start 2P',monospace;margin-left:8px;"></span></h2>
       <div class="row">
-        <div id="lbToday" class="btn">Today</div>
-        <div id="lbAll" class="btn">All-time</div>
-        <div id="lb20" class="btn">Top 20</div>
-        <div id="lb10" class="btn">Top 10</div>
-        <div id="lbClose" class="btn">Back</div>
+<div id="lbToday"   class="btn">Daily</div>
+<div id="lbWeekly"  class="btn">Weekly</div>   <!-- NEW -->
+<div id="lbMonthly" class="btn">Monthly</div>  <!-- NEW -->
+<div id="lbAll"     class="btn">All-time</div>
+<div id="lb20"      class="btn">Top 20</div>
+<div id="lb10"      class="btn">Top 10</div>
+<div id="lbClose"   class="btn">Back</div>
       </div>
     </div>
     <div class="mt12" id="lbSelf" class="ghost"></div>
@@ -468,29 +470,45 @@ document.querySelectorAll('#avatars .btn[data-skin]').forEach(b=>{
 document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
 
 /* Leaderboard tabs */
-const lbSub=document.getElementById('lbSub');
-const lbTodayBtn=document.getElementById('lbToday');
-const lbAllBtn  =document.getElementById('lbAll');
-const lb20Btn   =document.getElementById('lb20');
-const lb10Btn   =document.getElementById('lb10');
-function lbSetActive(btn){ [lbTodayBtn,lbAllBtn,lb20Btn,lb10Btn].forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-lbTodayBtn.onclick=()=> lbActivate('daily');
-lbAllBtn.onclick  =()=> lbActivate('all');
-lb20Btn.onclick   =()=> lbActivate('top20');
-lb10Btn.onclick   =()=> lbActivate('top10');
+const lbSub     = document.getElementById('lbSub');
+const lbToday   = document.getElementById('lbToday');
+const lbWeekly  = document.getElementById('lbWeekly');   // NEW
+const lbMonthly = document.getElementById('lbMonthly');  // NEW
+const lbAll     = document.getElementById('lbAll');
+const lb20      = document.getElementById('lb20');
+const lb10      = document.getElementById('lb10');
+
+function lbSetActive(btn){
+  [lbToday, lbWeekly, lbMonthly, lbAll, lb20, lb10].forEach(b=> b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+lbToday .onclick = () => lbActivate('daily');
+lbWeekly.onclick = () => lbActivate('weekly');   // NEW
+lbMonthly.onclick= () => lbActivate('monthly');  // NEW
+lbAll   .onclick = () => lbActivate('all');
+lb20    .onclick = () => lbActivate('top20');
+lb10    .onclick = () => lbActivate('top10');
+
 function lbActivate(kind){
-  if(kind==='daily'){ 
-    lbSetActive(lbTodayBtn); 
-    loadLeaderboard({period:'daily',limit:20,unique:false}); 
-  } else if(kind==='all'){ 
-    lbSetActive(lbAllBtn); 
-    loadLeaderboard({period:'all',limit:200,unique:true}); 
-  } else if(kind==='top20'){ 
-    lbSetActive(lb20Btn); 
-    loadLeaderboard({period:'all',limit:20,unique:true}); 
-  } else { 
-    lbSetActive(lb10Btn); 
-    loadLeaderboard({period:'all',limit:10,unique:true}); 
+  if (kind === 'daily') {
+    lbSetActive(lbToday);
+    loadLeaderboard({ period:'daily',   limit:20,  unique:false }); // raw daily
+  } else if (kind === 'weekly') {
+    lbSetActive(lbWeekly);
+    loadLeaderboard({ period:'weekly',  limit:50,  unique:true  }); // best per player
+  } else if (kind === 'monthly') {
+    lbSetActive(lbMonthly);
+    loadLeaderboard({ period:'monthly', limit:100, unique:true  }); // best per player
+  } else if (kind === 'all') {
+    lbSetActive(lbAll);
+    loadLeaderboard({ period:'all',     limit:200, unique:true  });
+  } else if (kind === 'top20') {
+    lbSetActive(lb20);
+    loadLeaderboard({ period:'all',     limit:20,  unique:true  });
+  } else { // top10
+    lbSetActive(lb10);
+    loadLeaderboard({ period:'all',     limit:10,  unique:true  });
   }
 }
 
@@ -505,28 +523,24 @@ async function loadLeaderboard({period='daily',limit=20,unique=false}={}){
     const data = await res.json();
     if(!data.ok) throw new Error(data.error||'LB failed');
 
-    // Subtitle
     const label =
-      period==='daily' ? `Today (${data.tz||''})` :
-      period==='weekly'? `This Week (${data.tz||''})` :
-      period==='monthly'?`This Month (${data.tz||''})` :
-      `All-time${unique?' — Best per player':''}`;
+      period==='daily'   ? `Today (${data.tz||''})` :
+      period==='weekly'  ? `This Week (${data.tz||''})` :
+      period==='monthly' ? `This Month (${data.tz||''})` :
+                           `All-time${unique?' — Best per player':''}`;
     lbSub.textContent = label;
 
     const rows = data.rows || [];
     const tbody = rows.length ? rows.map((r,idx)=>`<tr>
       <td>${idx+1}</td>
-      <td>${pad(r.score)}</td>
-      <td>${esc(r.name||'')}</td>
-      <td>${esc(r.mode||'-')}</td>
-      <td>${esc(r.device||'-')}</td>
+      <td>${String(r.score).padStart(5,'0')}</td>
+      <td>${(r.name||'').replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</td>
+      <td>${(r.mode||'-')}</td>
+      <td>${(r.device||'-')}</td>
       <td>${(new Date(r.ts)).toLocaleDateString()}</td>
     </tr>`).join('') : '<tr><td colspan="6">No scores yet — be the first!</td></tr>';
     tbodyEl.innerHTML = tbody;
-
-    const me = cleanName(localStorage.getItem('moon_name')||'');
-    document.getElementById('lbSelf').textContent = me ? `Your name: ${me}` : 'You have not set a name yet.';
-  } catch(e){
+  }catch(e){
     document.querySelector('#lbTable tbody').innerHTML = '<tr><td colspan="6">Failed to load.</td></tr>';
   }
 }
