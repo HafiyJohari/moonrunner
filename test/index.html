@@ -139,31 +139,29 @@
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
   
-/* === PORTRAIT: width-driven 16:9, no stretch, clear pads === */
+/* === PORTRAIT FIX PACK (pads always visible, no huge gap) === */
 @media (orientation:portrait){
-  body.playing #stage{ padding-bottom:84px; }  /* was 110–120 */
-  .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
-  .jump{ width:76px; height:76px; }
-  .mobile .leftGrp{ left:10px; bottom:10px; }
-  .mobile .rightGrp{ right:10px; bottom:10px; }
-  .hud .right{ display:none !important; }
+
+  /* 1) Give the canvas just enough bottom space for the pads (smaller than before) */
+  body.playing #stage{ padding-bottom:64px; }  /* was ~84–120px */
+
+  /* 2) Hide the HUD toolbar while playing on phones to remove the big empty band */
+  body.playing .hud{ display:none !important; }
+
+  /* 3) Keep pads tight to the bottom/safe-area */
+  .mobile .leftGrp{  left:10px;  bottom:max(env(safe-area-inset-bottom,0px), 8px); }
+  .mobile .rightGrp{ right:10px; bottom:max(env(safe-area-inset-bottom,0px), 8px); }
+
+  /* 4) Modest pad size so they stay on-screen on most phones */
+  .pad{  width:66px; height:66px; font-size:18px; border-radius:14px; }
+  .jump{ width:74px; height:74px; }
 }
 
-  /* Pads sizing/placement */
-  .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
-  .jump{ width:76px; height:76px; }
-  .mobile .leftGrp  { left:12px; bottom:12px; }
-  .mobile .rightGrp { right:12px; bottom:12px; }
-
-  /* Always show pads while playing on touch */
-  body.playing .mobile{ display:block; }
-}
-
-/* Very short portrait screens: minor shrink */
-@media (orientation:portrait) and (max-height:700px){
-  body.playing #stage{ padding-bottom:96px; }
-  .pad{ width:62px; height:62px; }
-  .jump{ width:70px; height:70px; }
+/* Extra safety for short portrait screens */
+@media (orientation:portrait) and (max-height:760px){
+  body.playing #stage{ padding-bottom:56px; }
+  .pad{  width:60px; height:60px; }
+  .jump{ width:68px; height:68px; }
 }
 
 /* If the device is very short even in portrait, shrink once more */
