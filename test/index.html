@@ -113,6 +113,20 @@
 
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
+
+  /* Portrait: lift the canvas a bit and shrink pads so they don't cover action */
+@media (hover:none) and (pointer:coarse) and (orientation:portrait){
+  /* create breathing room below the canvas */
+  canvas{ margin-bottom: 120px; }
+
+  /* smaller pads in portrait */
+  .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
+  .jump{ width:76px; height:76px; }
+
+  /* tuck into corners a bit tighter */
+  .mobile .leftGrp  { left:10px;  bottom:10px; }
+  .mobile .rightGrp { right:10px; bottom:10px; }
+}
 </style>
 </head>
 <body>
