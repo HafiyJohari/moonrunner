@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — v1.8.3+ “Daily & Skins”</title>
+<title>MKHKASG: MoonRunner — v1.8.7 “Daily & Skins — hotfix”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
@@ -47,9 +47,11 @@
   body.invert .ui .card { background: rgba(255,255,255,.98); color:#000; border-color:#000; box-shadow:0 0 0 2px #000 inset; }
   .ui .btn{border-color:currentColor}
 
-  /* Character modal (new) */
+  /* Character modal */
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .cardBtn{display:grid;place-items:center;border:2px solid currentColor;background:transparent;color:inherit;padding:8px;cursor:pointer}
+  .skinPrev{background:#000;border:1px solid currentColor}
+  body.invert .skinPrev{background:#fff}
 </style>
 </head>
 <body>
@@ -81,12 +83,12 @@
     <div class="row mt12">
       <div id="playBtn" class="btn">▶ Play</div>
       <div id="howBtn" class="btn">? How to Play</div>
-      <div id="charBtn" class="btn">👤 Characters</div> <!-- NEW -->
+      <div id="charBtn" class="btn">👤 Characters</div>
       <div id="settingsBtn" class="btn">☼ Settings</div>
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.8.3+ — Daily & Skins • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.8.7 — Daily & Skins (hotfix) • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -111,7 +113,7 @@
     <div id="nameGate" class="mt12">
       <div class="ghost">Enter name to submit score:</div>
       <div class="row mt8">
-        <input id="nameInput" type="text" maxlength="12" placeholder="Your Name"/> <!-- 12 max -->
+        <input id="nameInput" type="text" maxlength="12" placeholder="Your Name"/>
         <div id="submitBtn" class="btn">Submit</div>
       </div>
     </div>
@@ -134,7 +136,7 @@
       <div id="setContrast" class="btn">⬛/⬜ Contrast</div>
       <div id="setSpeed" class="btn">Speed: Normal (×1.5)</div>
     </div>
-    <div class="mt12">Name: <input id="setName" type="text" maxlength="12" style="width:260px"/></div> <!-- 12 max -->
+    <div class="mt12">Name: <input id="setName" type="text" maxlength="12" style="width:260px"/></div>
     <div class="row mt12">
       <div id="settingsClose" class="btn">Close</div>
     </div>
@@ -162,7 +164,7 @@
     <div class="row" style="justify-content:space-between;align-items:center;">
       <h2>Leaderboard <span id="lbSub" class="ghost" style="font:12px 'Press Start 2P',monospace;margin-left:8px;"></span></h2>
       <div class="row">
-        <div id="lbToday" class="btn">Today</div>   <!-- NEW default -->
+        <div id="lbToday" class="btn">Today</div>
         <div id="lbAll" class="btn">All-time</div>
         <div id="lb20" class="btn">Top 20</div>
         <div id="lb10" class="btn">Top 10</div>
@@ -187,12 +189,12 @@
     <div class="mt6">Font: <b>Press Start 2P</b> (CodeMan38) — SIL Open Font License 1.1</div>
     <div class="mt6">Music & SFX: <b>Original in-engine chiptune</b> via Web Audio API</div>
     <div class="mt6">Assisted by <b>Mira</b> (AI collaborator)</div>
-    <div class="mt6 ghost">Scores are sent to a Google Sheet leaderboard. Please avoid personal info in your name.</div>
+    <div class="mt6 ghost">Scores go to a Google Sheet leaderboard. Keep names clean.</div>
     <div class="row mt12"><div id="creditsClose" class="btn">Close</div></div>
   </div>
 </div>
 
-<!-- Character Select (NEW) -->
+<!-- Character Select -->
 <div id="chars" class="ui">
   <div class="card">
     <h2>Character Select</h2>
@@ -229,7 +231,7 @@
 
 <script>
 /* ===== Config ===== */
-const GAME_VERSION = '1.8.3+';
+const GAME_VERSION = '1.8.7';
 const API_URL = "https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
 
 /* ===== Canvas & DPR ===== */
@@ -280,7 +282,7 @@ function beep(kind='jump'){
   }
 }
 
-/* Simple chiptune loop */
+/* Simple chiptune loop (unchanged) */
 let musicRunning=false, musicTimer=null, musicStep=0;
 const bpm=140, stepSec=60/bpm/2;
 const NT=n=>440*Math.pow(2,(n-69)/12);
@@ -323,7 +325,7 @@ let timeMs = 0;
 let state='boot'; // boot | menu | play | paused | over
 let score=0, best=Number(localStorage.getItem('moon_best')||0);
 let scroll=0;
-let uiReturn = 'menu'; // where to return after closing leaderboard
+let uiReturn = 'menu';
 const statusEl=document.getElementById('status');
 
 /* ===== Speed Modes ===== */
@@ -331,10 +333,9 @@ const speedModes=[
   {name:'Casual', speed:2.4, score:1.0, coin:200},
   {name:'Normal', speed:3.2, score:1.5, coin:300},
   {name:'Hard',   speed:4.4, score:2.0, coin:400},
-  {name:'Insane', speed:5.4, score:2.3, coin:400}, // NEW — faster base, higher score mult, same coin as Hard
+  {name:'Insane', speed:5.4, score:2.3, coin:400},
 ];
-
-let speedMode=1; // default Normal
+let speedMode=1;
 let baseSpeed=speedModes[speedMode].speed;
 let scoreMul = speedModes[speedMode].score;
 let coinValue = speedModes[speedMode].coin;
@@ -348,11 +349,11 @@ function setMode(idx){
   if(setBtn) setBtn.textContent = `Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
 }
 
-/* ===== Character skin (NEW) ===== */
+/* ===== Character skin ===== */
 const SKIN_KEY='moon_skin';
 let skin = localStorage.getItem(SKIN_KEY)||'astro'; // 'astro'|'invert'|'alien'
 
-/* ===== Name sanitize (NEW) ===== */
+/* ===== Name sanitize ===== */
 const NAME_RE = /[^A-Za-z0-9 _\-.]/g;
 function cleanName(s){
   return (s||'').toString().trim().replace(/\s+/g,' ').replace(NAME_RE,'').slice(0,12) || 'Player';
@@ -369,7 +370,7 @@ addEventListener('keydown',e=>{
     else if(state==='paused'){ hideUI('pause'); state='play'; document.getElementById('menuBtn').style.display='none'; }
   }
   if(state==='menu'&&(e.key===' '||e.key==='Enter'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')) start();
-  if(state==='over'&&(e.key===' '||e.key==='Enter')) start();
+  if(state==='over'&&(e.key===' '||e.key==='Enter')) { hideUI('over'); start(); } // FIX
 });
 addEventListener('keyup',e=>{ if (document.activeElement && document.activeElement.tagName === 'INPUT') return; keys[e.key]=false; });
 
@@ -413,9 +414,9 @@ function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','ch
 /* Menu wiring */
 document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
 document.getElementById('howBtn').onclick=()=> showUI('how');
-document.getElementById('charBtn').onclick=()=> openChars(); // NEW
+document.getElementById('charBtn').onclick=()=> openChars();
 document.getElementById('settingsBtn').onclick=()=>{ document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
-document.getElementById('lbBtn').onclick=()=>{ uiReturn='menu'; showUI('lb'); lbActivate('daily'); }; // default Today
+document.getElementById('lbBtn').onclick=()=>{ uiReturn='menu'; showUI('lb'); lbActivate('daily'); };
 document.getElementById('creditsBtn').onclick=()=> showUI('credits');
 
 document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
@@ -423,9 +424,9 @@ document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
 document.getElementById('pauseSettingsBtn').onclick=()=>{ hideUI('pause'); document.getElementById('setName').value=(localStorage.getItem('moon_name')||''); showUI('settings'); };
 document.getElementById('exitBtn').onclick=()=>{ hideUI('pause'); showUI('menu'); state='menu'; };
 
-document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
+document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); }; // FIX
 document.getElementById('overMenuBtn').onclick=()=>{ hideUI('over'); showUI('menu'); state='menu'; };
-document.getElementById('overLbBtn').onclick=()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); lbActivate('daily'); }; // default Today
+document.getElementById('overLbBtn').onclick=()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); lbActivate('daily'); };
 
 document.getElementById('howClose').onclick=()=> hideUI('how');
 document.getElementById('creditsClose').onclick=()=> hideUI('credits');
@@ -442,7 +443,7 @@ document.getElementById('settingsClose').onclick=()=>{
 
 document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
 
-/* Leaderboard tabs (UPDATED) */
+/* Leaderboard tabs */
 const lbSub = document.getElementById('lbSub');
 const lbTodayBtn = document.getElementById('lbToday');
 const lbAllBtn   = document.getElementById('lbAll');
@@ -461,7 +462,7 @@ function lbActivate(kind){
   else { lbSetActive(lb10Btn); loadLeaderboard({period:'all',limit:10}); }
 }
 
-/* ===== Leaderboard (UPDATED to new API) ===== */
+/* ===== Leaderboard ===== */
 async function loadLeaderboard({period='daily',limit=20}={}){
   try{
     document.querySelector('#lbTable tbody').innerHTML='<tr><td colspan="5">Loading…</td></tr>';
@@ -500,7 +501,7 @@ async function submitScore(name,score){
   }catch(e){ return false; }
 }
 
-/* ===== World & Difficulty (same as your 1.8.3) ===== */
+/* ===== World & Difficulty (same) ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
 function getDiff(){
@@ -519,9 +520,8 @@ function getDiff(){
 
 /* ===== Player & physics ===== */
 const GRAV=0.65,JUMP=11.6,FRICTION=0.86;
-const COYOTE_MS=120,JUMP_BUFFER_MS=120;
+const JUMP_BUFFER_MS=120;
 const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0};
-let coyoteUntil=0;
 
 /* ===== Generation ===== */
 function resetWorld(){
@@ -530,13 +530,13 @@ function resetWorld(){
   segments.push({x:0,w:440,type:'ground'}); // runway
   spawnAhead(W*2.4);
 }
-function lastEnd(){ return segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0; }
+function lastEnd(){ return segments.length?segments[segments.length-1].x+segments[segments-1].w:0; } // (unused)
 function spawnAhead(targetX){
-  while(lastEnd()<targetX){
+  while((segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0)<targetX){
     const {gapMin,gapMax,gMin,gMax}=getDiff();
     const afterTutorial=(timeMs>10000);
     const segW=Math.floor(gMin+RND()*(gMax-gMin));
-    const gx=lastEnd();
+    const gx=(segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0);
     segments.push({x:gx,w:segW,type:'ground'});
 
     if(afterTutorial){
@@ -548,11 +548,11 @@ function spawnAhead(targetX){
     if(afterTutorial && RND()<0.12){ const ix=gx+segW-60; const type=(RND()<0.6?'shield':'slow'); items.push({kind:type,x:ix,y:floorY-48,w:12,h:12,phase:(RND()*6.28)}); }
 
     const gap=afterTutorial?Math.floor(gapMin+RND()*gapMax):Math.floor(20+RND()*30);
-    segments.push({x:lastEnd(),w:gap,type:'gap'});
+    segments.push({x:gx+segW,w:gap,type:'gap'});
   }
 }
 
-/* ===== Sprites (add player skins) ===== */
+/* ===== Sprites ===== */
 function astronaut(x,y,pose='idle'){
   const f=FG(),b=BG(); x=i(x); y=i(y);
   FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
@@ -562,8 +562,8 @@ function astronaut(x,y,pose='idle'){
 }
 function astronautInvert(x,y,pose='idle'){
   const f=FG(),b=BG(); x=i(x); y=i(y);
-  FILL(x-1,y-2,18,26,b); // silhouette
-  astronaut(x,y,pose);  // edges stay crisp
+  FILL(x-1,y-2,18,26,b);
+  astronaut(x,y,pose);
 }
 function playerAlien(x,y){
   const f=FG(),b=BG(); x=i(x); y=i(y);
@@ -584,7 +584,7 @@ function tileGround(x,y,w){ const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w); FILL(x
 /* ===== Collisions ===== */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
 
-/* ===== Character Select (NEW) ===== */
+/* ===== Character Select (fixed previews) ===== */
 function openChars(){ showUI('chars'); drawSkinPreviews(); }
 document.getElementById('charsClose').onclick=()=> hideUI('chars');
 document.querySelectorAll('#chars .cardBtn').forEach(btn=>{
@@ -595,44 +595,51 @@ document.querySelectorAll('#chars .cardBtn').forEach(btn=>{
   });
 });
 function drawSkinPreviews(){
-  document.querySelectorAll('.skinPrev').forEach((cv,idx)=>{
-    const kind=['astro','invert','alien'][idx];
-    const c=cv.getContext('2d'); c.imageSmoothingEnabled=false; c.fillStyle='#000'; c.fillRect(0,0,64,64); c.fillStyle='#fff';
-    c.save(); c.translate(32,40);
-    if(kind==='alien'){ playerAlien(-8,-18); }
-    else if(kind==='invert'){ astronautInvert(-8,-22); }
-    else { astronaut(-8,-22); }
-    c.restore();
+  const cards = document.querySelectorAll('#chars .cardBtn');
+  cards.forEach(card=>{
+    const kind = card.dataset.skin;
+    const cv = card.querySelector('canvas');
+    const c = cv.getContext('2d');
+    const f = '#fff', b = '#000';
+    c.imageSmoothingEnabled=false;
+    c.fillStyle = document.body.classList.contains('invert') ? '#fff' : '#000';
+    c.fillRect(0,0,64,64);
+    c.fillStyle = document.body.classList.contains('invert') ? '#000' : '#fff';
+
+    // tiny local drawer (no global ctx usage)
+    const RF=(x,y,w,h,col)=>{c.fillStyle=col; c.fillRect(x|0,y|0,w|0,h|0);};
+    if(kind==='alien'){
+      RF(21,30,22,14,f); RF(25,34,4,4,b); RF(35,34,2,2,b); RF(23,44,18,2,f);
+    }else{
+      // astronaut silhouette + visor
+      if(kind==='invert'){ RF(21,26,18,26,b); }
+      RF(24,28,16,22,f); RF(21,34,3,10,f); RF(29,34,6,6,b);
+    }
   });
 }
 
-/* ===== Pickup Callouts (NEW) ===== */
-const callouts=[]; // {x,y,vy,life,text}
+/* ===== Pickup Callouts ===== */
+const callouts=[];
 function addCall(text, x, y){ callouts.push({ x, y, vy:-0.35, life:60, text }); }
 function updateCallouts(u){
   for(let i=callouts.length-1;i>=0;i--){
-    const c=callouts[i];
-    c.y += c.vy * u;
-    c.life -= u;
-    if(c.life<=0) callouts.splice(i,1);
+    const c=callouts[i]; c.y += c.vy * u; c.life -= u; if(c.life<=0) callouts.splice(i,1);
   }
 }
 function drawCallouts(){
   ctx.save();
   ctx.fillStyle=FG(); ctx.textAlign='center'; ctx.textBaseline='bottom';
   ctx.font="12px 'Press Start 2P', monospace";
-  for(const c of callouts){
-    ctx.globalAlpha = Math.max(0, c.life/60);
-    ctx.fillText(c.text, c.x, c.y);
-  }
-  ctx.restore();
-  ctx.globalAlpha=1;
+  for(const c of callouts){ ctx.globalAlpha = Math.max(0, c.life/60); ctx.fillText(c.text, c.x, c.y); }
+  ctx.restore(); ctx.globalAlpha=1;
 }
 
 /* ===== Control ===== */
 let jumpBuffer=0;
 function start(){
-  resetWorld(); state='play'; statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
+  hideAllUI();                       // FIX: clear any overlay before starting
+  resetWorld(); state='play';
+  statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   document.getElementById('menuBtn').style.display='none';
   if(!musicMuted) startMusic(); beep('coin');
 }
@@ -676,8 +683,8 @@ document.getElementById('submitBtn').onclick=async()=>{
   document.getElementById('nameGate').style.display='none';
 };
 
-/* ===== Update (frame-rate independent, same base) ===== */
-const GRAV_U=GRAV, ACCEL_U=0.7, COIN_BASE=200;
+/* ===== Update (frame-rate independent) ===== */
+const GRAV_U=GRAV, ACCEL_U=0.7;
 function update(u){
   timeMs += (u / TARGET_FPS) * 1000;
 
@@ -755,7 +762,7 @@ function update(u){
     }
   }
 
-  // items + callouts (NEW)
+  // items + callouts
   for(let k=items.length-1;k>=0;k--){
     const it=items[k];
     const bob = Math.sin((timeMs/260) + (it.phase||0)) * 2;
@@ -805,7 +812,7 @@ function draw(){
     if(e.kind==='alien') enemyAlien(x,y,blink); else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
   }
 
-  // items (with small animations)
+  // items (small animations)
   for(const it of items){
     const x=i2(it.x - scroll), y=i2((it._drawY ?? it.y));
     if(it.kind==='chip'){
@@ -848,7 +855,7 @@ function draw(){
     FILL(player.x+player.w-1,player.y,1,player.h,f);
   }
 
-  // callouts (NEW)
+  // callouts
   drawCallouts();
 
   // HUD
