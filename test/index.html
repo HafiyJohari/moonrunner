@@ -49,10 +49,24 @@
   /* Pause tips line */
   .tips{margin-top:10px;font:10px 'Press Start 2P',monospace;opacity:.85}
 
+
+  /* Keep avatar preview canvases tiny and crisp */
+  
+.preview canvas{
+  width:32px;           /* match their intrinsic size */
+  height:44px;
+  max-width:none;       /* stop responsive upscaling */
+  max-height:none;
+  display:inline-block; /* cancel the global display:block that caused full-width centering */
+  margin:0;             /* cancel margin:auto */
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+}
+  
   /* Avatar grid */
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
   .preview{display:flex;flex-direction:column;align-items:center;gap:6px}
-  .preview canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:1px solid currentColor;background:transparent}
+#game{image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:auto;max-width:100vw;max-height:100vh}
 </style>
 </head>
 <body>
