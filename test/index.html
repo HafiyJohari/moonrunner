@@ -113,20 +113,35 @@
 
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
-
-  /* Portrait: lift the canvas a bit and shrink pads so they don't cover action */
+/* === PORTRAIT FIX: make game larger and keep pads clear === */
 @media (hover:none) and (pointer:coarse) and (orientation:portrait){
-  /* create breathing room below the canvas */
-  canvas{ margin-bottom: 120px; }
 
-  /* smaller pads in portrait */
-  .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
-  .jump{ width:76px; height:76px; }
+  /* Grow the game by using viewport height instead of width */
+  canvas{
+    height: 66vh; /* tweak to 70–72vh if you want even bigger */
+    width: min(96vw, calc(66vh * (16/9)));
+    margin-bottom: 108px; /* room for pads */
+  }
 
-  /* tuck into corners a bit tighter */
+  /* Match HUD width to canvas width */
+  .hud{
+    width: min(96vw, calc(66vh * (16/9)));
+  }
+
+  /* Pads a bit smaller & tucked into corners */
+  .pad{ width:64px; height:64px; font-size:18px; border-radius:14px; }
+  .jump{ width:72px; height:72px; }
   .mobile .leftGrp  { left:10px;  bottom:10px; }
   .mobile .rightGrp { right:10px; bottom:10px; }
 }
+
+/* If the device is very short even in portrait (small phones), shrink pads once more */
+@media (hover:none) and (pointer:coarse) and (orientation:portrait) and (max-height:700px){
+  .pad{ width:58px; height:58px; }
+  .jump{ width:66px; height:66px; }
+  canvas{ margin-bottom: 96px; }
+}
+
 </style>
 </head>
 <body>
