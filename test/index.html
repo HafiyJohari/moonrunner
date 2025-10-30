@@ -1018,7 +1018,7 @@ function spawnAhead(targetX){
         items.push({ kind: 'shield', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
       // slow (LOWERED)
-      if (RND() < 0.8) {
+      if (RND() < 0.08) {
         const ix = gx + 46;
         items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
