@@ -864,19 +864,6 @@ function spawnAhead(targetX){
   }
 }
 
-    if(afterTutorial){
-      if(RND()<0.19 && segW>120){ const cx=gx+40+Math.floor(RND()*(segW-80)); entities.push({kind:'spike',x:cx,y:floorY-60,w:40,h:10}); }
-      if(RND()<0.38 && segW>100){ const ax=gx+40+Math.floor(RND()*(segW-100)); entities.push({kind:'alien',x:ax,y:floorY-14,w:22,h:14,dir:(RND()<0.5?-1:1),baseX:ax,range:36+Math.floor(RND()*44)}); }
-    }
-
-    if(RND()<0.6){ const ix=gx+30+Math.floor(RND()*(segW-60)); items.push({kind:'chip',x:ix,y:floorY-40,w:10,h:10,phase:(RND()*6.28)}); }
-    if(afterTutorial && RND()<0.12){ const ix=gx+segW-60; const type=(RND()<0.6?'shield':'slow'); items.push({kind:type,x:ix,y:floorY-48,w:12,h:12,phase:(RND()*6.28)}); }
-
-    const gap=afterTutorial?Math.floor(gapMin+RND()*gapMax):Math.floor(20+RND()*30);
-    segments.push({x:gx+segW,w:gap,type:'gap'});
-  }
-}
-
 /* Sprites (unchanged) */
 function astroClassic(x,y,pose='idle'){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
   if(pose==='run1'){FILL(x+2,y+18,5,2,b);FILL(x+11,y+18,3,2,b);} if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+9,y+18,6,2,b);} if(pose==='jump'){FILL(x+3,y+18,10,2,b);} }
