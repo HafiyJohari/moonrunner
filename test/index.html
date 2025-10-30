@@ -1008,17 +1008,17 @@ function spawnAhead(targetX){
         });
       }
       // spike (same)
-      if (RND() < 0.25 && segW > 120) {
+      if (RND() < 0.20 && segW > 120) {
         const sx = gx + 40 + Math.floor(RND() * (segW - 80));
         entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
       }
       // shield (LOWERED)
-      if (RND() < 0.07) {
+      if (RND() < 0.09) {
         const ix = gx + segW - 58;
         items.push({ kind: 'shield', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
       // slow (LOWERED)
-      if (RND() < 0.05) {
+      if (RND() < 0.07) {
         const ix = gx + 46;
         items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
