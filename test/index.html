@@ -43,12 +43,13 @@
 }
 .jump{ width:96px; height:96px; }
 
-/* Show pads ONLY while actually playing (JS toggles body.playing) */
+/* Show pads ONLY while actually playing (touch devices) */
 @media (hover:none) and (pointer:coarse){
+
   .mobile{ display:none; }
   body.playing .mobile{ display:block; }
   .hud .right{ display:none; } /* keep bottom buttons from overlapping on touch */
-}
+
   /* Resize pads for portrait */
   .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
   .jump{ width:76px; height:76px; }
@@ -56,7 +57,6 @@
   /* Corner placement */
   .mobile .leftGrp  { left:10px;  bottom:10px; }
   .mobile .rightGrp { right:10px; bottom:10px; }
-
 }
 
 /* Shorter screens: shrink slightly */
@@ -790,32 +790,141 @@ function resetWorld(){
   spawnAhead(W*2.4);
 }
 function spawnAhead(targetX){
-  while((segments.length ? segments[segments.length-1].x + segments[segments.length-1].w : 0) < targetX){
+  while ((segments.length ? segments[segments.length - 1].x + segments[segments.length - 1].w : 0) < targetX) {
 
-    // 1) work out current tutorial phase from time
+    // figure out tutorial phase
     let phase = 0;
-    if      (timeMs > 11500) phase = 5;   // normal
-    else if (timeMs > 9500)  phase = 4;   // + slow
-    else if (timeMs > 7500)  phase = 3;   // + shield
-    else if (timeMs > 5000)  phase = 2;   // + spikes
-    else if (timeMs > 2500)  phase = 1;   // + alien
-    else                     phase = 0;   // coins only
+    if      (timeMs > 11500) phase = 5;   // free / normal
+    else if (timeMs > 9500)  phase = 4;   // + powerups (shield/slow)
+    else if (timeMs > 7500)  phase = 3;   // + spikes
+    else if (timeMs > 5000)  phase = 2;   // + aliens
+    else if (timeMs > 2500)  phase = 1;   // coins only
+    else                     phase = 0;   // just run
 
-    const {gapMin,gapMax,gMin,gMax}=getDiff();
+    const { gapMin, gapMax, gMin, gMax } = getDiff();
     const segW = Math.floor(gMin + RND() * (gMax - gMin));
-    const gx   = (segments.length ? segments[segments.length-1].x + segments[segments.length-1].w : 0);
+    const gx   = (segments.length ? segments[segments.length - 1].x + segments[segments.length - 1].w : 0);
+
+    // add ground segment
     segments.push({ x: gx, w: segW, type: 'ground' });
 
-    /* ----- PHASED SPAWNS ----- */
+    /* -------------------------
+       SINGLE-SPAWN PER SEGMENT
+       ------------------------- */
+    let spawned = false;
 
-    // chips: always
-    if (RND() < 0.6){
-      const ix = gx + 30 + Math.floor(RND() * (segW - 60));
-      items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: (RND() * 6.28) });
+    // PHASE 0 — flat run, no coins
+    if (phase === 0) {
+      // do nothing
     }
 
-    // phase 1+: add alien sometimes
-    if (phase >= 1){
+    // PHASE 1 — coins only
+    else if (phase === 1) {
+      if (RND() < 0.7 && segW > 80) {
+        const ix = gx + 36 + Math.floor(RND() * (segW - 72));
+        items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: (RND() * 6.28) });
+        spawned = true;
+      }
+    }
+
+    // PHASE 2 — coin OR alien
+    else if (phase === 2) {
+      if (RND() < 0.55) {
+        // coin
+        const ix = gx + 36 + Math.floor(RND() * (segW - 72));
+        items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: (RND() * 6.28) });
+        spawned = true;
+      } else if (segW > 110) {
+        // alien
+        const ax = gx + 46 + Math.floor(RND() * (segW - 110));
+        entities.push({
+          kind: 'alien',
+          x: ax,
+          y: floorY - 14,
+          w: 22,
+          h: 14,
+          dir: (RND() < 0.5 ? -1 : 1),
+          baseX: ax,
+          range: 42 + Math.floor(RND() * 32)
+        });
+        spawned = true;
+      }
+    }
+
+    // PHASE 3 — coin OR alien OR spike
+    else if (phase === 3) {
+      const roll = RND();
+      if (roll < 0.45) {
+        // coin
+        const ix = gx + 36 + Math.floor(RND() * (segW - 72));
+        items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: (RND() * 6.28) });
+        spawned = true;
+      } else if (roll < 0.75 && segW > 110) {
+        // alien
+        const ax = gx + 46 + Math.floor(RND() * (segW - 110));
+        entities.push({
+          kind: 'alien',
+          x: ax,
+          y: floorY - 14,
+          w: 22,
+          h: 14,
+          dir: (RND() < 0.5 ? -1 : 1),
+          baseX: ax,
+          range: 42 + Math.floor(RND() * 32)
+        });
+        spawned = true;
+      } else if (segW > 120) {
+        // spike
+        const sx = gx + 40 + Math.floor(RND() * (segW - 80));
+        entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
+        spawned = true;
+      }
+    }
+
+    // PHASE 4 — coin/alien/spike/shield/slow (but still max 1)
+    else if (phase === 4) {
+      const roll = RND();
+      if (roll < 0.40) {
+        // coin
+        const ix = gx + 36 + Math.floor(RND() * (segW - 72));
+        items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: (RND() * 6.28) });
+        spawned = true;
+      } else if (roll < 0.63 && segW > 110) {
+        // alien
+        const ax = gx + 46 + Math.floor(RND() * (segW - 110));
+        entities.push({
+          kind: 'alien',
+          x: ax,
+          y: floorY - 14,
+          w: 22,
+          h: 14,
+          dir: (RND() < 0.5 ? -1 : 1),
+          baseX: ax,
+          range: 42 + Math.floor(RND() * 32)
+        });
+        spawned = true;
+      } else if (roll < 0.8 && segW > 120) {
+        // spike
+        const sx = gx + 40 + Math.floor(RND() * (segW - 80));
+        entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
+        spawned = true;
+      } else {
+        // powerup (shield or slow)
+        const ix = gx + segW - 58;
+        const kind = (RND() < 0.55) ? 'shield' : 'slow';
+        items.push({ kind, x: ix, y: floorY - 48, w: 12, h: 12, phase: (RND() * 6.28) });
+        spawned = true;
+      }
+    }
+
+    // PHASE 5 — normal game, keep your old behaviour
+    else {
+      // coins
+      if (RND() < 0.6){
+        const ix = gx + 30 + Math.floor(RND() * (segW - 60));
+        items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: (RND() * 6.28) });
+      }
+      // alien
       if (RND() < 0.35 && segW > 100){
         const ax = gx + 40 + Math.floor(RND() * (segW - 100));
         entities.push({
@@ -829,36 +938,30 @@ function spawnAhead(targetX){
           range: 36 + Math.floor(RND() * 44)
         });
       }
-    }
-
-    // phase 2+: add spikes sometimes
-    if (phase >= 2){
+      // spike
       if (RND() < 0.25 && segW > 120){
         const sx = gx + 40 + Math.floor(RND() * (segW - 80));
         entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
       }
-    }
-
-    // phase 3+: spawn shield at end of platform
-    if (phase >= 3){
+      // shield
       if (RND() < 0.40){
         const ix = gx + segW - 58;
         items.push({ kind: 'shield', x: ix, y: floorY - 48, w: 12, h: 12, phase: (RND() * 6.28) });
       }
-    }
-
-    // phase 4+: sometimes slow-mo
-    if (phase >= 4){
+      // slow
       if (RND() < 0.28){
         const ix = gx + 46;
         items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: (RND() * 6.28) });
       }
     }
 
-    // 2) gaps — in tutorial we keep gap small so player can focus
+    // gaps — make phase 0/1 gaps small so player can settle
     let gap;
-    if (phase === 0) gap = Math.floor(20 + RND() * 28);
-    else             gap = Math.floor(gapMin + RND() * gapMax);
+    if (phase <= 1) {
+      gap = Math.floor(20 + RND() * 26);
+    } else {
+      gap = Math.floor(gapMin + RND() * gapMax);
+    }
 
     segments.push({ x: gx + segW, w: gap, type: 'gap' });
   }
