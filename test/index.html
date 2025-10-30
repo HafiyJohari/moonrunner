@@ -57,8 +57,6 @@
   .mobile .leftGrp  { left:10px;  bottom:10px; }
   .mobile .rightGrp { right:10px; bottom:10px; }
 
-  /* Always show pads when playing on touch */
-  body.playing .mobile{ display:block; }
 }
 
 /* Shorter screens: shrink slightly */
@@ -194,6 +192,11 @@ body.playing .mobile .jump{
     width:94px;
     height:94px;
   }
+}
+
+  /* desktop safety: hide mobile pads on mouse/keyboard devices */
+@media (hover:hover) and (pointer:fine){
+  .mobile{ display:none !important; }
 }
 
   
