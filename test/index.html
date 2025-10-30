@@ -1013,12 +1013,12 @@ function spawnAhead(targetX){
         entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
       }
       // shield (LOWERED)
-      if (RND() < 0.18) {
+      if (RND() < 0.10) {
         const ix = gx + segW - 58;
         items.push({ kind: 'shield', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
       // slow (LOWERED)
-      if (RND() < 0.10) {
+      if (RND() < 0.8) {
         const ix = gx + 46;
         items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
