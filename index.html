@@ -2,19 +2,97 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MKHKASG: MoonRunner — v1.9.1 “Lunar Stable”</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MKHKASG: MoonRunner — v1.9.5 “Lunar Substantial”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --w:960; --h:540; }
   html,body{margin:0;height:100%;background:#000;color:#fff;font-family:ui-monospace,Consolas,Menlo,monospace}
   body.invert{background:#fff;color:#000}
   .wrap{display:grid;place-items:center;height:100%;gap:8px;padding:10px}
+
+#stage{ position:relative; }        /* lets pads sit above the canvas */
+
+/* Mobile HUD overlay (hidden by default; we show it only while playing) */
+.mobile{
+  position:absolute;
+  inset:auto 0 max(env(safe-area-inset-bottom,0px), 10px) 0;
+  display:none;
+  pointer-events:none;
+  z-index:30; /* above canvas */
+}
+/* Force-show pads when game is playing (fix for Chrome portrait) */
+body.playing .mobile{
+  display:block !important;
+  pointer-events:auto;
+}
+
+/* Corner groups pinned like a racing game UI */
+.mobile .leftGrp{
+  position:absolute; left:12px; bottom:0;
+  display:flex; gap:10px; pointer-events:none;
+}
+.mobile .rightGrp{
+  position:absolute; right:12px; bottom:0;
+  display:flex; gap:10px; pointer-events:none;
+}
+
+/* Pads are tap targets; groups stay non-interactive */
+.pad{
+  pointer-events:auto;
+  background:rgba(255,255,255,.06); /* subtle, keeps 1-bit vibe */
+  color:inherit; border:1px solid currentColor; border-radius:16px;
+  width:84px; height:84px;           /* landscape size */
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; touch-action:none; opacity:.95;
+}
+.jump{ width:96px; height:96px; }
+
+/* Show pads ONLY while actually playing (touch devices) */
+@media (hover:none) and (pointer:coarse){
+
+  .mobile{ display:none; }
+  body.playing .mobile{ display:block; }
+  .hud .right{ display:none; } /* keep bottom buttons from overlapping on touch */
+
+  /* Resize pads for portrait */
+  .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
+  .jump{ width:76px; height:76px; }
+
+  /* Corner placement */
+  .mobile .leftGrp  { left:10px;  bottom:10px; }
+  .mobile .rightGrp { right:10px; bottom:10px; }
+}
+
+/* Shorter screens: shrink slightly */
+@media (orientation:portrait) and (max-height:700px){
+  body.playing #stage{ padding-bottom:90px; }
+  .pad{ width:62px; height:62px; }
+  .jump{ width:70px; height:70px; }
+}
+
+  
+/* Ensure pads also show while fullscreen on iOS/Safari */
+:fullscreen .mobile{display:block}
+:-webkit-full-screen .mobile{display:block}
+
+
+/* Ensure pads also show while fullscreen on iOS/Safari */
+:fullscreen .mobile{display:block}
+:-webkit-full-screen .mobile{display:block}
+
+/* Manual override still supported */
+.mobile.show{ display:block !important; }
+
+
+  /* Canvas scales but keeps 16:9 */
   canvas{
     width:min(96vw,96vh*(16/9));
     height:calc(var(--h) * (min(96vw,96vh*(16/9)) / var(--w)));
     image-rendering:pixelated; image-rendering:crisp-edges; background:transparent;
+    display:block;
   }
+
   .hud{width:min(96vw,96vh*(16/9));display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.95}
   .hud .left,.hud .right{display:flex;gap:10px;align-items:center}
   .btn{padding:4px 10px;border:1px solid currentColor;cursor:pointer;user-select:none}
@@ -33,12 +111,6 @@
   table{width:100%;border-collapse:collapse;font:12px 'Press Start 2P',monospace}
   th,td{border-bottom:1px solid currentColor;padding:6px 4px;text-align:left}
 
-  /* Mobile pads */
-  .mobile{position:fixed;left:0;right:0;bottom:10px;display:none;justify-content:space-between;pointer-events:none;padding:0 8px;z-index:5}
-  .pad{pointer-events:auto;background:transparent;color:inherit;border:1px solid currentColor;border-radius:12px;width:31vw;height:16vh;display:flex;align-items:center;justify-content:center;font-size:18px;touch-action:none;opacity:.9}
-  .jump{width:31vw;height:16vh}
-  @media (max-width:820px){ .mobile{display:flex} .hud .right{display:none} }
-
   /* Contrast-safe overlays */
   body:not(.invert) .ui { background: rgba(0,0,0,.78); }
   body:not(.invert) .ui .card { background: rgba(0,0,0,.96); color:#fff; border-color:#fff; box-shadow:0 0 0 2px #fff inset; }
@@ -49,29 +121,163 @@
   /* Pause tips line */
   .tips{margin-top:10px;font:10px 'Press Start 2P',monospace;opacity:.85}
 
-
-  /* Keep avatar preview canvases tiny and crisp */
-  
-.preview canvas{
-  width:32px;           /* match their intrinsic size */
-  height:44px;
-  max-width:none;       /* stop responsive upscaling */
-  max-height:none;
-  display:inline-block; /* cancel the global display:block that caused full-width centering */
-  margin:0;             /* cancel margin:auto */
-  image-rendering:pixelated;
-  image-rendering:crisp-edges;
-}
-  
-  /* Avatar grid */
+  /* Avatar previews tiny & crisp */
+  .preview canvas{
+    width:32px;height:44px;max-width:none;max-height:none;display:inline-block;margin:0;
+    image-rendering:pixelated;image-rendering:crisp-edges;
+  }
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
   .preview{display:flex;flex-direction:column;align-items:center;gap:6px}
-#game{image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:auto;max-width:100vw;max-height:100vh}
+
+/* --- Avatar popup restored --- */
+#avatars{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.85);
+  z-index:60;
+  justify-content:center;
+  align-items:center;
+}
+#avatars .card{
+  width:min(480px,90vw);
+  padding:16px 20px;
+  border:2px solid #fff;
+  background:#000;
+  text-align:center;
+}
+#avatars h2{margin-bottom:10px;}
+#avatars .grid{
+  display:flex;
+  justify-content:center;
+  gap:16px;
+  flex-wrap:wrap;
+}
+#avatars canvas{
+  width:64px;
+  height:64px;
+  image-rendering:pixelated;
+}
+
+  
+  /* --- Center Caption (story/tutorial) --- */
+  #captionWrap{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:20}
+  #caption{max-width:min(92vw,900px);text-align:center;font-family:'Press Start 2P',monospace;line-height:1.8;color:#9aa;opacity:0;transform:translateY(6px);transition:opacity .28s, transform .28s}
+  #caption.show{opacity:1;transform:translateY(0)}
+  #caption .title{font-size:18px;letter-spacing:1px;color:#bcc}
+  #caption .sub{font-size:14px;color:#899}
+  @media (max-width:480px){ #caption .title{font-size:14px} #caption .sub{font-size:12px} }
+  body.invert #caption .title{color:#334} body.invert #caption .sub{color:#556}
+
+  /* Safety: any hidden UI should not catch clicks */
+  .ui[style*="display: none"]{pointer-events:none !important}
+  
+/* keep pads visible but closer to the game */
+body.playing #stage{ padding-bottom:1px; }   /* was ~110px */
+
+/* fit the canvas without stretching, use more of the screen height */
+body.playing canvas{
+  width: 100vw;
+  height: auto;
+  max-height: calc(100vh - 10px);  /* was ~200–220px -> less empty space */
+  aspect-ratio: 16 / 9;
+  display:block;
+  margin:0 auto;
+  transform:none;                   /* no zoom / shift */
+}
+
+/* keep pads a bit smaller in portrait so they don’t push the canvas */
+.mobile .pad  { width:76px; height:76px; }
+.mobile .jump { width:90px; height:90px; }
+
+/* hide bottom HUD row so it doesn't steal space from pads */
+.hud, .hud_right { display:none !important; }
+
+  /* --- Hafiy mobile pad adjust --- */
+
+/* 1. push pads up into the game area */
+body.playing .mobile .leftGrp,
+body.playing .mobile .rightGrp{
+  bottom:130px;      /* move higher: tweak 120–140px if you want */
+}
+
+/* 2. make pads bigger while playing */
+body.playing .mobile .pad{
+  width:92px;
+  height:92px;
+  font-size:20px;
+}
+
+body.playing .mobile .jump{
+  width:108px;
+  height:108px;
+}
+
+/* 3. but if screen is pendek, jangan too big */
+@media (max-height:700px){
+  body.playing .mobile .leftGrp,
+  body.playing .mobile .rightGrp{
+    bottom:105px;     /* sedikit rendah for short screens */
+  }
+  body.playing .mobile .pad{
+    width:80px;
+    height:80px;
+  }
+  body.playing .mobile .jump{
+    width:94px;
+    height:94px;
+  }
+}
+
+  /* desktop safety: hide mobile pads on mouse/keyboard devices */
+@media (hover:hover) and (pointer:fine){
+  .mobile{ display:none !important; }
+}
+
+  /* --- DESKTOP VIEW (mouse/keyboard) --- */
+@media (hover:hover) and (pointer:fine){
+
+  /* bring back old “nice” size */
+  body.playing canvas,
+  body:not(.playing) canvas{
+    width: min(84vw, 84vh * (16/9));
+    height: auto;
+    max-height: 82vh;
+    margin: 0 auto;
+    display: block;
+  }
+
+  /* stage wrapper centers everything */
+  #stage.wrap{
+    display: grid;
+    place-items: center;
+    gap: 10px;
+    padding: 10px 0 44px; /* space for bottom HUD */
+  }
+
+  /* show HUD again on desktop */
+  .hud{
+    display: flex !important;
+    width: min(84vw, 84vh * (16/9));
+    margin: 0 auto;
+  }
+
+  /* bottom tips/buttons row (like old version) */
+  .tips{
+    display: block;
+    width: min(84vw, 84vh * (16/9));
+    margin: 0 auto;
+  }
+}
+
+  
 </style>
 </head>
 <body>
-<div class="wrap">
+<div id="stage" class="wrap">
   <canvas id="cv" width="960" height="540"></canvas>
+
+  <!-- HUD -->
   <div class="hud">
     <div class="left">
       <span id="status">Loading…</span>
@@ -83,11 +289,28 @@
       <div id="music" class="btn">♪ Music</div>
       <div id="invert" class="btn">⬛/⬜ Contrast</div>
       <div id="fs" class="btn">⛶ Full</div>
+      <div id="landBtn" class="btn">⇆ Landscape</div><!-- NEW -->
       <div id="speeddown" class="btn">–Speed</div>
       <div id="speedup" class="btn">+Speed</div>
       <div id="menuBtn" class="btn" style="display:none">☰ Menu</div>
+    </div> <!-- .right -->
+  </div> <!-- .hud -->
+
+  <!-- Mobile buttons (moved INSIDE #stage) -->
+  <div class="mobile">
+    <div class="leftGrp">
+      <div id="btnLeft"  class="pad">◀</div>
+      <div id="btnRight" class="pad">▶</div>
+    </div>
+    <div class="rightGrp">
+      <div id="btnJump" class="pad jump">⤒</div>
     </div>
   </div>
+</div>
+
+<!-- Center Caption -->
+<div id="captionWrap" aria-hidden="true">
+  <div id="caption"><div class="title"></div><div class="sub"></div></div>
 </div>
 
 <!-- Main Menu -->
@@ -97,13 +320,14 @@
     <div class="ghost mt6">1-bit endless runner on the moon.</div>
     <div class="row mt12">
       <div id="playBtn" class="btn">▶ Play</div>
+      <div id="playLandBtn" class="btn" style="display:none">▶ Play in Landscape</div><!-- mobile-only -->
       <div id="howBtn" class="btn">? How to Play</div>
       <div id="avatarsBtn" class="btn">𓁷 Avatars</div>
       <div id="settingsBtn" class="btn">☼ Settings</div>
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.9.1 “Lunar Stable” • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v1.9.5 “Lunar Substantial” • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -203,13 +427,13 @@
     <div class="row" style="justify-content:space-between;align-items:center;">
       <h2>Leaderboard <span id="lbSub" class="ghost" style="font:12px 'Press Start 2P',monospace;margin-left:8px;"></span></h2>
       <div class="row">
-<div id="lbToday"   class="btn">Daily</div>
-<div id="lbWeekly"  class="btn">Weekly</div>   <!-- NEW -->
-<div id="lbMonthly" class="btn">Monthly</div>  <!-- NEW -->
-<div id="lbAll"     class="btn">All-time</div>
-<div id="lb20"      class="btn">Top 20</div>
-<div id="lb10"      class="btn">Top 10</div>
-<div id="lbClose"   class="btn">Back</div>
+        <div id="lbToday"   class="btn">Daily</div>
+        <div id="lbWeekly"  class="btn">Weekly</div>
+        <div id="lbMonthly" class="btn">Monthly</div>
+        <div id="lbAll"     class="btn">All-time</div>
+        <div id="lb20"      class="btn">Top 20</div>
+        <div id="lb10"      class="btn">Top 10</div>
+        <div id="lbClose"   class="btn">Back</div>
       </div>
     </div>
     <div class="mt12" id="lbSelf" class="ghost"></div>
@@ -235,23 +459,14 @@
   </div>
 </div>
 
-<!-- Mobile buttons -->
-<div class="mobile">
-  <div style="display:flex;gap:8px;padding-left:8px;">
-    <div id="btnLeft" class="pad">◀</div>
-    <div id="btnRight" class="pad">▶</div>
-  </div>
-  <div style="padding-right:8px;">
-    <div id="btnJump" class="pad jump">⤒</div>
-  </div>
-</div>
 
 <script>
 /* ===== Config ===== */
-const GAME_VERSION='1.9.1';
+const GAME_VERSION='1.9.1a';
 const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
-
+  
 /* ===== Canvas & DPR ===== */
+const STAGE = document.getElementById('stage'); // NEW: wrapper for fullscreen
 const CV=document.getElementById('cv');
 const ctx=CV.getContext('2d',{alpha:false}); ctx.imageSmoothingEnabled=false;
 const W=960,H=540; let DPR=1;
@@ -266,9 +481,8 @@ const i=v=>v|0, i2=v=>(v>>1)<<1;
 const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
 const pad=(n,w=5)=>String(n).padStart(w,'0');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-function esc(s){return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-/* ===== WebAudio: buses, mix, ducking ===== */
+/* ===== WebAudio ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
 let musicVol=0.045, sfxVol=0.28;
 let musicBus=null, sfxBus=null;
@@ -339,10 +553,10 @@ const TARGET_FPS=75; let last=performance.now(); let timeMs=0;
 let state='boot'; // boot | menu | play | paused | over
 let score=0, best=Number(localStorage.getItem('moon_best')||0);
 let scroll=0; let uiReturn='menu';
-let returnFromSettings = 'menu'; // back-from-settings behavior
+let returnFromSettings = 'menu';
 const statusEl=document.getElementById('status');
 
-/* ===== Speed Modes (unchanged) ===== */
+/* ===== Speed Modes ===== */
 const speedModes=[
   {name:'Casual', speed:2.4, score:1.0, coin:200},
   {name:'Normal', speed:3.2, score:1.5, coin:300},
@@ -387,23 +601,59 @@ function bindTouch(id,on,off){ const el=document.getElementById(id);
 }
 bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
 bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
-let jumpBufferUntil=0;
-bindTouch('btnJump', ()=>{ keys[' ']=true; jumpBufferUntil=performance.now()+120; }, ()=>{ keys[' ']=false; });
+bindTouch('btnJump', ()=>{ keys[' ']=true; }, ()=>{ keys[' ']=false; });
 
 /* Toolbar */
 document.getElementById('music').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent = musicMuted?'♪ Music Off':'♪ Music'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('mute').onclick =(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent = sfxMuted?'🔇 SFX':'🔈 SFX'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
 document.getElementById('invert').onclick=()=> document.body.classList.toggle('invert');
-document.getElementById('fs').onclick     =()=> CV.requestFullscreen?.();
+document.getElementById('fs').onclick = () => document.documentElement.requestFullscreen?.();
+document.getElementById('landBtn').onclick=()=> goLandscape(); // NEW
 document.getElementById('speedup').onclick =()=> setMode(speedMode+1);
 document.getElementById('speeddown').onclick=()=> setMode(speedMode-1);
-document.getElementById('menuBtn').onclick =()=>{ hideAllUI(); showUI('menu'); state='menu'; };
+document.getElementById('menuBtn').onclick =()=>{ hideAllUI(); showUI('menu'); state='menu'; setPlaying(false); };
+
+/* ===== Center Caption (story/tutorial) ===== */
+const cap = document.getElementById('caption');
+const capT=cap.querySelector('.title');
+const capS=cap.querySelector('.sub');
+let capTimer=null;
+function showCaption(title='',sub='',ms=2400){
+  capT.textContent=title||''; capS.textContent=sub||'';
+  cap.classList.add('show'); clearTimeout(capTimer);
+  capTimer=setTimeout(()=>cap.classList.remove('show'),ms);
+}
+
+/* ===== Orientation helper ===== */
+async function goLandscape(){
+  try{
+    // was: await STAGE.requestFullscreen();
+    if (document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+    }
+    if (screen.orientation && screen.orientation.lock){
+      await screen.orientation.lock('landscape');
+    } else {
+      showCaption('Rotate your phone','Landscape is easier to play.',2600);
+    }
+  } catch(e){
+    showCaption('Rotate your phone','Landscape is easier to play.',2600);
+  } finally {
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      document.querySelector('.mobile')?.classList.add('show');
+    }
+  }
+}
+
+
 
 /* UI helpers */
 function showUI(id,lock=false){ document.getElementById(id).style.display='flex'; if(lock&&state==='play') state='paused'; }
 function hideUI(id){ document.getElementById(id).style.display='none'; }
 function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','avatars'].forEach(hideUI); }
 
+function setPlaying(on){ document.body.classList.toggle('playing', !!on); }
+  
 /* Menu wiring */
 document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
 document.getElementById('howBtn').onclick =()=> showUI('how');
@@ -432,10 +682,20 @@ document.getElementById('pauseSettingsBtn').onclick = () => {
   returnFromSettings = 'play';
   showUI('settings');
 };
-document.getElementById('exitBtn').onclick=()=>{ hideUI('pause'); showUI('menu'); state='menu'; };
+document.getElementById('exitBtn').onclick=()=>{
+  hideUI('pause');
+  showUI('menu');
+  state='menu';
+  setPlaying(false); // hide pads when returning to menu
+};
 
 document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
-document.getElementById('overMenuBtn').onclick=()=>{ hideUI('over'); showUI('menu'); state='menu'; };
+document.getElementById('overMenuBtn').onclick=()=>{
+  hideUI('over');
+  showUI('menu');
+  state='menu';
+  setPlaying(false); // hide pads when returning to menu
+};
 document.getElementById('overLbBtn').onclick =()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); lbActivate('daily'); };
 
 document.getElementById('howClose').onclick=()=> hideUI('how');
@@ -457,67 +717,43 @@ document.getElementById('settingsClose').onclick = () => {
     state = 'menu';
   }
 };
+document.getElementById('lbClose').onclick=()=>{
+  hideUI('lb');
+  showUI(uiReturn);
+  if(uiReturn==='over') state='over'; else state='menu';
+  if(state==='menu') setPlaying(false); // pads hide if we land on menu
+};
 
-document.getElementById('avatarsClose').onclick=()=> hideUI('avatars');
-document.querySelectorAll('#avatars .btn[data-skin]').forEach(b=>{
-  b.addEventListener('click',()=>{
-    charSkin = b.getAttribute('data-skin');
-    localStorage.setItem('moon_char', charSkin);
-    hideUI('avatars');
-  });
-});
-
-document.getElementById('lbClose').onclick=()=>{ hideUI('lb'); showUI(uiReturn); if(uiReturn==='over') state='over'; else state='menu'; };
-
-/* Leaderboard tabs */
+/* Leaderboard tabs (unchanged) */
 const lbSub     = document.getElementById('lbSub');
 const lbToday   = document.getElementById('lbToday');
-const lbWeekly  = document.getElementById('lbWeekly');   // NEW
-const lbMonthly = document.getElementById('lbMonthly');  // NEW
+const lbWeekly  = document.getElementById('lbWeekly');
+const lbMonthly = document.getElementById('lbMonthly');
 const lbAll     = document.getElementById('lbAll');
 const lb20      = document.getElementById('lb20');
 const lb10      = document.getElementById('lb10');
-
-function lbSetActive(btn){
-  [lbToday, lbWeekly, lbMonthly, lbAll, lb20, lb10].forEach(b=> b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-lbToday .onclick = () => lbActivate('daily');
-lbWeekly.onclick = () => lbActivate('weekly');   // NEW
-lbMonthly.onclick= () => lbActivate('monthly');  // NEW
-lbAll   .onclick = () => lbActivate('all');
-lb20    .onclick = () => lbActivate('top20');
-lb10    .onclick = () => lbActivate('top10');
+function lbSetActive(btn){ [lbToday,lbWeekly,lbMonthly,lbAll,lb20,lb10].forEach(b=> b.classList.remove('active')); btn.classList.add('active'); }
+lbToday.onclick = ()=> lbActivate('daily');
+lbWeekly.onclick= ()=> lbActivate('weekly');
+lbMonthly.onclick=()=> lbActivate('monthly');
+lbAll.onclick   = ()=> lbActivate('all');
+lb20.onclick    = ()=> lbActivate('top20');
+lb10.onclick    = ()=> lbActivate('top10');
 
 function lbActivate(kind){
-  if (kind === 'daily') {
-    lbSetActive(lbToday);
-    loadLeaderboard({ period:'daily',   limit:20,  unique:false }); // raw daily
-  } else if (kind === 'weekly') {
-    lbSetActive(lbWeekly);
-    loadLeaderboard({ period:'weekly',  limit:50,  unique:true  }); // best per player
-  } else if (kind === 'monthly') {
-    lbSetActive(lbMonthly);
-    loadLeaderboard({ period:'monthly', limit:100, unique:true  }); // best per player
-  } else if (kind === 'all') {
-    lbSetActive(lbAll);
-    loadLeaderboard({ period:'all',     limit:200, unique:true  });
-  } else if (kind === 'top20') {
-    lbSetActive(lb20);
-    loadLeaderboard({ period:'all',     limit:20,  unique:true  });
-  } else { // top10
-    lbSetActive(lb10);
-    loadLeaderboard({ period:'all',     limit:10,  unique:true  });
-  }
+  if (kind === 'daily')   { lbSetActive(lbToday);   loadLeaderboard({ period:'daily',   limit:20,  unique:false }); }
+  else if (kind==='weekly'){ lbSetActive(lbWeekly); loadLeaderboard({ period:'weekly',  limit:50,  unique:true  }); }
+  else if (kind==='monthly'){lbSetActive(lbMonthly);loadLeaderboard({ period:'monthly', limit:100, unique:true  }); }
+  else if (kind==='all')  { lbSetActive(lbAll);     loadLeaderboard({ period:'all',     limit:200, unique:true  }); }
+  else if (kind==='top20'){ lbSetActive(lb20);      loadLeaderboard({ period:'all',     limit:20,  unique:true  }); }
+  else                    { lbSetActive(lb10);      loadLeaderboard({ period:'all',     limit:10,  unique:true  }); }
 }
 
-/* ===== Leaderboard (device included) ===== */
+/* ===== Leaderboard I/O ===== */
 async function loadLeaderboard({period='daily',limit=20,unique=false}={}){
   try{
     const tbodyEl = document.querySelector('#lbTable tbody');
     tbodyEl.innerHTML = '<tr><td colspan="6">Loading…</td></tr>';
-
     const url = `${API_URL}?action=list&period=${encodeURIComponent(period)}&limit=${limit}&unique=${unique?1:0}`;
     const res = await fetch(url, { cache:'no-store' });
     const data = await res.json();
@@ -544,30 +780,18 @@ async function loadLeaderboard({period='daily',limit=20,unique=false}={}){
     document.querySelector('#lbTable tbody').innerHTML = '<tr><td colspan="6">Failed to load.</td></tr>';
   }
 }
-
 async function submitScore(name,score){
   try{
     const device=/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)?'Mobile':'Desktop';
-    const body = new URLSearchParams({
-      name: cleanName(name),
-      score: String(Math.floor(score)),
-      version: GAME_VERSION,
-      mode: speedModes[speedMode].name,
-      device
-    });
+    const body = new URLSearchParams({ name, score:String(Math.floor(score)), version:GAME_VERSION, mode:speedModes[speedMode].name, device });
     const r = await fetch(API_URL, { method:'POST', body });
     const j = await r.json().catch(()=>({ok:false,error:'bad_json'}));
-    if(!j.ok){
-      // Pass back the reason so caller can display it
-      return { ok:false, error: j.error || 'submit_failed' };
-    }
+    if(!j.ok) return { ok:false, error: j.error || 'submit_failed' };
     return { ok:true };
-  }catch(err){
-    return { ok:false, error: 'network' };
-  }
+  }catch(err){ return { ok:false, error: 'network' }; }
 }
 
-/* ===== World & Difficulty (unchanged) ===== */
+/* ===== World / Difficulty / Physics (unchanged) ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
 function getDiff(){
@@ -583,161 +807,312 @@ function getDiff(){
   const gMax=gMin+140;
   return {worldScroll,gapMin,gapMax,gMin,gMax};
 }
-
-/* ===== Player & physics ===== */
 const GRAV=0.65,JUMP=11.6,FRICTION=0.86;
 const JUMP_BUFFER_MS=120;
 const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0};
 
-/* ===== Session counters (recap) ===== */
 let coinsPicked=0, shieldsPicked=0, slowUsed=0;
-
-/* ===== Near-miss tracking ===== */
 let lastNearMissTime=0;
+let milestoneIndex=0, flyby=null;
+function triggerFlyby(){ const dir = Math.random()<0.5 ? -1 : 1; flyby = { x: dir<0 ? W+60 : -60, y: 80 + Math.random()*60, dir, t: 0 }; }
 
-/* ===== Milestone UFO flyby ===== */
-let milestoneIndex=0; // 5k, 10k, 15k, ...
-let flyby=null; // {x,y,dir,t}
-function triggerFlyby(){
-  const dir = Math.random()<0.5 ? -1 : 1;
-  flyby = { x: dir<0 ? W+60 : -60, y: 80 + Math.random()*60, dir, t: 0 };
-}
-
-/* ===== Generation ===== */
 function resetWorld(){
   segments=[];entities=[];items=[];scroll=0;timeMs=0;score=0;
   coinsPicked=0; shieldsPicked=0; slowUsed=0;
   lastNearMissTime=0; milestoneIndex=0; flyby=null;
   Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0});
-  segments.push({x:0,w:440,type:'ground'}); // runway
+  segments.push({x:0,w:440,type:'ground'});
   spawnAhead(W*2.4);
 }
 function spawnAhead(targetX){
-  while((segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0)<targetX){
-    const {gapMin,gapMax,gMin,gMax}=getDiff();
-    const afterTutorial=(timeMs>10000);
-    const segW=Math.floor(gMin+RND()*(gMax-gMin));
-    const gx=(segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0);
-    segments.push({x:gx,w:segW,type:'ground'});
+  while ((segments.length ? segments[segments.length - 1].x + segments[segments.length - 1].w : 0) < targetX) {
 
-    if(afterTutorial){
-      if(RND()<0.19 && segW>120){ const cx=gx+40+Math.floor(RND()*(segW-80)); entities.push({kind:'spike',x:cx,y:floorY-60,w:40,h:10}); }
-      if(RND()<0.38 && segW>100){ const ax=gx+40+Math.floor(RND()*(segW-100)); entities.push({kind:'alien',x:ax,y:floorY-14,w:22,h:14,dir:(RND()<0.5?-1:1),baseX:ax,range:36+Math.floor(RND()*44)}); }
+    // ----- timeline (ms) -----
+    // 0   - 2000  : warmup, no items
+    // 2000- 4500  : coins only
+    // 4500- 7000  : coins OR alien
+    // 7000- 9000  : coins OR alien OR spike
+    // 9000-11000  : + shield (still max 1)
+    // 11000-13000 : + slow (still max 1)
+    // >13000      : normal game
+    let phase = 0;
+    if      (timeMs > 13000) phase = 6;
+    else if (timeMs > 11000) phase = 5;
+    else if (timeMs >  9000) phase = 4;
+    else if (timeMs >  7000) phase = 3;
+    else if (timeMs >  4500) phase = 2;
+    else if (timeMs >  2000) phase = 1;
+    else                     phase = 0;
+
+    const { gapMin, gapMax, gMin, gMax } = getDiff();
+    const segW = Math.floor(gMin + RND() * (gMax - gMin));
+    const gx   = (segments.length ? segments[segments.length - 1].x + segments[segments.length - 1].w : 0);
+
+    // make the floor
+    segments.push({ x: gx, w: segW, type: 'ground' });
+
+    // we only allow ONE thing per platform during tutorial (phase <=5)
+    let spawned = false;
+
+    // PHASE 0 — nothing, just run
+    if (phase === 0) {
+      // no items/spawns
     }
 
-    if(RND()<0.6){ const ix=gx+30+Math.floor(RND()*(segW-60)); items.push({kind:'chip',x:ix,y:floorY-40,w:10,h:10,phase:(RND()*6.28)}); }
-    if(afterTutorial && RND()<0.12){ const ix=gx+segW-60; const type=(RND()<0.6?'shield':'slow'); items.push({kind:type,x:ix,y:floorY-48,w:12,h:12,phase:(RND()*6.28)}); }
+    // PHASE 1 — coins only
+    else if (phase === 1) {
+      if (RND() < 0.75 && segW > 80) {
+        const ix = gx + 40 + Math.floor(RND() * (segW - 80));
+        items.push({ kind: 'chip', x: ix, y: floorY - 42, w: 10, h: 10, phase: RND()*6.28 });
+        spawned = true;
+      }
+    }
 
-    const gap=afterTutorial?Math.floor(gapMin+RND()*gapMax):Math.floor(20+RND()*30);
-    segments.push({x:gx+segW,w:gap,type:'gap'});
+    // PHASE 2 — coin OR alien
+    else if (phase === 2) {
+      if (RND() < 0.6) {
+        // coin
+        const ix = gx + 40 + Math.floor(RND() * (segW - 80));
+        items.push({ kind: 'chip', x: ix, y: floorY - 42, w: 10, h: 10, phase: RND()*6.28 });
+        spawned = true;
+      } else if (segW > 110) {
+        // alien
+        const ax = gx + 46 + Math.floor(RND() * (segW - 110));
+        entities.push({
+          kind: 'alien',
+          x: ax,
+          y: floorY - 14,
+          w: 22,
+          h: 14,
+          dir: (RND()<0.5?-1:1),
+          baseX: ax,
+          range: 40 + Math.floor(RND()*30)
+        });
+        spawned = true;
+      }
+    }
+
+    // PHASE 3 — coin OR alien OR spike
+    else if (phase === 3) {
+      const roll = RND();
+      if (roll < 0.45) {
+        const ix = gx + 40 + Math.floor(RND() * (segW - 80));
+        items.push({ kind: 'chip', x: ix, y: floorY - 42, w: 10, h: 10, phase: RND()*6.28 });
+        spawned = true;
+      } else if (roll < 0.75 && segW > 110) {
+        const ax = gx + 46 + Math.floor(RND() * (segW - 110));
+        entities.push({
+          kind: 'alien',
+          x: ax,
+          y: floorY - 14,
+          w: 22,
+          h: 14,
+          dir: (RND()<0.5?-1:1),
+          baseX: ax,
+          range: 40 + Math.floor(RND()*30)
+        });
+        spawned = true;
+      } else if (segW > 120) {
+        const sx = gx + 44 + Math.floor(RND() * (segW - 90));
+        entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
+        spawned = true;
+      }
+    }
+
+    // PHASE 4 — add shield, but still 1 item max
+    else if (phase === 4) {
+      const roll = RND();
+      if (roll < 0.42) {
+        const ix = gx + 40 + Math.floor(RND() * (segW - 80));
+        items.push({ kind: 'chip', x: ix, y: floorY - 42, w: 10, h: 10, phase: RND()*6.28 });
+        spawned = true;
+      } else if (roll < 0.70 && segW > 110) {
+        const ax = gx + 46 + Math.floor(RND() * (segW - 110));
+        entities.push({
+          kind: 'alien',
+          x: ax,
+          y: floorY - 14,
+          w: 22,
+          h: 14,
+          dir: (RND()<0.5?-1:1),
+          baseX: ax,
+          range: 40 + Math.floor(RND()*30)
+        });
+        spawned = true;
+      } else if (roll < 0.88 && segW > 120) {
+        const sx = gx + 44 + Math.floor(RND() * (segW - 90));
+        entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
+        spawned = true;
+      } else {
+        // shield (rare in tutorial)
+        const ix = gx + segW - 60;
+        items.push({ kind: 'shield', x: ix, y: floorY - 50, w: 12, h: 12, phase: RND()*6.28 });
+        spawned = true;
+      }
+    }
+
+    // PHASE 5 — add slow, but still max 1
+    else if (phase === 5) {
+      const roll = RND();
+      if (roll < 0.40) {
+        const ix = gx + 40 + Math.floor(RND() * (segW - 80));
+        items.push({ kind: 'chip', x: ix, y: floorY - 42, w: 10, h: 10, phase: RND()*6.28 });
+        spawned = true;
+      } else if (roll < 0.68 && segW > 110) {
+        const ax = gx + 46 + Math.floor(RND() * (segW - 110));
+        entities.push({
+          kind: 'alien',
+          x: ax,
+          y: floorY - 14,
+          w: 22,
+          h: 14,
+          dir: (RND()<0.5?-1:1),
+          baseX: ax,
+          range: 40 + Math.floor(RND()*30)
+        });
+        spawned = true;
+      } else if (roll < 0.83 && segW > 120) {
+        const sx = gx + 44 + Math.floor(RND() * (segW - 90));
+        entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
+        spawned = true;
+      } else if (roll < 0.93) {
+        const ix = gx + segW - 60;
+        items.push({ kind: 'shield', x: ix, y: floorY - 50, w: 12, h: 12, phase: RND()*6.28 });
+        spawned = true;
+      } else {
+        const ix = gx + 48;
+        items.push({ kind: 'slow', x: ix, y: floorY - 50, w: 12, h: 12, phase: RND()*6.28 });
+        spawned = true;
+      }
+    }
+
+    // PHASE 6 — back to your old random, but powerups not too frequent
+    else {
+      // coins (same)
+      if (RND() < 0.6) {
+        const ix = gx + 30 + Math.floor(RND() * (segW - 60));
+        items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: RND()*6.28 });
+      }
+      // alien (same)
+      if (RND() < 0.35 && segW > 100) {
+        const ax = gx + 40 + Math.floor(RND() * (segW - 100));
+        entities.push({
+          kind: 'alien',
+          x: ax,
+          y: floorY - 14,
+          w: 22,
+          h: 14,
+          dir: (RND()<0.5?-1:1),
+          baseX: ax,
+          range: 36 + Math.floor(RND() * 44)
+        });
+      }
+      // spike (same)
+      if (RND() < 0.25 && segW > 120) {
+        const sx = gx + 40 + Math.floor(RND() * (segW - 80));
+        entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
+      }
+      // shield (LOWERED)
+      if (RND() < 0.07) {
+        const ix = gx + segW - 58;
+        items.push({ kind: 'shield', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
+      }
+      // slow (LOWERED)
+      if (RND() < 0.05) {
+        const ix = gx + 46;
+        items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
+      }
+    }
+
+    // gaps: small for early phases
+    let gap;
+    if (phase <= 1) {
+      gap = Math.floor(22 + RND() * 22);
+    } else {
+      gap = Math.floor(gapMin + RND() * gapMax);
+    }
+
+    segments.push({ x: gx + segW, w: gap, type: 'gap' });
   }
 }
 
-/* ===== Sprites ===== */
-function astroClassic(x,y,pose='idle'){
-  const f=FG(),b=BG(); x=i(x); y=i(y);
-  FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
-  if(pose==='run1'){FILL(x+2,y+18,5,2,b);FILL(x+11,y+18,3,2,b);}
-  if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+9,y+18,6,2,b);}
-  if(pose==='jump'){FILL(x+3,y+18,10,2,b);}
-}
-function astroStripe(x,y,pose='idle'){
-  const f=FG(),b=BG(); x=i(x); y=i(y);
-  FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
-  FILL(x+7,y+1,2,20,b); // vertical stripe
-  if(pose==='run1'){FILL(x+2,y+18,5,2,b);FILL(x+11,y+18,3,2,b);}
-  if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+9,y+18,6,2,b);}
-  if(pose==='jump'){FILL(x+3,y+18,10,2,b);}
-}
-function astroAlien(x,y,pose='idle'){
-  const f=FG(),b=BG(); x=i(x); y=i(y);
-  FILL(x+3,y,10,8,f); FILL(x+2,y+8,12,10,f); FILL(x+4,y+18,8,4,f);
-  FILL(x+5,y+3,2,2,b); FILL(x+9,y+3,2,2,b);
-  if(pose==='run1'){FILL(x+2,y+18,4,2,b);FILL(x+10,y+18,4,2,b);}
-  if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+11,y+18,4,2,b);}
-  if(pose==='jump'){FILL(x+3,y+18,10,2,b);}
-}
-function astronaut(x,y,pose='idle'){
-  if(charSkin==='stripe') return astroStripe(x,y,pose);
-  if(charSkin==='alien')  return astroAlien(x,y,pose);
-  return astroClassic(x,y,pose);
-}
+
+/* Sprites (unchanged) */
+function astroClassic(x,y,pose='idle'){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
+  if(pose==='run1'){FILL(x+2,y+18,5,2,b);FILL(x+11,y+18,3,2,b);} if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+9,y+18,6,2,b);} if(pose==='jump'){FILL(x+3,y+18,10,2,b);} }
+function astroStripe(x,y,pose='idle'){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b); FILL(x+7,y+1,2,20,b);
+  if(pose==='run1'){FILL(x+2,y+18,5,2,b);FILL(x+11,y+18,3,2,b);} if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+9,y+18,6,2,b);} if(pose==='jump'){FILL(x+3,y+18,10,2,b);} }
+function astroAlien(x,y,pose='idle'){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x+3,y,10,8,f); FILL(x+2,y+8,12,10,f); FILL(x+4,y+18,8,4,f);
+  FILL(x+5,y+3,2,2,b); FILL(x+9,y+3,2,2,b); if(pose==='run1'){FILL(x+2,y+18,4,2,b);FILL(x+10,y+18,4,2,b);} if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+11,y+18,4,2,b);} if(pose==='jump'){FILL(x+3,y+18,10,2,b);} }
+function astronaut(x,y,pose='idle'){ if(charSkin==='stripe') return astroStripe(x,y,pose); if(charSkin==='alien') return astroAlien(x,y,pose); return astroClassic(x,y,pose); }
 function enemyAlien(x,y,blink=false){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x,y,22,14,f); if(!blink){ FILL(x+4,y+4,4,4,b); FILL(x+14,y+4,2,2,b); } }
 function ufo(x,y){ const f=FG(); x=i(x); y=i(y); FILL(x-28,y,56,8,f); FILL(x-22,y-8,44,6,f); FILL(x-4,y-14,8,6,f); }
 function beamScan(cx,topY,t){ const f=FG(); cx=i2(cx); topY=i2(topY); const wob=(Math.sin(t/420)+1)*1.2; for(let k=0;k<56;k+=6){ const y=topY+14+k; const half=8+((k/56)*9)|0; FILL(cx-(half+wob),y,(half+wob)*2,2,f);} }
 function tileGround(x,y,w){ const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w); FILL(x,y-2,w,2,f); FILL(x,y,w,44,f);
-  for(let dx=0;dx<w;dx+=8) for(let dy=0;dy<44;dy+=8) if(((dx+dy)>>3)&1) FILL(x+dx,y+dy,4,4,b);
-}
+  for(let dx=0;dx<w;dx+=8) for(let dy=0;dy<44;dy+=8) if(((dx+dy)>>3)&1) FILL(x+dx,y+dy,4,4,b); }
 
-/* Avatar previews (mini) */
+/* Avatar previews */
 function drawPreviewTo(canvas, kind){
   const c=canvas.getContext('2d'); c.imageSmoothingEnabled=false;
   c.fillStyle=BG(); c.fillRect(0,0,canvas.width,canvas.height);
-  const f=FG(), b=BG();
-  c.fillStyle=f; c.fillRect(2,40,28,2); // ground line
-  if(kind==='alien'){
-    c.fillRect(11,6,10,8); c.fillRect(10,14,12,10); c.fillRect(12,24,8,4);
-    c.fillStyle=b; c.fillRect(13,9,2,2); c.fillRect(17,9,2,2);
-  }else{
-    c.fillRect(5,12,3,10);
-    c.fillStyle=f; c.fillRect(8,6,16,22);
-    c.fillStyle=b; c.fillRect(13,12,6,6);
-    if(kind==='stripe'){ c.fillRect(15,7,2,20); }
-  }
+  const f=FG(), b=BG(); c.fillStyle=f; c.fillRect(2,40,28,2);
+  if(kind==='alien'){ c.fillRect(11,6,10,8); c.fillRect(10,14,12,10); c.fillRect(12,24,8,4); c.fillStyle=b; c.fillRect(13,9,2,2); c.fillRect(17,9,2,2); }
+  else { c.fillRect(5,12,3,10); c.fillStyle=f; c.fillRect(8,6,16,22); c.fillStyle=b; c.fillRect(13,12,6,6); if(kind==='stripe'){ c.fillRect(15,7,2,20); } }
 }
-function drawPreviews(){
-  drawPreviewTo(document.getElementById('pvClassic'),'classic');
-  drawPreviewTo(document.getElementById('pvStripe'),'stripe');
-  drawPreviewTo(document.getElementById('pvAlien'),'alien');
-}
+function drawPreviews(){ drawPreviewTo(document.getElementById('pvClassic'),'classic'); drawPreviewTo(document.getElementById('pvStripe'),'stripe'); drawPreviewTo(document.getElementById('pvAlien'),'alien'); }
 
-/* ===== Collision ===== */
+/* Collision */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
 
-/* ===== Callouts ===== */
+/* Callouts (unchanged) */
 const callouts=[];
 function addCall(text,x,y){ callouts.push({x,y,vy:-0.35,life:60,text}); }
 function updateCallouts(u){ for(let i=callouts.length-1;i>=0;i--){ const c=callouts[i]; c.y+=c.vy*u; c.life-=u; if(c.life<=0) callouts.splice(i,1);} }
 function drawCallouts(){ ctx.save(); ctx.fillStyle=FG(); ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.font="12px 'Press Start 2P', monospace"; for(const c of callouts){ ctx.globalAlpha=Math.max(0,c.life/60); ctx.fillText(c.text,c.x,c.y); } ctx.restore(); ctx.globalAlpha=1; }
 
-/* ===== Pause tips rotator ===== */
-const tips=[
-  "Esc to pause. Close resumes.",
-  "Tap ⤒ to jump on mobile.",
-  "Collect 💠 for points (× mode).",
-  "🛡 protects up to 3 hits.",
-  "⏳ gives 3s slow motion."
-];
+/* Pause tips rotator */
+const tips=["Esc to pause. Close resumes.","Tap ⤒ to jump on mobile.","Collect 💠 for points (× mode).","🛡 protects up to 3 hits.","⏳ gives 3s slow motion."];
 let tipIdx=0, tipTimer=null;
 function startTips(){ const el=document.getElementById('tipsLine'); clearInterval(tipTimer); el.textContent=tips[tipIdx%tips.length]; tipTimer=setInterval(()=>{tipIdx++; el.textContent=tips[tipIdx%tips.length];}, 2400); }
 function stopTips(){ clearInterval(tipTimer); tipTimer=null; }
 
-/* ===== Control ===== */
+/* Tutorial seen flags (NEW, UI only) */
+let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:false};
+
+/* Control */
 let jumpBuffer=0;
 function start(){
   hideAllUI(); resetWorld(); state='play';
+    setPlaying(true);
+  // NEW: show tutorial popups again for each fresh run
+  seenTutorial = { coin:false, shield:false, slow:false, alien:false, spike:false };
+
   statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   document.getElementById('menuBtn').style.display='none';
   if(!musicMuted) startMusic(); beep('coin');
   stopTips();
+  // Story beat
+  showCaption('MoonRunner — keep moving…','Collect chips, avoid danger.',2200);
 }
+
 function useShield(){ player.shields=clamp(player.shields-1,0,3); player.auraFlash=180; player.inv=150; addCall('HIT!',player.x+8,player.y-6); beep('hit'); }
 function gameOver(){
   state='over';
+    setPlaying(false);
   best=Math.max(best,Math.floor(score)); localStorage.setItem('moon_best',String(best));
   statusEl.textContent='Game Over';
   document.getElementById('overScore').textContent=`Score: ${pad(Math.floor(score))} • Best: ${pad(best)}`;
   document.getElementById('recap').innerHTML = `Run Recap — 💠 ${coinsPicked} • 🛡 ${shieldsPicked} • ⏳ ${slowUsed}`;
-  const saved=cleanName(localStorage.getItem('moon_name')||'');
+  const saved=(localStorage.getItem('moon_name')||'').trim();
   if(saved){
-submitScore(saved,score).then(res=>{
-  const m=document.getElementById('submitMsg');
-  m.style.display='block';
-  m.textContent = res.ok ? 'Submitted ✓'
-    : (res.error==='rate_limited' ? 'Too fast — try again in a moment'
-    : (res.error==='bad_name' ? 'Name rejected — change it in Settings'
-    : 'Submit failed'));
-});
+    submitScore(saved,score).then(res=>{
+      const m=document.getElementById('submitMsg');
+      m.style.display='block';
+      m.textContent = res.ok ? 'Submitted ✓'
+        : (res.error==='rate_limited' ? 'Too fast — try again in a moment'
+        : (res.error==='bad_name' ? 'Name rejected — change it in Settings'
+        : 'Submit failed'));
+    });
     document.getElementById('nameGate').style.display='none';
   }else{
     document.getElementById('nameGate').style.display='block';
@@ -747,19 +1122,19 @@ submitScore(saved,score).then(res=>{
   showUI('over',true); document.getElementById('menuBtn').style.display='';
 }
 document.getElementById('submitBtn').onclick=async()=>{
-  const nm=cleanName(document.getElementById('nameInput').value||''); if(!nm) return;
+  const nm=(document.getElementById('nameInput').value||'').trim().slice(0,12); if(!nm) return;
   localStorage.setItem('moon_name',nm);
-const res=await submitScore(nm,score);
-const m=document.getElementById('submitMsg'); 
-m.style.display='block'; 
-m.textContent = res.ok ? 'Submitted ✓'
-  : (res.error==='rate_limited' ? 'Too fast — try again in a moment'
-  : (res.error==='bad_name' ? 'Name rejected — change it in Settings'
-  : 'Submit failed'));
+  const res=await submitScore(nm,score);
+  const m=document.getElementById('submitMsg'); 
+  m.style.display='block'; 
+  m.textContent = res.ok ? 'Submitted ✓'
+    : (res.error==='rate_limited' ? 'Too fast — try again in a moment'
+    : (res.error==='bad_name' ? 'Name rejected — change it in Settings'
+    : 'Submit failed'));
   document.getElementById('nameGate').style.display='none';
 };
 
-/* ===== Update (frame-rate independent) ===== */
+/* Update (unchanged logic, + tutorial triggers only) */
 const GRAV_U=GRAV, ACCEL_U=0.7;
 function update(u){
   timeMs += (u / TARGET_FPS) * 1000;
@@ -799,16 +1174,17 @@ function update(u){
     else if(player.vx<0 && (prevX+scroll)>=(s.x+s.w)){ player.x=(s.x+s.w-scroll); player.vx=0; }
   }
 
-  // Abyss protection + shields
   if(player.y>H+40){
     if(player.inv>0){ player.y=floorY-player.h-2; player.vy=-JUMP*0.8; }
     else if(player.shields>0){ useShield(); player.y=floorY-player.h-2; player.vy=-JUMP*0.8; }
     else{ gameOver(); }
   }
 
-  // enemies + near-miss
+  // enemies + near-miss + tutorial captions when first seen
   let nearMissNow=false;
   for(const e of entities){
+    if(!seenTutorial.alien && e.kind==='alien' && e.x - scroll < W-20){ showCaption('Avoid aliens!','They pace the platforms.'); seenTutorial.alien=true; }
+    if(!seenTutorial.spike && e.kind==='spike' && e.x - scroll < W-20){ showCaption('Watch the spikes!','Jump early, not late.'); seenTutorial.spike=true; }
     if(e.kind==='alien'){
       e.x+=e.dir*0.7*m; if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
       const intersect = AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h});
@@ -832,11 +1208,16 @@ function update(u){
     lastNearMissTime = performance.now();
   }
 
-  // items
+  // items + first-sighting captions
   for(let k=items.length-1;k>=0;k--){
     const it=items[k];
     const bob=Math.sin((timeMs/260)+(it.phase||0))*2;
     const rect={x:it.x,y:it.y+bob,w:it.w,h:it.h};
+
+    if(!seenTutorial.coin   && it.kind==='chip'   && it.x - scroll < W-20){ showCaption('Collect chips','Score +200 × mode'); seenTutorial.coin=true; }
+    if(!seenTutorial.shield && it.kind==='shield' && it.x - scroll < W-20){ showCaption('Shield','Protects up to 3 hits'); seenTutorial.shield=true; }
+    if(!seenTutorial.slow   && it.kind==='slow'   && it.x - scroll < W-20){ showCaption('Slow field','3s slow motion'); seenTutorial.slow=true; }
+
     if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:rect.x,y:rect.y,w:rect.w,h:rect.h})){
       if(it.kind==='chip'){ const add=Math.floor(coinValue*scoreMul); score+=add; coinsPicked++; addCall(`+${add}`,player.x+8,player.y-6); beep('coin'); }
       if(it.kind==='shield'){ if(player.shields<3){ player.shields++; shieldsPicked++; addCall('Shield!',player.x+8,player.y-6); beep('shield'); } else { const bonus=Math.floor(coinValue*0.5*scoreMul); score+=bonus; addCall(`+${bonus}`,player.x+8,player.y-6); beep('coin'); } }
@@ -854,47 +1235,36 @@ function update(u){
   // distance scoring
   score += (0.069*m + Math.max(0,player.vx)*0.03*m) * scoreMul;
 
-  // milestone UFO flyby (every 5000)
+  // milestone UFO
   const targetMilestone = Math.floor(score/5000);
-  if(targetMilestone>milestoneIndex){
-    milestoneIndex = targetMilestone;
-    triggerFlyby();
-  }
-  if(flyby){
-    flyby.t += m;
-    flyby.x += flyby.dir * 6 * m;
-    if(flyby.x < -100 || flyby.x > W+100) flyby=null;
-  }
+  if(targetMilestone>milestoneIndex){ milestoneIndex = targetMilestone; triggerFlyby(); }
+  if(flyby){ flyby.t += m; flyby.x += flyby.dir * 6 * m; if(flyby.x < -100 || flyby.x > W+100) flyby=null; }
 
   updateCallouts(m);
 }
 
-/* ===== Draw ===== */
+/* Draw (unchanged except title text) */
 function draw(){
   const f=FG(),b=BG(); ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
 
-  // stars (parallax)
   ctx.fillStyle=f;
   for(let n=0;n<100;n++){
     const x1=((n*83)%2000)-(scroll*0.25%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
     const x2=((n*211)%2400)-(scroll*0.10%2400), y2=(n*97)%H;  const xx2=((x2+2400)%2400)-100; if(xx2>=0&&xx2<W) ctx.fillRect(i(xx2),i(y2),1,1);
   }
 
-  // ground tiles
   for(const s of segments){
     if(s.type!=='ground') continue;
     const x=i(s.x-scroll), w=i(s.w); if(x>W||x+w<-50) continue;
     tileGround(x,floorY,w);
   }
 
-  // enemies
   const blink=((performance.now()/1500|0)%2)===0;
   for(const e of entities){
     const x=i(e.x-scroll), y=i(e.y);
     if(e.kind==='alien') enemyAlien(x,y,blink); else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
   }
 
-  // items
   for(const it of items){
     const x=i2(it.x-scroll), y=i2((it._drawY ?? it.y));
     if(it.kind==='chip'){
@@ -911,7 +1281,6 @@ function draw(){
     }
   }
 
-  // player
   const frame=(performance.now()/120|0);
   const pose=player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
   if(player.shields>0){
@@ -923,16 +1292,10 @@ function draw(){
   if(!invBlink){ astronaut(player.x,player.y,pose); }
   else{ FILL(player.x,player.y,player.w,1,f); FILL(player.x,player.y+player.h-1,player.w,1,f); FILL(player.x,player.y,1,player.h,f); FILL(player.x+player.w-1,player.y,1,player.h,f); }
 
-  // milestone UFO flyby
-  if(flyby){
-    const yy = flyby.y + Math.sin(flyby.t*0.3)*2;
-    ufo(flyby.x, yy);
-  }
+  if(flyby){ const yy = flyby.y + Math.sin(flyby.t*0.3)*2; ufo(flyby.x, yy); }
 
-  // callouts
   drawCallouts();
 
-  // HUD
   ctx.fillStyle=f; ctx.font="12px 'Press Start 2P', monospace";
   const hudL=`SCORE ${pad(Math.floor(score))}    BEST ${pad(best)}    MODE ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   ctx.fillText(hudL,10,18);
@@ -941,7 +1304,6 @@ function draw(){
   ctx.fillText(`🛡 ${dots.join(' ')}`, W-10, 18);
   ctx.textAlign='left';
 
-  // Menu scene (UFO + beam + tutorial text)
   if(state==='menu'){
     const t=performance.now(); const cx=i(W/2), cy=i(H*0.30);
     const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
@@ -957,10 +1319,14 @@ function draw(){
   }
 }
 
-/* ===== Boot & Loop ===== */
+/* Boot & Loop */
 async function boot(){
   try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
   resetWorld(); setMode(speedMode); state='menu'; statusEl.textContent='Menu — ready';
+  // Show "Play in Landscape" on touch devices
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    const pl=document.getElementById('playLandBtn'); pl.style.display='inline-block'; pl.onclick=()=>{ hideUI('menu'); goLandscape().then(()=>start()); };
+  }
   requestAnimationFrame(loop); showUI('menu');
 }
 function loop(now){
@@ -976,14 +1342,19 @@ const __showUI = showUI;
 showUI = function(id, lock=false){
   document.getElementById(id).style.display='flex';
   if(lock && state==='play'){ state='paused'; }
-  if(id==='pause') startTips();
+  if(id==='pause'){ startTips(); setPlaying(false); }   // <— add setPlaying(false)
 };
+
 const __hideUI = hideUI;
 hideUI = function(id){
   document.getElementById(id).style.display='none';
-  if(id==='pause') stopTips();
+  if(id==='pause'){ stopTips(); setPlaying(true); }     // <— add setPlaying(true)
 };
 
+  // make sure avatar thumbs exist even before opening
+drawPreviews();
+
+  
 boot();
 </script>
 </body>
