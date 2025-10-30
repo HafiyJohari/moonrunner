@@ -199,6 +199,42 @@ body.playing .mobile .jump{
   .mobile{ display:none !important; }
 }
 
+  /* --- DESKTOP VIEW (mouse/keyboard) --- */
+@media (hover:hover) and (pointer:fine){
+
+  /* bring back old “nice” size */
+  body.playing canvas,
+  body:not(.playing) canvas{
+    width: min(84vw, 84vh * (16/9));
+    height: auto;
+    max-height: 82vh;
+    margin: 0 auto;
+    display: block;
+  }
+
+  /* stage wrapper centers everything */
+  #stage.wrap{
+    display: grid;
+    place-items: center;
+    gap: 10px;
+    padding: 10px 0 44px; /* space for bottom HUD */
+  }
+
+  /* show HUD again on desktop */
+  .hud{
+    display: flex !important;
+    width: min(84vw, 84vh * (16/9));
+    margin: 0 auto;
+  }
+
+  /* bottom tips/buttons row (like old version) */
+  .tips{
+    display: block;
+    width: min(84vw, 84vh * (16/9));
+    margin: 0 auto;
+  }
+}
+
   
 </style>
 </head>
@@ -754,12 +790,79 @@ function resetWorld(){
   spawnAhead(W*2.4);
 }
 function spawnAhead(targetX){
-  while((segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0)<targetX){
+  while((segments.length ? segments[segments.length-1].x + segments[segments.length-1].w : 0) < targetX){
+
+    // 1) work out current tutorial phase from time
+    let phase = 0;
+    if      (timeMs > 11500) phase = 5;   // normal
+    else if (timeMs > 9500)  phase = 4;   // + slow
+    else if (timeMs > 7500)  phase = 3;   // + shield
+    else if (timeMs > 5000)  phase = 2;   // + spikes
+    else if (timeMs > 2500)  phase = 1;   // + alien
+    else                     phase = 0;   // coins only
+
     const {gapMin,gapMax,gMin,gMax}=getDiff();
-    const afterTutorial=(timeMs>10000);
-    const segW=Math.floor(gMin+RND()*(gMax-gMin));
-    const gx=(segments.length?segments[segments.length-1].x+segments[segments.length-1].w:0);
-    segments.push({x:gx,w:segW,type:'ground'});
+    const segW = Math.floor(gMin + RND() * (gMax - gMin));
+    const gx   = (segments.length ? segments[segments.length-1].x + segments[segments.length-1].w : 0);
+    segments.push({ x: gx, w: segW, type: 'ground' });
+
+    /* ----- PHASED SPAWNS ----- */
+
+    // chips: always
+    if (RND() < 0.6){
+      const ix = gx + 30 + Math.floor(RND() * (segW - 60));
+      items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: (RND() * 6.28) });
+    }
+
+    // phase 1+: add alien sometimes
+    if (phase >= 1){
+      if (RND() < 0.35 && segW > 100){
+        const ax = gx + 40 + Math.floor(RND() * (segW - 100));
+        entities.push({
+          kind: 'alien',
+          x: ax,
+          y: floorY - 14,
+          w: 22,
+          h: 14,
+          dir: (RND() < 0.5 ? -1 : 1),
+          baseX: ax,
+          range: 36 + Math.floor(RND() * 44)
+        });
+      }
+    }
+
+    // phase 2+: add spikes sometimes
+    if (phase >= 2){
+      if (RND() < 0.25 && segW > 120){
+        const sx = gx + 40 + Math.floor(RND() * (segW - 80));
+        entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
+      }
+    }
+
+    // phase 3+: spawn shield at end of platform
+    if (phase >= 3){
+      if (RND() < 0.40){
+        const ix = gx + segW - 58;
+        items.push({ kind: 'shield', x: ix, y: floorY - 48, w: 12, h: 12, phase: (RND() * 6.28) });
+      }
+    }
+
+    // phase 4+: sometimes slow-mo
+    if (phase >= 4){
+      if (RND() < 0.28){
+        const ix = gx + 46;
+        items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: (RND() * 6.28) });
+      }
+    }
+
+    // 2) gaps — in tutorial we keep gap small so player can focus
+    let gap;
+    if (phase === 0) gap = Math.floor(20 + RND() * 28);
+    else             gap = Math.floor(gapMin + RND() * gapMax);
+
+    segments.push({ x: gx + segW, w: gap, type: 'gap' });
+  }
+}
 
     if(afterTutorial){
       if(RND()<0.19 && segW>120){ const cx=gx+40+Math.floor(RND()*(segW-80)); entities.push({kind:'spike',x:cx,y:floorY-60,w:40,h:10}); }
