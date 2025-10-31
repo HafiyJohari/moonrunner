@@ -3,24 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>MkhkAsg : MoonRunner — v2.2.0 "Cyber Grid"</title>
+<title>MkhkAsg : MoonRunner — v3.0 "Aesthetic Apex"</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-  /* --- VAPORWAVE COLOR PALETTE --- */
+  /* --- BASE COLORS (Dynamically set via JS/Themes) --- */
   :root { 
     --w:960; --h:540; 
-    --bg-dark: #080020;    /* Deep Night Violet */
-    --fg-neon: #FF0080;    /* Bright Fuchsia (Main FG/Player) */
-    --ground-neon: #00FFCC; /* Neon Aqua/Teal (Ground/Platforms) */
-    --accent-pale: #FFA500; /* Bright Orange (Light/Accent) */
-    --alien-sec: #FF00FF; /* Bright Magenta for Alien */
+    --bg-dark: #080020;
+    --fg-neon: #FF0080;
+    --ground-neon: #00FFCC;
+    --accent-pale: #FFA500;
+    --alien-sec: #FF00FF;
   }
 
   html,body{
     margin:0;height:100%;
+    /* These inherit from the JS-set body attributes/style */
     background:var(--bg-dark);
     color:var(--fg-neon);
     font-family:ui-monospace,Consolas,Menlo,monospace;
+    transition: background 0.5s, color 0.5s;
+    overflow: hidden; /* Prevent body scroll */
   }
   
   /* Inverted mode is a contrast flip */
@@ -60,6 +63,7 @@
     width:84px; height:84px;
     display:flex; align-items:center; justify-content:center;
     font-size:20px; touch-action:none; opacity:.95;
+    box-shadow: 0 0 12px var(--ground-neon) inset;
   }
   .jump{ width:96px; height:96px; }
 
@@ -82,7 +86,7 @@
   .mobile.show{ display:block !important; }
 
   /* Canvas scales but keeps 16:9 */
-  canvas{
+  #cv{
     width:min(96vw,96vh*(16/9));
     height:calc(var(--h) * (min(96vw,96vh*(16/9)) / var(--w)));
     image-rendering:pixelated; image-rendering:crisp-edges; background:transparent;
@@ -91,95 +95,127 @@
 
   .hud{width:min(96vw,96vh*(16/9));display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.95}
   .hud .left,.hud .right{display:flex;gap:10px;align-items:center}
-  .btn{padding:4px 10px;border:1px solid currentColor;cursor:pointer;user-select:none; color:var(--ground-neon);}
-  .btn:active{transform:translateY(1px)}
+  
+  /* Redesigned Button Style */
+  .btn{
+    padding:6px 14px;
+    border:2px solid currentColor;
+    cursor:pointer;
+    user-select:none;
+    color:var(--ground-neon);
+    font-family:'Press Start 2P',monospace;
+    font-size:10px;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 0 0 8px var(--ground-neon);
+    background: rgba(0, 0, 0, 0.15);
+  }
+  .btn:hover{
+    box-shadow: 0 0 12px var(--fg-neon);
+    color: var(--fg-neon);
+    transform: scale(1.03);
+  }
+  .btn:active{transform:translateY(1px); box-shadow: 0 0 4px var(--fg-neon) inset;}
   .btn.active{outline:2px solid var(--fg-neon); color:var(--fg-neon);}
 
   /* Overlays (Menus) */
-  .ui{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10}
-  .ui .card{padding:18px 20px;max-width:min(92vw,860px);border:2px solid currentColor;box-shadow:0 0 0 2px currentColor inset}
-  .ui h1,.ui h2,.ui h3{font-family:'Press Start 2P',monospace;margin:0 0 14px 0}
-  .ui h1{font-size:22px} .ui h2{font-size:16px} .ui h3{font-size:12px}
-  .row{display:flex;gap:10px;flex-wrap:wrap}
-  .ghost{opacity:.85}
+  .ui{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10; backdrop-filter: blur(2px);}
   
-  input[type=text]{background:transparent;color:inherit;border:1px solid currentColor;padding:8px 10px;font:12px 'Press Start 2P',monospace;min-width:220px}
-  table{width:100%;border-collapse:collapse;font:12px 'Press Start 2P',monospace}
-  th,td{border-bottom:1px solid currentColor;padding:6px 4px;text-align:left}
+  /* Menu Card Styling (FIX: Reduced max-width) */
+  .ui .card{
+    padding:24px 30px;
+    /* Reduced max-width to prevent "zoom-in" feel */
+    max-width:min(94vw, 520px); 
+    border:4px solid var(--fg-neon);
+    box-shadow:0 0 20px 5px var(--fg-neon) inset, 0 0 30px var(--fg-neon);
+    border-radius: 4px;
+    font-size: 12px; /* Increased base font size for readability */
+  }
+  
+  .ui h1, .ui h2, .ui h3{font-family:'Press Start 2P',monospace;margin:0 0 16px 0; text-align: center;}
+  .ui h1{font-size:26px; color:var(--ground-neon);} 
+  .ui h2{font-size:18px; color:var(--fg-neon);} 
+  .ui h3{font-size:14px; color:var(--accent-pale);}
+  
+  .row{display:flex;gap:12px;flex-wrap:wrap; justify-content: center;}
+  .ghost{opacity:.75}
+  .mt6{margin-top:6px;} .mt8{margin-top:8px;} .mt12{margin-top:12px;}
+  
+  input[type=text]{
+    background:rgba(0,0,0,0.4);
+    color:var(--ground-neon);
+    border:2px solid var(--ground-neon);
+    padding:10px 12px;
+    font:12px 'Press Start 2P',monospace;
+    min-width:220px;
+    box-shadow: 0 0 8px rgba(0,255,204,0.5);
+  }
+  
+  table{width:100%;border-collapse:collapse;font:10px 'Press Start 2P',monospace; margin-top: 10px;}
+  th,td{border-bottom:1px solid currentColor;padding:8px 4px;text-align:left; color: var(--accent-pale);}
+  th{color: var(--fg-neon);}
 
-  /* Contrast-safe overlays (Using new colors) */
-  body:not(.invert) .ui { background: rgba(8,0,32,.78); }
-  body:not(.invert) .ui .card { 
-    background: rgba(8,0,32,.96); 
+  /* Contrast-safe overlays (Colors set by JS) */
+  .ui .card { 
+    background: var(--bg-dark); 
     color:var(--ground-neon); 
     border-color:var(--fg-neon); 
-    box-shadow:0 0 0 2px var(--fg-neon) inset; 
   }
-  body.invert .ui { background: rgba(255,0,128,.75); }
-  body.invert .ui .card { 
-    background: rgba(255,0,128,.98); 
-    color:var(--bg-dark); 
-    border-color:var(--bg-dark); 
-    box-shadow:0 0 0 2px var(--bg-dark) inset; 
-  }
-  .ui .btn{border-color:currentColor}
-
-  /* Pause tips line */
-  .tips{margin-top:36px;font:10px 'Press Start 2P',monospace;opacity:.85}
-
-  /* Avatar previews tiny & crisp */
-  .preview canvas{
-    width:32px;height:44px;max-width:none;max-height:none;display:inline-block;margin:0;
-    image-rendering:pixelated;image-rendering:crisp-edges;
-  }
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
-  .preview{display:flex;flex-direction:column;align-items:center;gap:6px}
-
-/* --- Avatar popup --- */
-#avatars{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(8,0,32,0.85);
-  z-index:60;
-  justify-content:center;
-  align-items:center;
-}
-#avatars .card{
-  width:min(480px,90vw);
-  padding:16px 20px;
-  border:2px solid var(--fg-neon);
-  background:var(--bg-dark);
-  color:var(--ground-neon);
-  text-align:center;
-}
-#avatars h2{margin-bottom:10px;}
-#avatars .grid{
-  display:flex;
-  justify-content:center;
-  gap:16px;
-  flex-wrap:wrap;
-}
-#avatars canvas{
-  width:64px;
-  height:64px;
-  image-rendering:pixelated;
-}
-
   
-  /* --- Center Caption (story/tutorial) --- */
+  /* FIX: Ensure Avatar and Theme cards use the same responsive size as the main menu card for consistency */
+  #avatars, #themes { background:rgba(8,0,32,0.9); }
+  /* FIX: Further reduced avatar card width */
+  #avatars .card, #themes .card {
+    max-width: min(94vw, 480px); /* Reduced max width for better mobile fit */
+    padding: 24px 30px; /* Consistent padding */
+  }
+
+  /* Previews */
+  /* RESIZING PREVIEW CANVAS */
+  .preview canvas{
+    width:32px;height:44px;max-width:none;max-height:none;display:block;margin:0 auto;
+    image-rendering:pixelated; image-rendering:crisp-edges;
+    border: 1px solid var(--accent-pale);
+    box-shadow: 0 0 10px var(--accent-pale);
+  }
+  /* Grid settings for character previews */
+  .grid{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+  /* Constrained the individual preview item width to allow 5 to wrap cleanly on small screens */
+  .preview{display:flex;flex-direction:column;align-items:center;gap:4px; width: 80px; text-align: center;}
+  
+  /* NEW: Constrain avatar grid to force 3-2 layout */
+  #avatars .grid {
+    max-width: 270px; /* 3 * 80px + 2 * 10px gap = 260px. Add padding. */
+  }
+  /* Let theme buttons be wider than 80px */
+  #themes .preview {
+    width: auto; 
+  }
+  
+  /* Style for items in the How To menu (REMOVED) */
+
+  /* Center Caption */
   #captionWrap{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:20}
   #caption{max-width:min(92vw,900px);text-align:center;font-family:'Press Start 2P',monospace;line-height:1.8;color:var(--accent-pale);opacity:0;transform:translateY(6px);transition:opacity .28s, transform .28s}
   #caption.show{opacity:1;transform:translateY(0)}
   #caption .title{font-size:18px;letter-spacing:1px;color:var(--fg-neon)}
   #caption .sub{font-size:14px;color:var(--ground-neon)}
-  @media (max-width:480px){ #caption .title{font-size:14px} #caption .sub{font-size:12px} }
+  @media (max-width:480px){ 
+    #caption .title{font-size:14px} 
+    #caption .sub{font-size:12px} 
+    .ui h1{font-size:20px;} 
+    .ui h2{font-size:16px;}
+    
+    /* FIX: Reduced mobile card padding further to prevent zoom-in */
+    .ui .card{ padding: 16px 20px; font-size: 11px; } 
+    #avatars .card, #themes .card { padding: 16px 12px; } /* Tiny bit tighter for this menu */
+  }
   body.invert #caption .title{color:var(--bg-dark)} body.invert #caption .sub{color:var(--fg-neon)}
 
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
   
-/* Hafiy mobile pad adjust */
+  
+/* Mobile pad adjustments for better touch targets */
 body.playing #stage{ padding-bottom:1px; }
 body.playing canvas{
   width: 100vw;
@@ -190,22 +226,19 @@ body.playing canvas{
   margin:0 auto;
   transform:none;
 }
-.mobile .pad  { width:76px; height:76px; }
-.mobile .jump { width:90px; height:90px; }
+.mobile .pad  { width:80px; height:80px; }
+.mobile .jump { width:100px; height:100px; }
 .hud, .hud_right { display:none !important; }
-body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:130px; }
-body.playing .mobile .pad{ width:92px; height:92px; font-size:20px; }
-body.playing .mobile .jump{ width:108px; height:108px; }
+body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:10px; }
 @media (max-height:700px){
-  body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:105px; }
-  body.playing .mobile .pad{ width:80px; height:80px; }
-  body.playing .mobile .jump{ width:94px; height:94px; }
+  body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:10px; }
+  .mobile .pad{ width:68px; height:68px; }
+  .mobile .jump{ width:84px; height:84px; }
 }
 
-  
 /* --- DESKTOP VIEW (mouse/keyboard) --- */
 @media (hover:hover) and (pointer:fine){
-  body.playing canvas, body:not(.playing) canvas{
+  body.playing #cv, body:not(.playing) #cv{
     width: min(84vw, 84vh * (16/9));
     height: auto;
     max-height: 82vh;
@@ -229,14 +262,13 @@ body.playing .mobile .jump{ width:108px; height:108px; }
     margin:40px auto 0;
   }
 }
-
-  
 </style>
 </head>
 <body>
 <div id="stage" class="wrap">
   <canvas id="cv" width="960" height="540"></canvas>
 
+  <!-- HUD -->
   <div class="hud">
     <div class="left">
       <span id="status">Loading…</span>
@@ -255,6 +287,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
     </div>
   </div>
 
+  <!-- Mobile buttons -->
   <div class="mobile">
     <div class="leftGrp">
       <div id="btnLeft"  class="pad">◀</div>
@@ -266,124 +299,193 @@ body.playing .mobile .jump{ width:108px; height:108px; }
   </div>
 </div>
 
+<!-- Center Caption -->
 <div id="captionWrap" aria-hidden="true">
   <div id="caption"><div class="title"></div><div class="sub"></div></div>
 </div>
 
+<!-- Main Menu (UPDATED BUTTONS) -->
 <div id="menu" class="ui" style="display:flex">
   <div class="card">
-    <h1>MKHKASG : M O O N R U N N E R</h1>
-    <div class="ghost mt6">Vaporwave Pixel Endless Runner.</div>
-    <div class="row mt12">
-      <div id="playBtn" class="btn">▶ Start Run</div>
+    <h1>M O O N R U N N E R</h1>
+    <h2><span class="ghost">MKHKASG • V3.0</span></h2>
+    <div class="ghost mt6">The Infinite Run Protocol is ready.</div>
+    
+    <div class="row mt12" style="justify-content:center;">
+      <div id="playBtn" class="btn">▶ START RUN</div>
       <div id="playLandBtn" class="btn" style="display:none">▶ Play in Landscape</div>
-      <div id="howBtn" class="btn">? Protocol</div>
-      <div id="avatarsBtn" class="btn">𓁷 Characters</div>
-      <div id="settingsBtn" class="btn">☼ Config</div>
-      <div id="lbBtn" class="btn">★ Leaderboard</div>
-      <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v2.2.0 “Cyber Grid” • WASD/Arrows + Space • Desktop & Mobile</div>
+    
+    <div class="row mt12">
+      <div id="avatarsBtn" class="btn">𓁷 CHARACTERS</div>
+      <div id="themesBtn" class="btn">✿ AESTHETICS</div>
+    </div>
+
+    <div class="row mt12">
+      <div id="lbBtn" class="btn">★ LEADERBOARD</div>
+      <!-- PROTOCOL changed to TUTORIAL -->
+      <div id="howBtn" class="btn">? HOW TO PLAY</div>
+      <!-- CONFIG changed to SETTINGS -->
+      <div id="settingsBtn" class="btn">☼ SETTINGS</div>
+      <div id="creditsBtn" class="btn">ℹ CREDITS</div>
+    </div>
+    <div class="ghost mt12" id="versionText">v3.0 “Aesthetic Apex” • WASD/Arrows + Space</div>
   </div>
 </div>
 
+<!-- Pause -->
 <div id="pause" class="ui">
   <div class="card">
     <h2>[ P A U S E D ]</h2>
     <div class="row mt12">
-      <div id="resumeBtn" class="btn">Resume</div>
-      <div id="restartBtn" class="btn">Restart Protocol</div>
-      <div id="pauseSettingsBtn" class="btn">Config</div>
-      <div id="exitBtn" class="btn">Exit to Menu</div>
+      <div id="resumeBtn" class="btn">RESUME</div>
+      <div id="restartBtn" class="btn">RESTART PROTOCOL</div>
+      <!-- CONFIG changed to SETTINGS -->
+      <div id="pauseSettingsBtn" class="btn">SETTINGS</div>
+      <div id="exitBtn" class="btn">EXIT TO MENU</div>
     </div>
     <div class="tips" id="tipsLine">Tip: Esc to pause.</div>
   </div>
 </div>
 
+<!-- Game Over -->
 <div id="over" class="ui">
   <div class="card">
     <h2>G A M E • O V E R</h2>
     <div id="overScore" class="mt8">Score: 00000 • Best: 00000</div>
-    <div id="recap" class="mt8 ghost"></div>
+    <!-- RECAP: Changed from text to canvases + span IDs -->
+    <div id="recap" class="mt8 ghost" style="display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">
+      Run Recap —
+      <canvas id="recapChip" width="10" height="10" style="width:10px;height:10px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+      <span id="recapChipScore">0</span> •
+      <canvas id="recapShield" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+      <span id="recapShieldScore">0</span> •
+      <canvas id="recapSlow" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+      <span id="recapSlowScore">0</span>
+    </div>
     <div id="nameGate" class="mt12">
       <div class="ghost">Enter name to submit score:</div>
       <div class="row mt8">
         <input id="nameInput" type="text" maxlength="12" placeholder="Your Name"/>
-        <div id="submitBtn" class="btn">Submit</div>
+        <div id="submitBtn" class="btn">SUBMIT</div>
       </div>
     </div>
     <div id="submitMsg" class="mt12 ghost" style="display:none">Submitted ✓</div>
     <div class="row mt12">
-      <div id="retryBtn" class="btn">Retry</div>
-      <div id="overLbBtn" class="btn">Leaderboard</div>
-      <div id="overMenuBtn" class="btn">Menu</div>
+      <div id="retryBtn" class="btn">RETRY</div>
+      <div id="overLbBtn" class="btn">LEADERBOARD</div>
+      <div id="overMenuBtn" class="btn">MENU</div>
     </div>
   </div>
 </div>
 
+<!-- Settings (TITLE UPDATED) -->
 <div id="settings" class="ui">
   <div class="card">
-    <h2>System Config</h2>
+    <h2>System Settings</h2>
     <div class="row mt12">
       <div id="setSound" class="btn">🔈 SFX: On</div>
       <div id="setMusic" class="btn">♪ Music: On</div>
-      <div id="setContrast" class="btn">⬛/⬜ Contrast</div>
+      <div id="setContrast" class="btn">⬛/⬜ CONTRAST</div>
+    </div>
+    <div class="row mt12">
       <div id="setSpeed" class="btn">Speed: Normal (×1.5)</div>
     </div>
     <div class="mt12">Name: <input id="setName" type="text" maxlength="12" style="width:260px"/></div>
     <div class="row mt12">
-      <div id="settingsClose" class="btn">Close</div>
+      <div id="settingsClose" class="btn">CLOSE</div>
     </div>
   </div>
 </div>
 
+<!-- Avatars (5 CHARACTERS) -->
 <div id="avatars" class="ui" style="display:none">
   <div class="card">
-    <h2>Select Runner</h2>
+    <h2>SELECT RUNNER</h2>
     <div class="grid">
       <div class="preview">
         <canvas id="pvClassic" width="32" height="44"></canvas>
-        <div class="btn" data-skin="classic">Select Neon-I</div>
+        <div class="btn" data-skin="classic">ASTRONAUT</div>
       </div>
       <div class="preview">
         <canvas id="pvStripe" width="32" height="44"></canvas>
-        <div class="btn" data-skin="stripe">Select Glitch-II</div>
+        <div class="btn" data-skin="stripe">GLITCH SUIT</div>
       </div>
       <div class="preview">
         <canvas id="pvAlien" width="32" height="44"></canvas>
-        <div class="btn" data-skin="alien">Select Vap-Unit</div>
+        <div class="btn" data-skin="alien">XENOMORPH</div>
+      </div>
+      <div class="preview">
+        <canvas id="pvPilot" width="32" height="44"></canvas>
+        <div class="btn" data-skin="pilot">NEO-PILOT</div>
+      </div>
+      <div class="preview">
+        <canvas id="pvRobot" width="32" height="44"></canvas>
+        <div class="btn" data-skin="robot">CYBER-DRONE</div>
       </div>
     </div>
-    <div class="row mt12"><div id="avatarsClose" class="btn">Back</div></div>
+    <div class="row mt12"><div id="avatarsClose" class="btn">BACK</div></div>
   </div>
 </div>
 
+<!-- Themes Menu (UPDATED WITH NEW THEME) -->
+<div id="themes" class="ui" style="display:none">
+  <div class="card">
+    <h2>SELECT AESTHETIC</h2>
+    <div class="grid">
+      <div class="preview">
+        <div class="btn" data-theme="cyber">CYBER GRID (Vaporwave)</div>
+      </div>
+      <div class="preview">
+        <div class="btn" data-theme="classic">CLASSIC COSMOS (B/W)</div>
+      </div>
+      <div class="preview">
+        <div class="btn" data-theme="pulsar">NEO-PULSAR (Teal/Orange)</div>
+      </div>
+      <div class="preview">
+        <div class="btn" data-theme="sunset">DIGITAL SUNSET (New!)</div>
+      </div>
+    </div>
+    <div class="row mt12"><div id="themesClose" class="btn">BACK</div></div>
+  </div>
+</div>
+
+
+<!-- How To (RENAMED & REVERTED TO v2.3.0) -->
 <div id="how" class="ui">
   <div class="card">
-    <h2>Protocol / How to Play</h2>
+    <h2>How to Play</h2>
     <div class="mt8">Controls: ←/→ move • W/↑/Space jump • Esc pause</div>
     <div class="mt8">Goal: Survive and run as far as you can across the digital moon.</div>
-    <div class="mt8">Collect:</div>
-    <div class="mt6 ghost">💠 Floppy Disks = +200 pts (× difficulty multiplier)</div>
-    <div class="mt6 ghost">🛡 Roman Busts = up to 3 hits of protection</div>
-    <div class="mt6 ghost">⏳ Cassettes = 3 s slow-motion</div>
-    <div class="mt8">Avoid: Glitch Aliens and Wireframe Spikes — they cost a shield or your life!</div>
-    <div class="row mt12"><div id="howClose" class="btn">Close</div></div>
+    <div class="mt8">Collectibles:</div>
+    <div class="mt6 ghost" style="display:flex; align-items:center; gap:8px;">
+        <canvas id="itemChip" width="10" height="10" style="width:10px;height:10px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+        Floppy Disks = +200 pts (× difficulty multiplier)
+    </div>
+    <div class="mt6 ghost" style="display:flex; align-items:center; gap:8px;">
+        <canvas id="itemShield" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+        Roman Busts = up to 3 hits of protection (🛡)
+    </div>
+    <div class="mt6 ghost" style="display:flex; align-items:center; gap:8px;">
+        <canvas id="itemSlow" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+        Cassettes = 3 s slow-motion (⏳)
+    </div>
+    <div class="mt8">Threats: Glitch Aliens and Wireframe Spikes — avoid them or lose a shield/life!</div>
+    <div class="row mt12"><div id="howClose" class="btn">CLOSE</div></div>
   </div>
 </div>
 
+<!-- Leaderboard (UNCHANGED) -->
 <div id="lb" class="ui">
   <div class="card">
     <div class="row" style="justify-content:space-between;align-items:center;">
-      <h2>Leaderboard <span id="lbSub" class="ghost" style="font:12px 'Press Start 2P',monospace;margin-left:8px;"></span></h2>
+      <h2>LEADERBOARD <span id="lbSub" class="ghost" style="font:12px 'Press Start 2P',monospace;margin-left:8px;"></span></h2>
       <div class="row">
         <div id="lbToday"   class="btn">Daily</div>
         <div id="lbWeekly"  class="btn">Weekly</div>
         <div id="lbMonthly" class="btn">Monthly</div>
         <div id="lbAll"     class="btn">All-time</div>
-        <div id="lb20"      class="btn">Top 20</div>
-        <div id="lb10"      class="btn">Top 10</div>
-        <div id="lbClose"   class="btn">Back</div>
+        <div id="lbClose"   class="btn">BACK</div>
       </div>
     </div>
     <div class="mt12" id="lbSelf" class="ghost"></div>
@@ -396,51 +498,112 @@ body.playing .mobile .jump{ width:108px; height:108px; }
   </div>
 </div>
 
+<!-- Credits (UPDATED NAME) -->
 <div id="credits" class="ui">
   <div class="card">
-    <h2>Credits</h2>
+    <h2>CREDITS</h2>
     <div class="mt8">Design & code: <b>MkhkAsg</b></div>
     <div class="mt6">Vaporwave Redesign: <b>A.I. Collaborative</b></div>
     <div class="mt6">Font: <b>Press Start 2P</b> (CodeMan38) — SIL Open Font License 1.1</div>
     <div class="mt6">Music & SFX: <b>Original in-engine chiptune</b> via Web Audio API</div>
-    <div class="mt6">Assisted by <b>Mira</b> (AI collaborator)</div>
     <div class="mt6 ghost">Scores go to a Google Sheet leaderboard. Keep names clean.</div>
-    <div class="row mt12"><div id="creditsClose" class="btn">Close</div></div>
+    <div class="row mt12"><div id="creditsClose" class="btn">CLOSE</div></div>
   </div>
 </div>
 
 
 <script>
 /* ===== Config (UPDATED VERSION) ===== */
-const GAME_VERSION='2.2.0-VAPOR';
+const GAME_VERSION='3.0.6-SYNTAX-FIX'; // Updated version
 const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
 const STAGE = document.getElementById('stage');
 const CV=document.getElementById('cv');
-const ctx=CV.getContext('2d',{alpha:false}); ctx.imageSmoothingEnabled=false;
-const W=960,H=540; let DPR=1;
+let ctx=CV.getContext('2d',{alpha:false}); ctx.imageSmoothingEnabled=false; // FIX: Use let for ctx
+// FIX: Removed 'const' so W and H don't conflict with global declarations.
+W=960,H=540; let DPR=1;
 function resizeCanvas(){ DPR=Math.min(2,Math.max(1,window.devicePixelRatio||1)); CV.width=(W*DPR)|0; CV.height=(H*DPR)|0; ctx.setTransform(DPR,0,0,DPR,0,0); }
 addEventListener('resize',resizeCanvas); resizeCanvas();
 
-/* ===== Colors & helpers (VAPORWAVE) ===== */
-function inverted(){return document.body.classList.contains('invert');}
-const VAPOR_BG = document.documentElement.style.getPropertyValue('--bg-dark') || '#080020';
-const VAPOR_FG = document.documentElement.style.getPropertyValue('--fg-neon') || '#FF0080';
-const VAPOR_GR = document.documentElement.style.getPropertyValue('--ground-neon') || '#00FFCC';
-const VAPOR_AC = document.documentElement.style.getPropertyValue('--accent-pale') || '#FFA500';
-const VAPOR_AL = document.documentElement.style.getPropertyValue('--alien-sec') || '#FF00FF';
+/* ===== Theme Definitions (NEW) ===== */
+const THEMES = {
+  cyber: {
+    name: "Cyber Grid",
+    bg: '#080020', // Deep Night Violet
+    fg: '#FF0080', // Bright Fuchsia
+    gr: '#00FFCC', // Neon Aqua
+    ac: '#FFA500', // Bright Orange
+    al: '#FF00FF', // Alien Magenta
+    earth: true,
+    city: true,
+  },
+  classic: {
+    name: "Classic Cosmos",
+    bg: '#000000', // Black
+    fg: '#FFFFFF', // White
+    gr: '#CCCCCC', // Light Gray
+    ac: '#888888', // Medium Gray
+    al: '#FF0000', // Red (Monsters pop)
+    earth: true, // FIX: Earth should be visible, but B/W
+    city: false,
+  },
+  pulsar: {
+    name: "Neo-Pulsar",
+    bg: '#002233', // Deep Teal
+    fg: '#FF6600', // Bright Orange
+    gr: '#FFFF00', // Neon Yellow
+    ac: '#FF0000', // Intense Red
+    al: '#00FFFF', // Cyan
+    earth: true,
+    city: false,
+  },
+  sunset: { // NEW THEME
+    name: "Digital Sunset",
+    bg: '#14002C', // Deep Violet/Blue
+    fg: '#FFCC00', // Bright Gold/Yellow
+    gr: '#CC3300', // Dark Red/Rust
+    ac: '#FF6633', // Lighter Orange
+    al: '#00FFFF', // Cyan
+    earth: false,
+    city: false,
+  }
+};
+let currentTheme = localStorage.getItem('moon_theme') || 'cyber';
 
-function FG(){return inverted()?VAPOR_BG:VAPOR_FG;} 
-function BG(){return inverted()?VAPOR_FG:VAPOR_BG;}
-function GR(){return inverted()?VAPOR_BG:VAPOR_GR;}
-function AC(){return inverted()?VAPOR_FG:VAPOR_AC;}
-function AL(){return inverted()?VAPOR_BG:VAPOR_AL;}
+/* ===== Colors & helpers (UPDATED to use theme object) ===== */
+function applyTheme(themeKey) {
+  currentTheme = themeKey;
+  localStorage.setItem('moon_theme', themeKey);
+  const theme = THEMES[themeKey] || THEMES.cyber;
+  
+  // Set CSS variables for UI elements
+  document.documentElement.style.setProperty('--bg-dark', theme.bg);
+  document.documentElement.style.setProperty('--fg-neon', theme.fg);
+  document.documentElement.style.setProperty('--ground-neon', theme.gr);
+  document.documentElement.style.setProperty('--accent-pale', theme.ac);
+  document.documentElement.style.setProperty('--alien-sec', theme.al);
+  
+  // Update UI text (if needed)
+  document.getElementById('versionText').textContent = `v3.0 “Aesthetic Apex” - ${theme.name}`;
+  // Redraw item previews immediately when theme changes
+  drawHowToPreviews(); // Redraw item icons for 'How to Play'
+  drawRecapPreviews(); // NEW: Redraw item icons for Game Over
+}
+
+function inverted(){return document.body.classList.contains('invert');}
+function T(){ return THEMES[currentTheme] || THEMES.cyber; }
+
+function FG(){return inverted()?T().bg:T().fg;} 
+function BG(){return inverted()?T().fg:T().bg;}
+function GR(){return inverted()?T().bg:T().gr;}
+function AC(){return inverted()?T().fg:T().ac;}
+function AL(){return inverted()?T().bg:T().al;}
 
 const i=v=>v|0, i2=v=>(v>>1)<<1;
 const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
 const pad=(n,w=5)=>String(n).padStart(w,'0');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-/* ===== WebAudio (RESTORED) ===== */
+/* ===== WebAudio (UNCHANGED) ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
 let musicVol=0.045, sfxVol=0.28;
 let musicBus=null, sfxBus=null;
@@ -457,7 +620,7 @@ function beep(kind='jump'){
   if(sfxMuted) return; ensureAC();
   const o=ac.createOscillator(), g=ac.createGain(); o.type='square';
   const t=ac.currentTime;
-  const T={jump:[440,220,.13,.10], coin:[660,440,.12,.12], hit:[110,55,.16,.12], shield:[880,660,.10,.12]};
+  const T={jump:[440,220,.13,.10], coin:[660,440,.12,.12], hit:[110,55,.16,.12], shield:[880,660,.10,.12], slow:[550,770,.10,.12]}; // Added 'slow'
   const [f1,f2,dur,vol]=T[kind]||T.jump;
   o.frequency.setValueAtTime(f1,t);
   o.frequency.exponentialRampToValueAtTime(f2,t+dur);
@@ -473,9 +636,10 @@ function beep(kind='jump'){
 let musicRunning=false, musicTimer=null, musicStep=0;
 const bpm=140, stepSec=60/bpm/2;
 const NT=n=>440*Math.pow(2,(n-69)/12);
-const N={C4:60,D4:62,E4:64,F4:65,G4:67,A4:69,B4:71,C5:72,D5:74,E5:76,F5:77,G5:79,A5:81};
-function leadPattern(){return[[N.E5,1],[N.G5,1],[N.C5,1],[N.D5,1],[N.E5,1],[N.G5,1],[N.A5,1],[N.G5,1],[N.E5,1],[N.C5,1],[N.A4,1],[N.C5,1],[N.E5,1],[N.D5,1],[N.C5,2],[N.F5,1],[N.A5,1],[N.C5,1],[N.D5,1],[N.F5,1],[N.A5,1],[N.G5,1],[N.F5,1],[N.E5,1],[N.D5,1],[N.C5,1],[N.B4,1],[N.C5,4]];}
-function bassPattern(){const root=[N.C4,N.A4-12,N.F5-24,N.G5-24];const seq=[];for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]);return seq;}
+// FIX: Renamed 'N' to 'NOTES' to avoid global scope conflict
+const NOTES={C4:60,D4:62,E4:64,F4:65,G4:67,A4:69,B4:71,C5:72,D5:74,E5:76,F5:77,G5:79,A5:81};
+function leadPattern(){return[[NOTES.E5,1],[NOTES.G5,1],[NOTES.C5,1],[NOTES.D5,1],[NOTES.E5,1],[NOTES.G5,1],[NOTES.A5,1],[NOTES.G5,1],[NOTES.E5,1],[NOTES.C5,1],[NOTES.A4,1],[NOTES.C5,1],[NOTES.E5,1],[NOTES.D5,1],[NOTES.C5,2],[NOTES.F5,1],[NOTES.A5,1],[NOTES.C5,1],[NOTES.D5,1],[NOTES.F5,1],[NOTES.A5,1],[NOTES.G5,1],[NOTES.F5,1],[NOTES.E5,1],[NOTES.D5,1],[NOTES.C5,1],[NOTES.B4,1],[NOTES.C5,4]];}
+function bassPattern(){const root=[NOTES.C4,NOTES.A4-12,NOTES.F5-24,NOTES.G5-24];const seq=[];for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]);return seq;}
 function playNote(freq,mul,type='square',vol=0.10){
   ensureAC(); const t=ac.currentTime,osc=ac.createOscillator(),g=ac.createGain();
   osc.type=type; osc.frequency.setValueAtTime(freq,t);
@@ -523,7 +687,7 @@ function setMode(idx){
   speedMode=( (idx%speedModes.length)+speedModes.length)%speedModes.length;
   baseSpeed=speedModes[speedMode].speed; scoreMul=speedModes[speedMode].score; coinValue=speedModes[speedMode].coin;
   statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
-  const setBtn=document.getElementById('setSpeed'); if(setBtn) setBtn.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
+  const setBtn=document.getElementById('setSpeed'); if(setBtn) setBtn.textContent=`SPEED: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
 }
 const NAME_RE=/[^A-Za-z0-9 _\-.]/g;
 function cleanName(s){ return (s||'').toString().trim().replace(/\s+/g,' ').replace(NAME_RE,'').slice(0,12)||'Player'; }
@@ -588,19 +752,33 @@ async function goLandscape(){
 }
 function showUI(id,lock=false){ document.getElementById(id).style.display='flex'; if(lock&&state==='play') state='paused'; }
 function hideUI(id){ document.getElementById(id).style.display='none'; }
-function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','avatars'].forEach(hideUI); }
+function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','avatars', 'themes'].forEach(hideUI); }
 function setPlaying(on){ document.body.classList.toggle('playing', !!on); }
 document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
+// FIX: howBtn is now PROTOCOL
 document.getElementById('howBtn').onclick =()=> showUI('how');
-document.getElementById('avatarsBtn').onclick=()=>{ showUI('avatars'); drawPreviews(); };
-document.getElementById('avatarsClose').onclick=()=> hideUI('avatars');
+document.getElementById('avatarsBtn').onclick=()=>{ hideUI('menu'); showUI('avatars'); drawPreviews(); };
+document.getElementById('themesBtn').onclick=()=>{ hideUI('menu'); showUI('themes'); };
+document.getElementById('avatarsClose').onclick=()=> { hideUI('avatars'); showUI('menu'); };
+document.getElementById('themesClose').onclick=()=> { hideUI('themes'); showUI('menu'); };
 document.querySelectorAll('#avatars .btn[data-skin]').forEach(b=>{
   b.addEventListener('click',()=>{
     charSkin = b.getAttribute('data-skin');
     localStorage.setItem('moon_char', charSkin);
+    drawPreviews(); // Refresh previews to show selection border if needed
     hideUI('avatars');
+    showUI('menu');
   });
 });
+document.querySelectorAll('#themes .btn[data-theme]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    applyTheme(b.getAttribute('data-theme'));
+    drawPreviews(); // Redraw character previews with new theme colors
+    hideUI('themes');
+    showUI('menu');
+  });
+});
+// FIX: settingsBtn is now SETTINGS
 document.getElementById('settingsBtn').onclick = () => {
   document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
   returnFromSettings = 'menu';
@@ -610,6 +788,7 @@ document.getElementById('lbBtn').onclick  =()=>{ uiReturn='menu'; showUI('lb'); 
 document.getElementById('creditsBtn').onclick=()=> showUI('credits');
 document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
 document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
+// FIX: pauseSettingsBtn is now SETTINGS
 document.getElementById('pauseSettingsBtn').onclick = () => {
   hideUI('pause');
   document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
@@ -659,22 +838,23 @@ const lbToday   = document.getElementById('lbToday');
 const lbWeekly  = document.getElementById('lbWeekly');
 const lbMonthly = document.getElementById('lbMonthly');
 const lbAll     = document.getElementById('lbAll');
-const lb20      = document.getElementById('lb20');
-const lb10      = document.getElementById('lb10');
-function lbSetActive(btn){ [lbToday,lbWeekly,lbMonthly,lbAll,lb20,lb10].forEach(b=> b.classList.remove('active')); btn.classList.add('active'); }
+// Removed top 20/10 buttons for cleaner UI
+// const lb20      = document.getElementById('lb20');
+// const lb10      = document.getElementById('lb10');
+function lbSetActive(btn){ [lbToday,lbWeekly,lbMonthly,lbMonthly,lbAll].forEach(b=> b.classList.remove('active')); btn.classList.add('active'); }
 lbToday.onclick = ()=> lbActivate('daily');
 lbWeekly.onclick= ()=> lbActivate('weekly');
 lbMonthly.onclick=()=> lbActivate('monthly');
 lbAll.onclick   = ()=> lbActivate('all');
-lb20.onclick    = ()=> lbActivate('top20');
-lb10.onclick    = ()=> lbActivate('top10');
+// lb20.onclick    = ()=> lbActivate('top20');
+// lb10.onclick    = ()=> lbActivate('top10');
 function lbActivate(kind){
   if (kind === 'daily')   { lbSetActive(lbToday);   loadLeaderboard({ period:'daily',   limit:20,  unique:false }); }
   else if (kind==='weekly'){ lbSetActive(lbWeekly); loadLeaderboard({ period:'weekly',  limit:50,  unique:true  }); }
   else if (kind==='monthly'){lbSetActive(lbMonthly);loadLeaderboard({ period:'monthly', limit:100, unique:true  }); }
   else if (kind==='all')  { lbSetActive(lbAll);     loadLeaderboard({ period:'all',     limit:200, unique:true  }); }
-  else if (kind==='top20'){ lbSetActive(lb20);      loadLeaderboard({ period:'all',     limit:20,  unique:true  }); }
-  else                    { lbSetActive(lb10);      loadLeaderboard({ period:'all',     limit:10,  unique:true  }); }
+  else if (kind==='top20'){ lbSetActive(lbToday);   loadLeaderboard({ period:'all',     limit:20,  unique:true  }); } // Re-using daily button style
+  else                    { lbSetActive(lbToday);   loadLeaderboard({ period:'all',     limit:10,  unique:true  }); } // Re-using daily button style
 }
 async function loadLeaderboard({period='daily',limit=20,unique=false}={}){
   try{
@@ -720,6 +900,22 @@ async function submitScore(name,score){
 /* ===== World / Difficulty / Physics (RESTORED) ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
+let particles = []; // NEW: For collection animations
+
+// NEW: Particle spawner
+function spawnParticles(x, y, color, count = 10) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            vx: (RND() - 0.5) * 4,
+            vy: (RND() - 0.5) * 4 - 2,
+            life: 20 + RND() * 20, // frames
+            color: color
+        });
+    }
+}
+
 function getDiff(){
   const tScore=Math.min(1,(score/2800));
   const tTime =Math.min(1,(timeMs/16000));
@@ -739,9 +935,9 @@ const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,au
 let coinsPicked=0, shieldsPicked=0, slowUsed=0;
 let lastNearMissTime=0;
 let milestoneIndex=0, flyby=null;
-function triggerFlyby(){ const dir = Math.random()<0.5 ? -1 : 1; flyby = { x: dir<0 ? W+60 : -60, y: 80 + Math.random()*60, dir, t: 0 }; }
+function triggerFlyby(){ const dir = Math.random()<0.5 ? -1 : 1; flyby = { x: dir<0 ? W+60 : -60, y: 80 + Math.random()*60, dir, t: 0, w: 56, h: 20 }; }
 function resetWorld(){
-  segments=[];entities=[];items=[];scroll=0;timeMs=0;score=0;
+  segments=[];entities=[];items=[];particles=[];scroll=0;timeMs=0;score=0; // Clear particles
   coinsPicked=0; shieldsPicked=0; slowUsed=0;
   lastNearMissTime=0; milestoneIndex=0; flyby=null;
   Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0});
@@ -919,17 +1115,15 @@ function spawnAhead(targetX){
   }
 }
 
-/* ===== 8-BIT VAPORWAVE SPRITE FUNCTIONS (FINAL REDESIGN) ===== */
+/* ===== 8-BIT VAPORWAVE SPRITE FUNCTIONS (UPDATED FOR 5 SKINS) ===== */
 
-// Player/Astronaut: Blocky 8-bit style, 16x22
 function astroClassic(x,y,pose='idle'){ 
   const f=FG(), b=BG(), g=GR(); 
   x=i(x); y=i(y); 
   
   FILL(x+2,y+4,12,18,f);
-  FILL(x+3,y,10,10,f); FILL(x+5,y+2,6,6,b); // Visor
-
-  FILL(x-4,y+8,4,8,g); // Jetpack
+  FILL(x+3,y,10,10,f); FILL(x+5,y+2,6,6,b);
+  FILL(x-4,y+8,4,8,g); 
   
   if(pose==='run1'){
     FILL(x+2,y+20,4,2,g); FILL(x+10,y+20,4,2,f); 
@@ -944,7 +1138,7 @@ function astroStripe(x,y,pose='idle'){
   FILL(i(x)+7,i(y)+4,2,14,GR()); 
 } 
 function astroAlien(x,y,pose='idle'){ 
-  const f=FG(), b=BG(), g=GR();
+  const f=FG(), b=BG(), g=GR(), a=AL();
   x=i(x); y=i(y); 
   FILL(x+3,y+2,10,8,g);
   FILL(x+1,y+10,14,12,g); 
@@ -952,13 +1146,55 @@ function astroAlien(x,y,pose='idle'){
   FILL(x+4,y+22,2,2,f); FILL(x+10,y+22,2,2,f);
   FILL(x+4,y,2,2,f); FILL(x+10,y,2,2,g);
 }
+function astroPilot(x,y,pose='idle'){ 
+  const f=FG(), b=BG(), g=GR(), a=AL();
+  x=i(x); y=i(y); 
+  
+  // Body/Suit
+  FILL(x+2,y+4,12,18,g); 
+  // Helmet/Visor (Accent Pale)
+  FILL(x+3,y,10,10,f); FILL(x+5,y+2,6,6,a); // Visor
+  // Arms
+  FILL(x-4,y+8,4,8,f); 
+  
+  if(pose==='run1'){
+    FILL(x+2,y+20,4,2,f); FILL(x+10,y+20,4,2,g); 
+  } else if(pose==='run2'){
+    FILL(x+1,y+20,4,2,g); FILL(x+11,y+20,4,2,f);
+  } else if(pose==='jump'){
+    FILL(x+3,y+20,10,2,f); 
+  }
+}
+function astroRobot(x,y,pose='idle'){ 
+  const f=FG(), b=BG(), g=GR(), a=AC();
+  x=i(x); y=i(y); 
+  
+  // Body/Head (Grounded Color)
+  FILL(x+2,y,12,22,g);
+  // Joints/Core (Accent Pale)
+  FILL(x+4,y+6,8,2,a);
+  FILL(x+4,y+14,8,2,a);
+  // Eyes (FG Neon)
+  FILL(x+5,y+2,2,2,f); FILL(x+9,y+2,2,2,f);
+  // Arms
+  FILL(x-2,y+8,2,8,g); FILL(x+16,y+8,2,8,g);
+  
+  if(pose==='run1'){
+    FILL(x+3,y+22,3,2,f); FILL(x+10,y+22,3,2,g); 
+  } else if(pose==='run2'){
+    FILL(x+2,y+22,3,2,g); FILL(x+11,y+22,3,2,f);
+  } else if(pose==='jump'){
+    FILL(x+3,y+22,10,2,a); 
+  }
+}
+
 function astronaut(x,y,pose='idle'){ 
   if(charSkin==='stripe') return astroStripe(x,y,pose); 
   if(charSkin==='alien') return astroAlien(x,y,pose); 
+  if(charSkin==='pilot') return astroPilot(x,y,pose);
+  if(charSkin==='robot') return astroRobot(x,y,pose);
   return astroClassic(x,y,pose); 
 }
-
-// Enemy Alien: 22x14 - Glitch/Insectoid look
 function enemyAlien(x,y,blink=false){ 
   const f=FG(), b=BG(), g=GR(), a=AL(); 
   x=i(x); y=i(y); 
@@ -974,26 +1210,29 @@ function enemyAlien(x,y,blink=false){
     FILL(x+8,y+6,6,2,b); 
   }
 }
-
-// UFO: 56 wide, blockier
 function ufo(x,y){ 
   const f=FG(); x=i(x); y=i(y); 
   FILL(x-28,y,56,6,f); 
-  FILL(x-22,y-8,44,8,GR()); // Cyan Dome
+  FILL(x-22,y-8,44,8,GR()); 
   FILL(x-4,y-14,8,6,f); 
 }
-function beamScan(cx,topY,t){ const f=FG(); cx=i2(cx); topY=i2(topY); const wob=(Math.sin(t/420)+1)*1.2; for(let k=0;k<56;k+=6){ const y=topY+14+k; const half=8+((k/56)*9)|0; FILL(cx-(half+wob),y,(half+wob)*2,2,f);} }
-
-
-// Tile Ground: Solid Neon Platform (Less distracting)
+function beamScan(cx,topY,t){ 
+  const f=FG(); cx=i2(cx); topY=i2(topY); 
+  const wob=(Math.sin(t/420)+1)*1.2; 
+  for(let k=0;k<56;k+=6){ 
+    const y=topY+14+k; 
+    const half=8+((k/56)*9)|0; 
+    ctx.globalAlpha = 0.5 - (k/56) * 0.4;
+    FILL(cx-(half+wob),y,(half+wob)*2,2,f);
+  } 
+  ctx.globalAlpha = 1;
+}
 function tileGround(x,y,w){ 
   const f=FG(), b=BG(), g=GR();
   x=i(x); y=i2(y); w=i(w); 
   
-  // Base platform (Cyan)
   FILL(x,y,w,44,g);
   
-  // Checkerboard Pattern (Pink/Dark)
   for(let dx=0;dx<w;dx+=8) {
     for(let dy=0;dy<44;dy+=8) {
       if(((dx+dy)>>3)&1) {
@@ -1004,33 +1243,137 @@ function tileGround(x,y,w){
     }
   }
   
-  // Top neon line (Pink)
   FILL(x,y-2,w,2,f); 
 }
 
-/* Avatar previews */
+// Item preview drawing utility (REMOVED)
+function drawItemPreviews(){
+    // This function is now empty
+}
+
+
+// FIX: Rewritten drawPreviewTo based on v2.3.0 logic
 function drawPreviewTo(canvas, kind){
-  const c=canvas.getContext('2d'); c.imageSmoothingEnabled=false;
-  c.fillStyle=BG(); c.fillRect(0,0,canvas.width,canvas.height);
-  const f=FG(), b=BG(), g=GR(); 
-  c.fillStyle=g; c.fillRect(2,40,28,2);
+  const c = canvas.getContext('2d'); 
+  c.imageSmoothingEnabled = false;
+  // Get colors dynamically
+  const f=FG(), b=BG(), g=GR(), a=AC(), al=AL();
   
-  if(kind==='alien'){ 
-    c.fillStyle=g; c.fillRect(10,8,12,6); c.fillRect(8,14,16,16); 
-    c.fillStyle=f; c.fillRect(11,10,2,2); c.fillRect(17,10,2,2);
-    c.fillStyle=b; c.fillRect(12,12,3,3); c.fillRect(17,12,3,3); 
-    c.fillStyle=f; c.fillRect(13,30,6,2); 
+  c.fillStyle = b; // Use dynamic BG
+  c.fillRect(0, 0, canvas.width, canvas.height); // clear
+  
+  // Ground line
+  c.fillStyle = g; // Use dynamic GR
+  c.fillRect(0, 40, 32, 2); // Ground line at y=40
+
+  // x=7, y=11 (from v3.0.4) was wrong. v2.3.0 logic is hardcoded for 32x44 canvas
+  
+  if (kind === 'classic') {
+    c.fillStyle=g; c.fillRect(5, 12, 3, 8); // arm
+    c.fillStyle=f; c.fillRect(10, 8, 12, 18); // body
+    c.fillStyle=f; c.fillRect(11, 4, 10, 10); c.fillStyle=b; c.fillRect(13, 6, 6, 6); // head
+    c.fillStyle=g; c.fillRect(12, 28, 8, 2); // legs (pose)
   }
-  else { 
-    c.fillStyle=g; c.fillRect(5,12,3,8); 
-    c.fillStyle=f; c.fillRect(10,8,12,18); 
-    c.fillStyle=f; c.fillRect(11,4,10,10); c.fillStyle=b; c.fillRect(13,6,6,6); 
-    if(kind==='stripe'){ c.fillStyle=g; c.fillRect(15,10,2,14); } 
-    c.fillStyle=f; c.fillRect(12,28,8,2);
+  else if (kind === 'stripe') {
+    c.fillStyle=g; c.fillRect(5, 12, 3, 8); // arm
+    c.fillStyle=f; c.fillRect(10, 8, 12, 18); // body
+    c.fillStyle=f; c.fillRect(11, 4, 10, 10); c.fillStyle=b; c.fillRect(13, 6, 6, 6); // head
+    c.fillStyle=g; c.fillRect(15, 10, 2, 14); // stripe
+    c.fillStyle=g; c.fillRect(12, 28, 8, 2); // legs (pose)
+  }
+  else if (kind === 'alien') {
+    c.fillStyle=g; c.fillRect(10, 8, 12, 6); c.fillRect(8, 14, 16, 16); 
+    c.fillStyle=f; c.fillRect(11, 10, 2, 2); c.fillRect(17, 10, 2, 2);
+    c.fillStyle=b; c.fillRect(12, 12, 3, 3); c.fillRect(17, 12, 3, 3); 
+    c.fillStyle=f; c.fillRect(13, 30, 6, 2); 
+  }
+  else if (kind === 'pilot') {
+    // Manually drawing pilot based on astroPilot (x=8, y=10 logic from v3.0)
+    // Centered at x=16, y=18 (approx) on a 32x44 canvas
+    const xOffset = 8, yOffset = 10;
+    c.fillStyle=f; c.fillRect(xOffset-4,yOffset+8,4,8); // Arm
+    c.fillStyle=g; c.fillRect(xOffset+2,yOffset+4,12,18); // Body/Suit
+    c.fillStyle=f; c.fillRect(xOffset+3,yOffset,10,10); c.fillStyle=al; c.fillRect(xOffset+5,yOffset+2,6,6); // Helmet/Visor
+    c.fillStyle=g; c.fillRect(xOffset+1,yOffset+20,4,2); // Leg (run2 pose)
+    c.fillStyle=f; c.fillRect(xOffset+11,yOffset+20,4,2); // Leg (run2 pose)
+  }
+  else if (kind === 'robot') {
+    // Manually drawing robot based on astroRobot (x=8, y=10 logic from v3.0)
+    const xOffset = 8, yOffset = 10;
+    c.fillStyle=g; c.fillRect(xOffset+2,yOffset,12,22); // Body/Head
+    c.fillStyle=a; c.fillRect(xOffset+4,yOffset+6,8,2); c.fillRect(xOffset+4,yOffset+14,8,2); // Joints/Core
+    c.fillStyle=f; c.fillRect(xOffset+5,yOffset+2,2,2); c.fillRect(xOffset+9,yOffset+2,2,2); // Eyes
+    c.fillStyle=g; c.fillRect(xOffset-2,yOffset+8,2,8); c.fillRect(xOffset+16,yOffset+8,2,8); // Arms
+    c.fillStyle=g; c.fillRect(xOffset+2,yOffset+22,3,2); // Leg (run2 pose)
+    c.fillStyle=f; c.fillRect(xOffset+11,yOffset+22,3,2); // Leg (run2 pose)
+  }
+  
+  // Draw selection border
+  if (kind === charSkin) {
+      c.strokeStyle = FG();
+      c.lineWidth = 2;
+      c.strokeRect(0, 0, canvas.width, canvas.height);
   }
 }
-function drawPreviews(){ drawPreviewTo(document.getElementById('pvClassic'),'classic'); drawPreviewTo(document.getElementById('pvStripe'),'stripe'); drawPreviewTo(document.getElementById('pvAlien'),'alien'); }
 
+function drawPreviews(){ 
+  drawPreviewTo(document.getElementById('pvClassic'),'classic'); 
+  drawPreviewTo(document.getElementById('pvStripe'),'stripe'); 
+  drawPreviewTo(document.getElementById('pvAlien'),'alien'); 
+  drawPreviewTo(document.getElementById('pvPilot'),'pilot');
+  drawPreviewTo(document.getElementById('pvRobot'),'robot');
+}
+
+
+// Item preview drawing utility (used for How to Play menu)
+function drawItem(canvas, itemKind) {
+    if (!canvas) return; // Safety check
+    const c = canvas.getContext('2d');
+    c.imageSmoothingEnabled = false;
+    const f=FG(), b=BG(), g=GR();
+    c.fillStyle = b; c.fillRect(0, 0, canvas.width, canvas.height);
+    const x = 0, y = 0; // Canvas is sized to the item
+    
+    if (itemKind === 'chip') {
+      c.fillStyle = g; c.fillRect(x, y, 10, 10);
+      c.fillStyle = b; c.fillRect(x + 1, y + 1, 8, 8);
+      c.fillStyle = g; c.fillRect(x + 3, y + 3, 4, 4);
+    }
+    if (itemKind === 'shield') {
+      c.fillStyle = f; c.fillRect(x + 2, y + 1, 8, 10);
+      c.fillStyle = f; c.fillRect(x + 3, y, 6, 1); 
+      c.fillStyle = f; c.fillRect(x + 4, y + 11, 4, 1); 
+      c.fillStyle = b; c.fillRect(x + 4, y + 3, 4, 4); 
+      c.fillStyle = g; c.fillRect(x + 5, y + 5, 2, 2);
+    }
+    if (itemKind === 'slow') {
+      c.fillStyle = f; c.fillRect(x, y + 2, 12, 8); 
+      c.fillStyle = b; c.fillRect(x + 1, y + 3, 10, 6); 
+      c.fillStyle = g; c.fillRect(x + 2, y + 4, 3, 3); 
+      c.fillStyle = g; c.fillRect(x + 7, y + 4, 3, 3);
+      c.fillStyle = g; c.fillRect(x + 1, y + 1, 10, 1);
+    }
+}
+function drawHowToPreviews(){
+    try {
+      drawItem(document.getElementById('itemChip'), 'chip');
+      drawItem(document.getElementById('itemShield'), 'shield');
+      drawItem(document.getElementById('itemSlow'), 'slow');
+    } catch(e) {
+      console.error("Error drawing item previews:", e);
+    }
+}
+
+// NEW: Function to draw sprites on Game Over recap
+function drawRecapPreviews(){
+    try {
+      drawItem(document.getElementById('recapChip'), 'chip');
+      drawItem(document.getElementById('recapShield'), 'shield');
+      drawItem(document.getElementById('recapSlow'), 'slow');
+    } catch(e) {
+      console.error("Error drawing recap previews:", e);
+    }
+}
 
 /* Collision, Callouts, Tips (UNCHANGED) */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
@@ -1062,7 +1405,13 @@ function gameOver(){
   best=Math.max(best,Math.floor(score)); localStorage.setItem('moon_best',String(best));
   statusEl.textContent='Game Over';
   document.getElementById('overScore').textContent=`Score: ${pad(Math.floor(score))} • Best: ${pad(best)}`;
-  document.getElementById('recap').innerHTML = `Run Recap — 💠 ${coinsPicked} • 🛡 ${shieldsPicked} • ⏳ ${slowUsed}`;
+  
+  // RECAP: Update text content of new spans and draw sprites
+  document.getElementById('recapChipScore').textContent = coinsPicked;
+  document.getElementById('recapShieldScore').textContent = shieldsPicked;
+  document.getElementById('recapSlowScore').textContent = slowUsed;
+  drawRecapPreviews(); // Draw the item sprites
+
   const saved=(localStorage.getItem('moon_name')||'').trim();
   if(saved){
     submitScore(saved,score).then(res=>{
@@ -1177,9 +1526,25 @@ function update(u){
     if(!seenTutorial.slow   && it.kind==='slow'   && it.x - scroll < W-20){ showCaption('Slow field','3s slow motion'); seenTutorial.slow=true; }
 
     if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:rect.x,y:rect.y,w:rect.w,h:rect.h})){
-      if(it.kind==='chip'){ const add=Math.floor(coinValue*scoreMul); score+=add; coinsPicked++; addCall(`+${add}`,player.x+8,player.y-6); beep('coin'); }
-      if(it.kind==='shield'){ if(player.shields<3){ player.shields++; shieldsPicked++; addCall('Shield!',player.x+8,player.y-6); beep('shield'); } else { const bonus=Math.floor(coinValue*0.5*scoreMul); score+=bonus; addCall(`+${bonus}`,player.x+8,player.y-6); beep('coin'); } }
-      if(it.kind==='slow'){ player.slow=180; slowUsed++; addCall('Slow-mo!',player.x+8,player.y-6); beep('coin'); }
+      if(it.kind==='chip'){ 
+          const add=Math.floor(coinValue*scoreMul); score+=add; coinsPicked++; 
+          addCall(`+${add}`,player.x+8,player.y-6); beep('coin'); 
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, GR(), 8);
+      }
+      if(it.kind==='shield'){ 
+          if(player.shields<3){ player.shields++; shieldsPicked++; 
+              addCall('Shield!',player.x+8,player.y-6); beep('shield'); 
+          } else { 
+              const bonus=Math.floor(coinValue*0.5*scoreMul); score+=bonus; 
+              addCall(`+${bonus}`,player.x+8,player.y-6); beep('coin'); 
+          } 
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, FG(), 12);
+      }
+      if(it.kind==='slow'){ 
+          player.slow=180; slowUsed++; 
+          addCall('Slow-mo!',player.x+8,player.y-6); beep('slow'); 
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 12);
+      }
       items.splice(k,1);
     }else{ it._drawY=rect.y; }
   }
@@ -1195,45 +1560,88 @@ function update(u){
   if(targetMilestone>milestoneIndex){ milestoneIndex = targetMilestone; triggerFlyby(); }
   if(flyby){ flyby.t += m; flyby.x += flyby.dir * 6 * m; if(flyby.x < -100 || flyby.x > W+100) flyby=null; }
 
+  // NEW: Update particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * m;
+      p.y += p.vy * m;
+      p.vy += 0.1 * m; // a little gravity
+      p.life -= m;
+      if (p.life <= 0) {
+          particles.splice(i, 1);
+      }
+  }
   updateCallouts(m);
 }
 
-/* ===== Draw Loop (MAXIMUM VAPOR) ===== */
+/* ===== Draw Loop (THEMED & REDESIGNED BACKGROUND) ===== */
 function draw(){
   const f=FG(),b=BG(), g=GR(), a=AC(); ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
+  const theme = T();
 
-  // 1. Pale Pink Stars/Accents (Sparse, less distracting)
-  ctx.fillStyle=a; 
-  for(let n=0;n<60;n++){
-    const x1=((n*83)%2000)-(scroll*0.25%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
+  // --- Background Overhaul ---
+  
+  // 1. Denser, multi-layer parallax stars
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = a;
+  for(let n=0;n<120;n++){ // Slow, dim stars (WAS 80)
+    const x1=((n*83)%2000)-(scroll*0.15%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
   }
-  
-  // 2. Neon City Silhouette (Inspired by image_547295.png)
-  const cityY = H*0.42;
-  ctx.fillStyle=BG(); // Dark Silhouette
-  // Draw simplified, blocky buildings (using dark background color)
-  FILL(0, cityY+10, W, H-cityY-10, BG()); 
-  FILL(W*0.1, cityY-10, 40, 20, BG()); 
-  FILL(W*0.3, cityY-30, 60, 40, BG());
-  FILL(W*0.7, cityY-5, 80, 15, BG());
-  FILL(W*0.5, cityY-45, 30, 55, BG());
-  
-  // Horizon Line (Bright Orange/Accent)
-  ctx.strokeStyle=a;
-  ctx.beginPath();
-  ctx.moveTo(0, cityY);
-  ctx.lineTo(W, cityY);
-  ctx.stroke();
-
-  // 3. Horizon Grid (Reduced opacity/drawings for less distraction)
-  ctx.strokeStyle=g;
-  ctx.globalAlpha = 0.30; // Very reduced opacity for the grid
-  for(let k=0; k<W; k+=80){
-    ctx.beginPath(); ctx.moveTo(W/2, cityY); ctx.lineTo(k, H); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(W/2, cityY); ctx.lineTo(W-k, H); ctx.stroke();
+  ctx.globalAlpha = 0.7;
+  ctx.fillStyle = f;
+  for(let n=0;n<75;n++){ // Brighter, faster stars (WAS 50)
+    const x1=((n*123)%2000)-(scroll*0.25%2000), y1=(n*141)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
   }
   ctx.globalAlpha = 1;
+
+  // 2. Distant, static Earth (FIX: Theme-aware)
+  if (theme.earth) { // Only draw if theme allows it
+    const earthX = W * 0.85;
+    const earthY = H * 0.2;
+    
+    if (theme.name === 'Classic Cosmos') {
+        // B&W Earth
+        ctx.fillStyle = f; // White
+        ctx.beginPath();
+        ctx.arc(earthX, earthY, 20, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = b; // Black continents
+        ctx.beginPath();
+        ctx.arc(earthX + 5, earthY - 3, 10, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = f; // White clouds
+        ctx.beginPath();
+        ctx.arc(earthX - 4, earthY + 4, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    } else {
+        // Color Earth
+        ctx.fillStyle = '#1E90FF'; // Blue
+        ctx.beginPath();
+        ctx.arc(earthX, earthY, 20, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#3CB371'; // Green continents
+        ctx.beginPath();
+        ctx.arc(earthX + 5, earthY - 3, 10, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = (theme.name === 'Pulsar' ? g : '#FFFFFF'); // Clouds/Ice
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.arc(earthX - 4, earthY + 4, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+  }
+
+
+  // 3. Large, detailed Moon on horizon (FIX: REMOVED)
+  // ... (Code for moon is now gone) ...
+
+  ctx.globalAlpha = 1;
   ctx.strokeStyle=f;
+  // --- End Background Overhaul ---
+
 
   // Draw Ground Platforms
   for(const s of segments){
@@ -1248,7 +1656,18 @@ function draw(){
     const x=i(e.x-scroll), y=i(e.y);
     if(e.kind==='alien') enemyAlien(x,y,blink); 
     else if(e.kind==='spike') {
-      FILL(x,y,e.w,e.h,g); 
+      // Wireframe spike effect
+      ctx.fillStyle = GR();
+      ctx.fillRect(x, y + e.h * 0.8, e.w, e.h * 0.2); // Base
+      ctx.beginPath();
+      ctx.moveTo(x, y + e.h * 0.8);
+      ctx.lineTo(x + e.w / 2, y);
+      ctx.lineTo(x + e.w, y + e.h * 0.8);
+      ctx.fillStyle = f;
+      ctx.fill();
+      ctx.strokeStyle = f;
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
   }
 
@@ -1256,37 +1675,66 @@ function draw(){
   for(const it of items){
     const x=i2(it.x-scroll), y=i2((it._drawY ?? it.y));
     if(it.kind==='chip'){
-      FILL(x,y,10,10,g); FILL(x+1,y+1,8,8,b);
-      FILL(x+3,y+3,4,4,g);
+      FILL(x,y,10,10,GR()); FILL(x+1,y+1,8,8,BG());
+      FILL(x+3,y+3,4,4,GR());
     }
     if(it.kind==='shield'){
       const pulse=(Math.sin((timeMs/500)+(it.phase||0))*0.5+0.5)|0;
       FILL(x+2,y+1,8,10,f); 
       FILL(x+3,y,6,1,f); FILL(x+4,y+11,4,1,f); 
       FILL(x+4,y+3,4,4,b); 
-      if(pulse) FILL(x+5,y+5,2,2,g);
+      if(pulse) FILL(x+5,y+5,2,2,GR());
     }
     if(it.kind==='slow'){
       FILL(x,y+2,12,8,f); FILL(x+1,y+3,10,6,b); 
-      FILL(x+2,y+4,3,3,g); FILL(x+7,y+4,3,3,g);
+      FILL(x+2,y+4,3,3,GR()); FILL(x+7,y+4,3,3,GR());
       const scan=((timeMs/120+(it.phase||0))%10)|0; 
-      FILL(x+1,y+1,10,1,g);
+      FILL(x+1,y+1,10,1,GR());
     }
   }
 
   // Draw Player
   const frame=(performance.now()/120|0);
   const pose=player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
-  if(player.shields>0){
-    const intense=player.auraFlash>0?1:0, th=intense?3:2;
+  if(player.shields>0 || player.slow > 0){
+    const isFlashing = (player.auraFlash>0) && (frame % 2 === 0);
+    const intense = (player.auraFlash>0 || player.slow > 0) ? 1 : 0;
+    const th = isFlashing || player.slow > 0 ? 3 : 2; // Bolder border when hit/slow
     const ax=player.x-3, ay=player.y-3, aw=player.w+6, ah=player.h+6;
-    for(let t=0;t<th;t++){ FILL(ax-t,ay-t,aw+2*t,1,f); FILL(ax-t,ay+ah+t,aw+2*t,1,f); FILL(ax-t,ay-t,1,ah+2*t,f); FILL(ax+aw+t,ay-t,1,ah+2*t,f); }
+    ctx.globalAlpha = intense ? 1.0 : 0.6;
+    
+    // Shield color is FG, Slow-mo color is AC
+    const color = player.slow > 0 ? AC() : FG();
+    
+    for(let t=0;t<th;t++){ 
+        FILL(ax-t,ay-t,aw+2*t,1,color); 
+        FILL(ax-t,ay+ah+t,aw+2*t,1,color); 
+        FILL(ax-t,ay-t,1,ah+2*t,color); 
+        FILL(ax+aw+t,ay-t,1,ah+2*t,color); 
+    }
+    ctx.globalAlpha = 1;
   }
   const invBlink=(player.inv>0)&&(frame%2===0);
   if(!invBlink){ astronaut(player.x,player.y,pose); }
   else{ FILL(player.x,player.y,player.w,1,f); FILL(player.x,player.y+player.h-1,player.w,1,f); FILL(player.x,player.y,1,player.h,f); FILL(player.x+player.w-1,player.y,1,player.h,f); }
 
-  if(flyby){ const yy = flyby.y + Math.sin(flyby.t*0.3)*2; ufo(flyby.x, yy); }
+  // NEW: Draw particles
+  ctx.globalAlpha = 0.8;
+  for (const p of particles) {
+      ctx.fillStyle = p.color;
+      FILL(p.x - scroll, p.y, 2, 2, p.color); // Draw particles relative to screen
+  }
+  ctx.globalAlpha = 1;
+
+  if(flyby){ 
+    const yy = flyby.y + Math.sin(flyby.t*0.3)*2; 
+    ufo(flyby.x, yy); 
+    // Add small trail behind UFO for animation
+    ctx.globalAlpha = 0.3;
+    const trailLength = clamp(flyby.t * 0.8, 20, 100); 
+    FILL(flyby.x - flyby.dir * (trailLength), yy + 3, trailLength * 0.5, 2, f);
+    ctx.globalAlpha = 1;
+  }
 
   drawCallouts();
 
@@ -1295,34 +1743,53 @@ function draw(){
   ctx.fillText(hudL,10,18);
   ctx.textAlign='right';
   const dots=['○','○','○']; for(let k=0;k<player.shields;k++) dots[k]='●';
-  ctx.fillText(`🛡 ${dots.join(' ')}`, W-10, 18);
+  const slowText = player.slow > 0 ? `⏳ ${Math.ceil(player.slow/TARGET_FPS)}s` : '';
+  ctx.fillText(`${slowText} 🛡 ${dots.join(' ')}`, W-10, 18);
   ctx.textAlign='left';
 
-  // Menu Screen Drawing
+  // Menu Screen Drawing (Simplified, less text background)
   if(state==='menu'){
     const t=performance.now(); const cx=i(W/2), cy=i(H*0.30);
-    const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
+    const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); 
+    // --- SYNTAX ERROR FIX ---
+    // Was: beamScan(cx,cy-4MkhkAsg MoonRunner — v3.0 Aesthetic Apex.html0+hover,t);
+    beamScan(cx,cy-40+hover,t); 
+    // --- END FIX ---
+    const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
     
-    ctx.font="22px 'Press Start 2P',monospace"; 
-    const title="MKHKASG : M O O N R U N N E R";
+    // Title shadow effect
+    ctx.fillStyle = inverted() ? '#AAAAAA' : '#666666'; 
+    ctx.font="26px 'Press Start 2P',monospace"; 
+    const title="M O O N R U N N E R";
+    ctx.fillText(title,i((W-ctx.measureText(title).width)/2) - 2,cy+66);
+    
+    // Title foreground effect
+    ctx.fillStyle = GR();
     ctx.fillText(title,i((W-ctx.measureText(title).width)/2),cy+64);
-    
+
     ctx.font="10px 'Press Start 2P',monospace";
-    const t1="Press SPACE to start • ←/→ move • W/↑/Space jump • Esc pause";
-    const t2="Collect: 💠 Floppy Disks, 🛡 Roman Busts, ⏳ Cassettes";
-    const t3="Avoid: Glitch Aliens & Wireframe Spikes. Survive the net.";
-    ctx.fillText(t1,i((W-ctx.measureText(t1).width)/2),cy+86);
-    ctx.fillText(t2,i((W-ctx.measureText(t2).width)/2),cy+104);
-    ctx.fillText(t3,i((W-ctx.measureText(t3).width)/2),cy+122);
+    const sub="— V A P O R W A V E • E N D L E S S • R U N N E R —";
+    ctx.fillStyle = f;
+    ctx.fillText(sub,i((W-ctx.measureText(sub).width)/2),cy+86);
   }
 }
 
 /* Boot & Loop (RESTORED) */
 async function boot(){
   try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  
+  // Initialize theme on boot
+  applyTheme(localStorage.getItem('moon_theme') || 'cyber');
+
+  // Draw item previews immediately for the How To menu
+  drawHowToPreviews(); 
+  
   resetWorld(); setMode(speedMode); state='menu'; statusEl.textContent='Menu — ready';
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     const pl=document.getElementById('playLandBtn'); pl.style.display='inline-block'; pl.onclick=()=>{ hideUI('menu'); goLandscape().then(()=>start()); };
+    document.getElementById('landBtn').style.display='none'; // Hide desktop landscape button on mobile menu
+  } else {
+    document.getElementById('playLandBtn').style.display='none';
   }
   requestAnimationFrame(loop); showUI('menu');
 }
@@ -1348,7 +1815,11 @@ hideUI = function(id){
 };
 
 drawPreviews();
+drawHowToPreviews();
+drawRecapPreviews(); // NEW: Call on initial load
 boot();
 </script>
 </body>
 </html>
+
+
