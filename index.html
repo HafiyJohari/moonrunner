@@ -622,7 +622,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 let ac=null, sfxMuted=false, musicMuted=false;
 // NEW: Music track state variable
 let currentMusicTrack = localStorage.getItem('moon_track') || 'classic';
-let musicVol=0.045, sfxVol=0.28;
+let musicVol=0.085, sfxVol=0.40;
 let musicBus=null, sfxBus=null;
 function ensureAC(){
   if(!ac){
