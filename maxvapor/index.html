@@ -3,22 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>MkhkAsg : MoonRunner — v2.1.0 "MAXIMUM VAPOR"</title>
+<title>MkhkAsg : MoonRunner — v2.2.0 "Cyber Grid"</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   /* --- VAPORWAVE COLOR PALETTE --- */
   :root { 
     --w:960; --h:540; 
-    --bg-dark: #1A0A4B;    /* Deep Cyber Blue/Purple (Background Sky) */
-    --fg-neon: #FF3DF9;    /* Neon Pink/Magenta (Main FG/Player) */
-    --ground-neon: #00FBFB; /* Neon Cyan/Teal (Ground/Platforms) */
-    --accent-pale: #FFC9E3; /* Pale Pink/Peach (Stars/UI Accents) */
-    --alien-sec: #FF00FF; /* Bright Purple/Magenta for Alien */
+    --bg-dark: #080020;    /* Deep Night Violet */
+    --fg-neon: #FF0080;    /* Bright Fuchsia (Main FG/Player) */
+    --ground-neon: #00FFCC; /* Neon Aqua/Teal (Ground/Platforms) */
+    --accent-pale: #FFA500; /* Bright Orange (Light/Accent) */
+    --alien-sec: #FF00FF; /* Bright Magenta for Alien */
   }
 
   html,body{
     margin:0;height:100%;
-    /* Base Colors: Dark Background, Neon Text */
     background:var(--bg-dark);
     color:var(--fg-neon);
     font-family:ui-monospace,Consolas,Menlo,monospace;
@@ -34,7 +33,7 @@
   .wrap{display:grid;place-items:center;height:100%;gap:8px;padding:10px}
   #stage{ position:relative; }
   
-  /* Mobile HUD overlay (hidden by default) */
+  /* Mobile HUD overlay */
   .mobile{
     position:absolute;
     inset:auto 0 max(env(safe-area-inset-bottom,0px), 10px) 0;
@@ -42,14 +41,12 @@
     pointer-events:none;
     z-index:30;
   }
-  /* Show pads when game is playing (needed for touch devices) */
   body.playing .mobile{ display:block !important; pointer-events:auto; }
 
-  /* *** FIX: HIDE MOBILE PADS ON DESKTOP *** */
+  /* FIX: HIDE MOBILE PADS ON DESKTOP */
   @media (hover:hover) and (pointer:fine){
     .mobile{ display:none !important; }
   }
-  /* ************************************** */
 
   .mobile .leftGrp{ position:absolute; left:12px; bottom:0; display:flex; gap:10px; pointer-events:none; }
   .mobile .rightGrp{ position:absolute; right:12px; bottom:0; display:flex; gap:10px; pointer-events:none; }
@@ -111,16 +108,16 @@
   th,td{border-bottom:1px solid currentColor;padding:6px 4px;text-align:left}
 
   /* Contrast-safe overlays (Using new colors) */
-  body:not(.invert) .ui { background: rgba(26,10,75,.78); }
+  body:not(.invert) .ui { background: rgba(8,0,32,.78); }
   body:not(.invert) .ui .card { 
-    background: rgba(26,10,75,.96); 
+    background: rgba(8,0,32,.96); 
     color:var(--ground-neon); 
     border-color:var(--fg-neon); 
     box-shadow:0 0 0 2px var(--fg-neon) inset; 
   }
-  body.invert .ui { background: rgba(255,61,249,.75); }
+  body.invert .ui { background: rgba(255,0,128,.75); }
   body.invert .ui .card { 
-    background: rgba(255,61,249,.98); 
+    background: rgba(255,0,128,.98); 
     color:var(--bg-dark); 
     border-color:var(--bg-dark); 
     box-shadow:0 0 0 2px var(--bg-dark) inset; 
@@ -138,12 +135,12 @@
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
   .preview{display:flex;flex-direction:column;align-items:center;gap:6px}
 
-/* --- Avatar popup restored --- */
+/* --- Avatar popup --- */
 #avatars{
   display:none;
   position:fixed;
   inset:0;
-  background:rgba(26,10,75,0.85);
+  background:rgba(8,0,32,0.85);
   z-index:60;
   justify-content:center;
   align-items:center;
@@ -281,12 +278,12 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <div id="playBtn" class="btn">▶ Start Run</div>
       <div id="playLandBtn" class="btn" style="display:none">▶ Play in Landscape</div>
       <div id="howBtn" class="btn">? Protocol</div>
-      <div id="avatarsBtn" class="btn">𓁷 Systems</div>
+      <div id="avatarsBtn" class="btn">𓁷 Characters</div>
       <div id="settingsBtn" class="btn">☼ Config</div>
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v2.1.0 “MAXIMUM VAPOR” • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v2.2.0 “Cyber Grid” • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -342,7 +339,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
 
 <div id="avatars" class="ui" style="display:none">
   <div class="card">
-    <h2>Choose Runner</h2>
+    <h2>Select Runner</h2>
     <div class="grid">
       <div class="preview">
         <canvas id="pvClassic" width="32" height="44"></canvas>
@@ -415,7 +412,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
 
 <script>
 /* ===== Config (UPDATED VERSION) ===== */
-const GAME_VERSION='2.1.0-VAPOR';
+const GAME_VERSION='2.2.0-VAPOR';
 const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
 const STAGE = document.getElementById('stage');
 const CV=document.getElementById('cv');
@@ -426,17 +423,17 @@ addEventListener('resize',resizeCanvas); resizeCanvas();
 
 /* ===== Colors & helpers (VAPORWAVE) ===== */
 function inverted(){return document.body.classList.contains('invert');}
-const VAPOR_BG = document.documentElement.style.getPropertyValue('--bg-dark') || '#1A0A4B';
-const VAPOR_FG = document.documentElement.style.getPropertyValue('--fg-neon') || '#FF3DF9';
-const VAPOR_GR = document.documentElement.style.getPropertyValue('--ground-neon') || '#00FBFB';
-const VAPOR_AC = document.documentElement.style.getPropertyValue('--accent-pale') || '#FFC9E3';
+const VAPOR_BG = document.documentElement.style.getPropertyValue('--bg-dark') || '#080020';
+const VAPOR_FG = document.documentElement.style.getPropertyValue('--fg-neon') || '#FF0080';
+const VAPOR_GR = document.documentElement.style.getPropertyValue('--ground-neon') || '#00FFCC';
+const VAPOR_AC = document.documentElement.style.getPropertyValue('--accent-pale') || '#FFA500';
 const VAPOR_AL = document.documentElement.style.getPropertyValue('--alien-sec') || '#FF00FF';
 
 function FG(){return inverted()?VAPOR_BG:VAPOR_FG;} 
 function BG(){return inverted()?VAPOR_FG:VAPOR_BG;}
 function GR(){return inverted()?VAPOR_BG:VAPOR_GR;}
 function AC(){return inverted()?VAPOR_FG:VAPOR_AC;}
-function AL(){return inverted()?VAPOR_BG:VAPOR_AL;} // Alien Color
+function AL(){return inverted()?VAPOR_BG:VAPOR_AL;}
 
 const i=v=>v|0, i2=v=>(v>>1)<<1;
 const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
@@ -922,22 +919,18 @@ function spawnAhead(targetX){
   }
 }
 
-/* ===== 8-BIT VAPORWAVE SPRITE FUNCTIONS (REDESIGNED) ===== */
+/* ===== 8-BIT VAPORWAVE SPRITE FUNCTIONS (FINAL REDESIGN) ===== */
 
 // Player/Astronaut: Blocky 8-bit style, 16x22
 function astroClassic(x,y,pose='idle'){ 
   const f=FG(), b=BG(), g=GR(); 
   x=i(x); y=i(y); 
   
-  // Body (Neon Pink/Main FG) - 12x18 block
   FILL(x+2,y+4,12,18,f);
-  // Helmet/Head (10x10)
   FILL(x+3,y,10,10,f); FILL(x+5,y+2,6,6,b); // Visor
 
-  // Jetpack / Tank (Cyan/Teal)
-  FILL(x-4,y+8,4,8,g);
+  FILL(x-4,y+8,4,8,g); // Jetpack
   
-  // Legs/Pose (Glow effect)
   if(pose==='run1'){
     FILL(x+2,y+20,4,2,g); FILL(x+10,y+20,4,2,f); 
   } else if(pose==='run2'){
@@ -953,15 +946,10 @@ function astroStripe(x,y,pose='idle'){
 function astroAlien(x,y,pose='idle'){ 
   const f=FG(), b=BG(), g=GR();
   x=i(x); y=i(y); 
-  // Alien Head (10x10) - Cyan
   FILL(x+3,y+2,10,8,g);
-  // Alien Body (14x12)
   FILL(x+1,y+10,14,12,g); 
-  // Eyes (Pink)
   FILL(x+5,y+4,2,2,f); FILL(x+9,y+4,2,2,f);
-  // Legs (Pink)
   FILL(x+4,y+22,2,2,f); FILL(x+10,y+22,2,2,f);
-  // Antennae (Pink/Cyan mix)
   FILL(x+4,y,2,2,f); FILL(x+10,y,2,2,g);
 }
 function astronaut(x,y,pose='idle'){ 
@@ -975,19 +963,14 @@ function enemyAlien(x,y,blink=false){
   const f=FG(), b=BG(), g=GR(), a=AL(); 
   x=i(x); y=i(y); 
   
-  // Body (Cyan/Teal)
   FILL(x+2,y+2,18,10,g);
-  // Head/Antennae (Pink)
   FILL(x+4,y,14,4,f);
-  // Legs (Pink/Purple)
   FILL(x,y+4,2,4,a); FILL(x+20,y+4,2,4,a);
   
-  // Eyes (Dark/BG)
   if(!blink){ 
     FILL(x+5,y+5,4,2,b); 
     FILL(x+13,y+5,4,2,b); 
   } else {
-    // Glitch effect: add a dark block in center
     FILL(x+8,y+6,6,2,b); 
   }
 }
@@ -995,17 +978,14 @@ function enemyAlien(x,y,blink=false){
 // UFO: 56 wide, blockier
 function ufo(x,y){ 
   const f=FG(); x=i(x); y=i(y); 
-  // Base (Neon Pink)
   FILL(x-28,y,56,6,f); 
-  // Dome (Pinker Hue)
-  FILL(x-18,y-8,36,8,'#FF71CE'); 
-  // Central core/stand
+  FILL(x-22,y-8,44,8,GR()); // Cyan Dome
   FILL(x-4,y-14,8,6,f); 
 }
 function beamScan(cx,topY,t){ const f=FG(); cx=i2(cx); topY=i2(topY); const wob=(Math.sin(t/420)+1)*1.2; for(let k=0;k<56;k+=6){ const y=topY+14+k; const half=8+((k/56)*9)|0; FILL(cx-(half+wob),y,(half+wob)*2,2,f);} }
 
 
-// Tile Ground: Checkered Vaporwave Grid - 8-bit
+// Tile Ground: Solid Neon Platform (Less distracting)
 function tileGround(x,y,w){ 
   const f=FG(), b=BG(), g=GR();
   x=i(x); y=i2(y); w=i(w); 
@@ -1036,43 +1016,33 @@ function drawPreviewTo(canvas, kind){
   c.fillStyle=g; c.fillRect(2,40,28,2);
   
   if(kind==='alien'){ 
-    // Alien 8-bit blocky
-    c.fillStyle=g; c.fillRect(10,8,12,6); c.fillRect(8,14,16,16,g); 
+    c.fillStyle=g; c.fillRect(10,8,12,6); c.fillRect(8,14,16,16); 
     c.fillStyle=f; c.fillRect(11,10,2,2); c.fillRect(17,10,2,2);
     c.fillStyle=b; c.fillRect(12,12,3,3); c.fillRect(17,12,3,3); 
     c.fillStyle=f; c.fillRect(13,30,6,2); 
   }
   else { 
-    // Astro 8-bit blocky
-    c.fillStyle=g; c.fillRect(5,12,3,8); // Cyan Jetpack
-    c.fillStyle=f; c.fillRect(10,8,12,18); // Pink Body
-    c.fillStyle=f; c.fillRect(11,4,10,10); c.fillStyle=b; c.fillRect(13,6,6,6); // Helmet/Visor
-    if(kind==='stripe'){ c.fillStyle=g; c.fillRect(15,10,2,14); } // Cyan Stripe
-    c.fillStyle=f; c.fillRect(12,28,8,2); // Pink Feet
+    c.fillStyle=g; c.fillRect(5,12,3,8); 
+    c.fillStyle=f; c.fillRect(10,8,12,18); 
+    c.fillStyle=f; c.fillRect(11,4,10,10); c.fillStyle=b; c.fillRect(13,6,6,6); 
+    if(kind==='stripe'){ c.fillStyle=g; c.fillRect(15,10,2,14); } 
+    c.fillStyle=f; c.fillRect(12,28,8,2);
   }
 }
 function drawPreviews(){ drawPreviewTo(document.getElementById('pvClassic'),'classic'); drawPreviewTo(document.getElementById('pvStripe'),'stripe'); drawPreviewTo(document.getElementById('pvAlien'),'alien'); }
 
 
-/* Collision (UNCHANGED) */
+/* Collision, Callouts, Tips (UNCHANGED) */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
-
-/* Callouts (UNCHANGED) */
 const callouts=[];
 function addCall(text,x,y){ callouts.push({x,y,vy:-0.35,life:60,text}); }
 function updateCallouts(u){ for(let i=callouts.length-1;i>=0;i--){ const c=callouts[i]; c.y+=c.vy*u; c.life-=u; if(c.life<=0) callouts.splice(i,1);} }
 function drawCallouts(){ ctx.save(); ctx.fillStyle=FG(); ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.font="12px 'Press Start 2P', monospace"; for(const c of callouts){ ctx.globalAlpha=Math.max(0,c.life/60); ctx.fillText(c.text,c.x,c.y); } ctx.restore(); ctx.globalAlpha=1; }
-
-/* Pause tips rotator (UNCHANGED) */
 const tips=["Esc to pause. Close resumes.","Tap ⤒ to jump on mobile.","Collect 💠 for points (× mode).","🛡 protects up to 3 hits.","⏳ gives 3s slow motion."];
 let tipIdx=0, tipTimer=null;
 function startTips(){ const el=document.getElementById('tipsLine'); clearInterval(tipTimer); el.textContent=tips[tipIdx%tips.length]; tipTimer=setInterval(()=>{tipIdx++; el.textContent=tips[tipIdx%tips.length];}, 2400); }
 function stopTips(){ clearInterval(tipTimer); tipTimer=null; }
-
-/* Tutorial seen flags (UNCHANGED) */
 let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:false};
-
-/* Control (RESTORED) */
 let jumpBuffer=0;
 function start(){
   hideAllUI(); resetWorld(); state='play';
@@ -1238,23 +1208,29 @@ function draw(){
     const x1=((n*83)%2000)-(scroll*0.25%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
   }
   
-  // 2. Large Neon Moon/Sun (Near the horizon)
-  ctx.fillStyle='#FF71CE'; 
-  const sunY = H*0.4;
-  for(let r=40; r>0; r-=4) {
-      ctx.globalAlpha = 0.6 - r/40;
-      ctx.beginPath();
-      ctx.arc(W/2, sunY, r, 0, 2 * Math.PI);
-      ctx.fill();
-  }
-  ctx.globalAlpha = 1;
+  // 2. Neon City Silhouette (Inspired by image_547295.png)
+  const cityY = H*0.42;
+  ctx.fillStyle=BG(); // Dark Silhouette
+  // Draw simplified, blocky buildings (using dark background color)
+  FILL(0, cityY+10, W, H-cityY-10, BG()); 
+  FILL(W*0.1, cityY-10, 40, 20, BG()); 
+  FILL(W*0.3, cityY-30, 60, 40, BG());
+  FILL(W*0.7, cityY-5, 80, 15, BG());
+  FILL(W*0.5, cityY-45, 30, 55, BG());
+  
+  // Horizon Line (Bright Orange/Accent)
+  ctx.strokeStyle=a;
+  ctx.beginPath();
+  ctx.moveTo(0, cityY);
+  ctx.lineTo(W, cityY);
+  ctx.stroke();
 
   // 3. Horizon Grid (Reduced opacity/drawings for less distraction)
   ctx.strokeStyle=g;
-  ctx.globalAlpha = 0.45;
+  ctx.globalAlpha = 0.30; // Very reduced opacity for the grid
   for(let k=0; k<W; k+=80){
-    ctx.beginPath(); ctx.moveTo(W/2, sunY); ctx.lineTo(k, H); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(W/2, sunY); ctx.lineTo(W-k, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/2, cityY); ctx.lineTo(k, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/2, cityY); ctx.lineTo(W-k, H); ctx.stroke();
   }
   ctx.globalAlpha = 1;
   ctx.strokeStyle=f;
@@ -1272,7 +1248,6 @@ function draw(){
     const x=i(e.x-scroll), y=i(e.y);
     if(e.kind==='alien') enemyAlien(x,y,blink); 
     else if(e.kind==='spike') {
-      // Spike as a Neon Cyan block
       FILL(x,y,e.w,e.h,g); 
     }
   }
@@ -1281,24 +1256,21 @@ function draw(){
   for(const it of items){
     const x=i2(it.x-scroll), y=i2((it._drawY ?? it.y));
     if(it.kind==='chip'){
-      // Chip as a NEON FLOPPY DISK icon (10x10)
       FILL(x,y,10,10,g); FILL(x+1,y+1,8,8,b);
       FILL(x+3,y+3,4,4,g);
     }
     if(it.kind==='shield'){
-      // Shield as a GREEK BUST icon (12x12)
       const pulse=(Math.sin((timeMs/500)+(it.phase||0))*0.5+0.5)|0;
-      FILL(x+2,y+1,8,10,f); // Pink Body
-      FILL(x+3,y,6,1,f); FILL(x+4,y+11,4,1,f); // Head/Base
-      FILL(x+4,y+3,4,4,b); // Dark Face
-      if(pulse) FILL(x+5,y+5,2,2,g); // Cyan Pulse
+      FILL(x+2,y+1,8,10,f); 
+      FILL(x+3,y,6,1,f); FILL(x+4,y+11,4,1,f); 
+      FILL(x+4,y+3,4,4,b); 
+      if(pulse) FILL(x+5,y+5,2,2,g);
     }
     if(it.kind==='slow'){
-      // Slow as a CASSETTE TAPE icon (12x12)
-      FILL(x,y+2,12,8,f); FILL(x+1,y+3,10,6,b); // Pink/Dark Cassette body
-      FILL(x+2,y+4,3,3,g); FILL(x+7,y+4,3,3,g); // Cyan spools
+      FILL(x,y+2,12,8,f); FILL(x+1,y+3,10,6,b); 
+      FILL(x+2,y+4,3,3,g); FILL(x+7,y+4,3,3,g);
       const scan=((timeMs/120+(it.phase||0))%10)|0; 
-      FILL(x+1,y+1,10,1,g); // Cyan Glitch line on top
+      FILL(x+1,y+1,10,1,g);
     }
   }
 
