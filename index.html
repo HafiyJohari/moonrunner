@@ -3,90 +3,96 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>MKHKASG: MoonRunner — v1.9.5 “Lunar Substantial”</title>
+<!-- TITLE UPDATED -->
+<title>MkhkAsg : MoonRunner — v3.4 "Synthwave"</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-  :root { --w:960; --h:540; }
-  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:ui-monospace,Consolas,Menlo,monospace}
-  body.invert{background:#fff;color:#000}
-  .wrap{display:grid;place-items:center;height:100%;gap:8px;padding:10px}
+  /* --- BASE COLORS (Dynamically set via JS/Themes) --- */
+  :root { 
+    --w:960; --h:540; 
+    --bg-dark: #080020;
+    --fg-neon: #FF0080;
+    --ground-neon: #00FFCC;
+    --accent-pale: #FFA500;
+    --alien-sec: #FF00FF;
+  }
 
-#stage{ position:relative; }        /* lets pads sit above the canvas */
-
-/* Mobile HUD overlay (hidden by default; we show it only while playing) */
-.mobile{
-  position:absolute;
-  inset:auto 0 max(env(safe-area-inset-bottom,0px), 10px) 0;
-  display:none;
-  pointer-events:none;
-  z-index:30; /* above canvas */
-}
-/* Force-show pads when game is playing (fix for Chrome portrait) */
-body.playing .mobile{
-  display:block !important;
-  pointer-events:auto;
-}
-
-/* Corner groups pinned like a racing game UI */
-.mobile .leftGrp{
-  position:absolute; left:12px; bottom:0;
-  display:flex; gap:10px; pointer-events:none;
-}
-.mobile .rightGrp{
-  position:absolute; right:12px; bottom:0;
-  display:flex; gap:10px; pointer-events:none;
-}
-
-/* Pads are tap targets; groups stay non-interactive */
-.pad{
-  pointer-events:auto;
-  background:rgba(255,255,255,.06); /* subtle, keeps 1-bit vibe */
-  color:inherit; border:1px solid currentColor; border-radius:16px;
-  width:84px; height:84px;           /* landscape size */
-  display:flex; align-items:center; justify-content:center;
-  font-size:20px; touch-action:none; opacity:.95;
-}
-.jump{ width:96px; height:96px; }
-
-/* Show pads ONLY while actually playing (touch devices) */
-@media (hover:none) and (pointer:coarse){
-
-  .mobile{ display:none; }
-  body.playing .mobile{ display:block; }
-  .hud .right{ display:none; } /* keep bottom buttons from overlapping on touch */
-
-  /* Resize pads for portrait */
-  .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
-  .jump{ width:76px; height:76px; }
-
-  /* Corner placement */
-  .mobile .leftGrp  { left:10px;  bottom:10px; }
-  .mobile .rightGrp { right:10px; bottom:10px; }
-}
-
-/* Shorter screens: shrink slightly */
-@media (orientation:portrait) and (max-height:700px){
-  body.playing #stage{ padding-bottom:90px; }
-  .pad{ width:62px; height:62px; }
-  .jump{ width:70px; height:70px; }
-}
-
+  html,body{
+    margin:0;height:100%;
+    /* These inherit from the JS-set body attributes/style */
+    background:var(--bg-dark);
+    color:var(--fg-neon);
+    font-family:ui-monospace,Consolas,Menlo,monospace;
+    transition: background 0.5s, color 0.5s;
+    overflow: hidden; /* Prevent body scroll */
+  }
   
-/* Ensure pads also show while fullscreen on iOS/Safari */
-:fullscreen .mobile{display:block}
-:-webkit-full-screen .mobile{display:block}
+  /* Inverted mode is a contrast flip */
+  body.invert{
+    background:var(--fg-neon);
+    color:var(--bg-dark);
+  }
+  
+  /* --- UI / BUTTON STYLING --- */
+  .wrap{display:grid;place-items:center;height:100%;gap:8px;padding:10px}
+  #stage{ position:relative; }
+  
+  /* Mobile HUD overlay */
+  .mobile{
+    position:absolute;
+    inset:auto 0 max(env(safe-area-inset-bottom,0px), 10px) 0;
+    display:none;
+    pointer-events:none;
+    z-index:30;
+  }
+  body.playing .mobile{ display:block !important; pointer-events:auto; }
 
+  /*
+    FIX: HIDE MOBILE PADS ON DESKTOP (EVEN WHEN PLAYING)
+    This is more specific than the rule above, so it should win.
+  */
+  @media (hover: hover) and (pointer: fine) {
+    body.playing .mobile {
+      display: none !important;
+    }
+  }
 
-/* Ensure pads also show while fullscreen on iOS/Safari */
-:fullscreen .mobile{display:block}
-:-webkit-full-screen .mobile{display:block}
+  .mobile .leftGrp{ position:absolute; left:12px; bottom:0; display:flex; gap:10px; pointer-events:none; }
+  .mobile .rightGrp{ position:absolute; right:12px; bottom:0; display:flex; gap:10px; pointer-events:none; }
 
-/* Manual override still supported */
-.mobile.show{ display:block !important; }
+  /* Pads are tap targets */
+  .pad{
+    pointer-events:auto;
+    background:rgba(255,255,255,.08);
+    color:var(--ground-neon);
+    border:1px solid currentColor; border-radius:16px;
+    width:84px; height:84px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; touch-action:none; opacity:.95;
+    box-shadow: 0 0 12px var(--ground-neon) inset;
+  }
+  .jump{ width:96px; height:96px; }
 
+  /* Media Queries for Mobile/Portrait */
+  @media (hover:none) and (pointer:coarse){
+    .mobile{ display:none; }
+    body.playing .mobile{ display:block; }
+    .hud .right{ display:none; }
+    .pad{ width:68px; height:68px; font-size:18px; border-radius:14px; }
+    .jump{ width:76px; height:76px; }
+    .mobile .leftGrp  { left:10px;  bottom:10px; }
+    .mobile .rightGrp { right:10px; bottom:10px; }
+  }
+  @media (orientation:portrait) and (max-height:700px){
+    body.playing #stage{ padding-bottom:90px; }
+    .pad{ width:62px; height:62px; }
+    .jump{ width:70px; height:70px; }
+  }
+  :fullscreen .mobile, :-webkit-full-screen .mobile{display:block}
+  .mobile.show{ display:block !important; }
 
   /* Canvas scales but keeps 16:9 */
-  canvas{
+  #cv{
     width:min(96vw,96vh*(16/9));
     height:calc(var(--h) * (min(96vw,96vh*(16/9)) / var(--w)));
     image-rendering:pixelated; image-rendering:crisp-edges; background:transparent;
@@ -95,182 +101,175 @@ body.playing .mobile{
 
   .hud{width:min(96vw,96vh*(16/9));display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.95}
   .hud .left,.hud .right{display:flex;gap:10px;align-items:center}
-  .btn{padding:4px 10px;border:1px solid currentColor;cursor:pointer;user-select:none}
-  .btn:active{transform:translateY(1px)}
-  .btn.active{outline:2px solid currentColor}
-
-  /* Overlays */
-  .ui{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10}
-  .ui .card{padding:18px 20px;max-width:min(92vw,860px);border:2px solid currentColor;box-shadow:0 0 0 2px currentColor inset}
-  .ui h1,.ui h2,.ui h3{font-family:'Press Start 2P',monospace;margin:0 0 14px 0}
-  .ui h1{font-size:22px} .ui h2{font-size:16px} .ui h3{font-size:12px}
-  .row{display:flex;gap:10px;flex-wrap:wrap}
-  .ghost{opacity:.85}
-  .mt6{margin-top:6px} .mt8{margin-top:8px} .mt12{margin-top:12px} .mt16{margin-top:16px}
-  input[type=text]{background:transparent;color:inherit;border:1px solid currentColor;padding:8px 10px;font:12px 'Press Start 2P',monospace;min-width:220px}
-  table{width:100%;border-collapse:collapse;font:12px 'Press Start 2P',monospace}
-  th,td{border-bottom:1px solid currentColor;padding:6px 4px;text-align:left}
-
-  /* Contrast-safe overlays */
-  body:not(.invert) .ui { background: rgba(0,0,0,.78); }
-  body:not(.invert) .ui .card { background: rgba(0,0,0,.96); color:#fff; border-color:#fff; box-shadow:0 0 0 2px #fff inset; }
-  body.invert .ui { background: rgba(255,255,255,.75); }
-  body.invert .ui .card { background: rgba(255,255,255,.98); color:#000; border-color:#000; box-shadow:0 0 0 2px #000 inset; }
-  .ui .btn{border-color:currentColor}
-
-  /* Pause tips line */
-  .tips{margin-top:36px;font:10px 'Press Start 2P',monospace;opacity:.85}
-
-  /* Avatar previews tiny & crisp */
-  .preview canvas{
-    width:32px;height:44px;max-width:none;max-height:none;display:inline-block;margin:0;
-    image-rendering:pixelated;image-rendering:crisp-edges;
-  }
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
-  .preview{display:flex;flex-direction:column;align-items:center;gap:6px}
-
-/* --- Avatar popup restored --- */
-#avatars{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.85);
-  z-index:60;
-  justify-content:center;
-  align-items:center;
-}
-#avatars .card{
-  width:min(480px,90vw);
-  padding:16px 20px;
-  border:2px solid #fff;
-  background:#000;
-  text-align:center;
-}
-#avatars h2{margin-bottom:10px;}
-#avatars .grid{
-  display:flex;
-  justify-content:center;
-  gap:16px;
-  flex-wrap:wrap;
-}
-#avatars canvas{
-  width:64px;
-  height:64px;
-  image-rendering:pixelated;
-}
-
   
-  /* --- Center Caption (story/tutorial) --- */
+  /* Redesigned Button Style */
+  .btn{
+    padding:6px 14px;
+    border:2px solid currentColor;
+    cursor:pointer;
+    user-select:none;
+    color:var(--ground-neon);
+    font-family:'Press Start 2P',monospace;
+    font-size:10px;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 0 0 8px var(--ground-neon);
+    background: rgba(0, 0, 0, 0.15);
+  }
+  .btn:hover{
+    box-shadow: 0 0 12px var(--fg-neon);
+    color: var(--fg-neon);
+    transform: scale(1.03);
+  }
+  .btn:active{transform:translateY(1px); box-shadow: 0 0 4px var(--fg-neon) inset;}
+  .btn.active{outline:2px solid var(--fg-neon); color:var(--fg-neon);}
+
+  /* Overlays (Menus) */
+  .ui{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10; backdrop-filter: blur(2px);}
+  
+  /* Menu Card Styling (FIX: Reduced max-width) */
+  .ui .card{
+    padding:24px 30px;
+    /* Reduced max-width to prevent "zoom-in" feel */
+    max-width:min(94vw, 520px); 
+    border:4px solid var(--fg-neon);
+    box-shadow:0 0 20px 5px var(--fg-neon) inset, 0 0 30px var(--fg-neon);
+    border-radius: 4px;
+    font-size: 12px; /* Increased base font size for readability */
+  }
+  
+  .ui h1, .ui h2, .ui h3{font-family:'Press Start 2P',monospace;margin:0 0 16px 0; text-align: center;}
+  .ui h1{font-size:26px; color:var(--ground-neon);} 
+  .ui h2{font-size:18px; color:var(--fg-neon);} 
+  .ui h3{font-size:14px; color:var(--accent-pale);}
+  
+  .row{display:flex;gap:12px;flex-wrap:wrap; justify-content: center;}
+  .ghost{opacity:.75}
+  .mt6{margin-top:6px;} .mt8{margin-top:8px;} .mt12{margin-top:12px;}
+  
+  input[type=text]{
+    background:rgba(0,0,0,0.4);
+    color:var(--ground-neon);
+    border:2px solid var(--ground-neon);
+    padding:10px 12px;
+    font:12px 'Press Start 2P',monospace;
+    min-width:220px;
+    box-shadow: 0 0 8px rgba(0,255,204,0.5);
+  }
+  
+  table{width:100%;border-collapse:collapse;font:10px 'Press Start 2P',monospace; margin-top: 10px;}
+  th,td{border-bottom:1px solid currentColor;padding:8px 4px;text-align:left; color: var(--accent-pale);}
+  th{color: var(--fg-neon);}
+
+  /* Contrast-safe overlays (Colors set by JS) */
+  .ui .card { 
+    background: var(--bg-dark); 
+    color:var(--ground-neon); 
+    border-color:var(--fg-neon); 
+  }
+  
+  /* FIX: Ensure Avatar and Theme cards use the same responsive size as the main menu card for consistency */
+  #avatars, #themes { background:rgba(8,0,32,0.9); }
+  /* FIX: Further reduced avatar card width */
+  #avatars .card, #themes .card {
+    max-width: min(94vw, 480px); /* Reduced max width for better mobile fit */
+    padding: 24px 30px; /* Consistent padding */
+  }
+
+  /* Previews */
+  /* RESIZING PREVIEW CANVAS */
+  .preview canvas{
+    width:32px;height:44px;max-width:none;max-height:none;display:block;margin:0 auto;
+    image-rendering:pixelated; image-rendering:crisp-edges;
+    border: 1px solid var(--accent-pale);
+    box-shadow: 0 0 10px var(--accent-pale);
+  }
+  /* Grid settings for character previews */
+  .grid{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+  /* Constrained the individual preview item width to allow 5 to wrap cleanly on small screens */
+  .preview{display:flex;flex-direction:column;align-items:center;gap:4px; width: 80px; text-align: center;}
+  
+  /* NEW: Constrain avatar grid to force 3-2 layout */
+  #avatars .grid {
+    max-width: 270px; /* 3 * 80px + 2 * 10px gap = 260px. Add padding. */
+  }
+  /* Let theme buttons be wider than 80px */
+  #themes .preview {
+    width: auto; 
+  }
+  
+  /* Style for items in the How To menu (REMOVED) */
+
+  /* Center Caption */
   #captionWrap{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:20}
-  #caption{max-width:min(92vw,900px);text-align:center;font-family:'Press Start 2P',monospace;line-height:1.8;color:#9aa;opacity:0;transform:translateY(6px);transition:opacity .28s, transform .28s}
+  #caption{max-width:min(92vw,900px);text-align:center;font-family:'Press Start 2P',monospace;line-height:1.8;color:var(--accent-pale);opacity:0;transform:translateY(6px);transition:opacity .28s, transform .28s}
   #caption.show{opacity:1;transform:translateY(0)}
-  #caption .title{font-size:18px;letter-spacing:1px;color:#bcc}
-  #caption .sub{font-size:14px;color:#899}
-  @media (max-width:480px){ #caption .title{font-size:14px} #caption .sub{font-size:12px} }
-  body.invert #caption .title{color:#334} body.invert #caption .sub{color:#556}
+  #caption .title{font-size:18px;letter-spacing:1px;color:var(--fg-neon)}
+  #caption .sub{font-size:14px;color:var(--ground-neon)}
+  @media (max-width:480px){ 
+    #caption .title{font-size:14px} 
+    #caption .sub{font-size:12px} 
+    .ui h1{font-size:20px;} 
+    .ui h2{font-size:16px;}
+    
+    /* FIX: Reduced mobile card padding further to prevent zoom-in */
+    .ui .card{ padding: 16px 20px; font-size: 11px; } 
+    #avatars .card, #themes .card { padding: 16px 12px; } /* Tiny bit tighter for this menu */
+  }
+  body.invert #caption .title{color:var(--bg-dark)} body.invert #caption .sub{color:var(--fg-neon)}
 
   /* Safety: any hidden UI should not catch clicks */
   .ui[style*="display: none"]{pointer-events:none !important}
   
-/* keep pads visible but closer to the game */
-body.playing #stage{ padding-bottom:1px; }   /* was ~110px */
-
-/* fit the canvas without stretching, use more of the screen height */
+  
+/* Hafiy mobile pad adjust (FROM v2.2.0) */
+body.playing #stage{ padding-bottom:1px; }
 body.playing canvas{
   width: 100vw;
   height: auto;
-  max-height: calc(100vh - 10px);  /* was ~200–220px -> less empty space */
+  max-height: calc(100vh - 10px);
   aspect-ratio: 16 / 9;
   display:block;
   margin:0 auto;
-  transform:none;                   /* no zoom / shift */
+  transform:none;
 }
-
-/* keep pads a bit smaller in portrait so they don’t push the canvas */
 .mobile .pad  { width:76px; height:76px; }
 .mobile .jump { width:90px; height:90px; }
-
-/* hide bottom HUD row so it doesn't steal space from pads */
 .hud, .hud_right { display:none !important; }
-
-  /* --- Hafiy mobile pad adjust --- */
-
-/* 1. push pads up into the game area */
-body.playing .mobile .leftGrp,
-body.playing .mobile .rightGrp{
-  bottom:130px;      /* move higher: tweak 120–140px if you want */
-}
-
-/* 2. make pads bigger while playing */
-body.playing .mobile .pad{
-  width:92px;
-  height:92px;
-  font-size:20px;
-}
-
-body.playing .mobile .jump{
-  width:108px;
-  height:108px;
-}
-
-/* 3. but if screen is pendek, jangan too big */
+body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:130px; }
+body.playing .mobile .pad{ width:92px; height:92px; font-size:20px; }
+body.playing .mobile .jump{ width:108px; height:108px; }
 @media (max-height:700px){
-  body.playing .mobile .leftGrp,
-  body.playing .mobile .rightGrp{
-    bottom:105px;     /* sedikit rendah for short screens */
-  }
-  body.playing .mobile .pad{
-    width:80px;
-    height:80px;
-  }
-  body.playing .mobile .jump{
-    width:94px;
-    height:94px;
-  }
+  body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:105px; }
+  body.playing .mobile .pad{ width:80px; height:80px; }
+  body.playing .mobile .jump{ width:94px; height:94px; }
 }
 
-  /* desktop safety: hide mobile pads on mouse/keyboard devices */
+/* --- DESKTOP VIEW (mouse/keyboard) --- */
 @media (hover:hover) and (pointer:fine){
-  .mobile{ display:none !important; }
-}
-
-  /* --- DESKTOP VIEW (mouse/keyboard) --- */
-@media (hover:hover) and (pointer:fine){
-
-  /* bring back old “nice” size */
-  body.playing canvas,
-  body:not(.playing) canvas{
+  body.playing #cv, body:not(.playing) #cv{
     width: min(84vw, 84vh * (16/9));
     height: auto;
     max-height: 82vh;
     margin: 0 auto;
     display: block;
   }
-
-  /* stage wrapper centers everything */
   #stage.wrap{
     display: grid;
     place-items: center;
     gap: 10px;
-    padding: 10px 0 44px; /* space for bottom HUD */
+    padding: 10px 0 44px;
   }
-
-  /* show HUD again on desktop */
   .hud{
     display: flex !important;
     width: min(84vw, 84vh * (16/9));
     margin: 0 auto;
   }
-
-  /* bottom tips/buttons row (like old version) */
   .tips{
     display: block;
     width: min(84vw, 84vh * (16/9));
-    margin:40px auto 0;   /* top 40px, left/right auto, bottom 0 */
+    margin:40px auto 0;
   }
 }
-
-  
 </style>
 </head>
 <body>
@@ -289,14 +288,14 @@ body.playing .mobile .jump{
       <div id="music" class="btn">♪ Music</div>
       <div id="invert" class="btn">⬛/⬜ Contrast</div>
       <div id="fs" class="btn">⛶ Full</div>
-      <div id="landBtn" class="btn">⇆ Landscape</div><!-- NEW -->
+      <div id="landBtn" class="btn">⇆ Landscape</div>
       <div id="speeddown" class="btn">–Speed</div>
       <div id="speedup" class="btn">+Speed</div>
       <div id="menuBtn" class="btn" style="display:none">☰ Menu</div>
-    </div> <!-- .right -->
-  </div> <!-- .hud -->
+    </div>
+  </div>
 
-  <!-- Mobile buttons (moved INSIDE #stage) -->
+  <!-- Mobile buttons -->
   <div class="mobile">
     <div class="leftGrp">
       <div id="btnLeft"  class="pad">◀</div>
@@ -313,33 +312,46 @@ body.playing .mobile .jump{
   <div id="caption"><div class="title"></div><div class="sub"></div></div>
 </div>
 
-<!-- Main Menu -->
+<!-- Main Menu (UPDATED BUTTONS) -->
 <div id="menu" class="ui" style="display:flex">
   <div class="card">
-    <h1>MKHKASG: MOONRUNNER</h1>
-    <div class="ghost mt6">1-bit endless runner on the moon.</div>
-    <div class="row mt12">
-      <div id="playBtn" class="btn">▶ Play</div>
-      <div id="playLandBtn" class="btn" style="display:none">▶ Play in Landscape</div><!-- mobile-only -->
-      <div id="howBtn" class="btn">? How to Play</div>
-      <div id="avatarsBtn" class="btn">𓁷 Avatars</div>
-      <div id="settingsBtn" class="btn">☼ Settings</div>
-      <div id="lbBtn" class="btn">★ Leaderboard</div>
-      <div id="creditsBtn" class="btn">ℹ Credits</div>
+    <h1>M O O N R U N N E R</h1>
+    <h2><span class="ghost">MKHKASG • V3.0</span></h2>
+    <div class="ghost mt6">The Infinite Run Protocol is ready.</div>
+    
+    <div class="row mt12" style="justify-content:center;">
+      <div id="playBtn" class="btn">▶ START RUN</div>
+      <div id="playLandBtn" class="btn" style="display:none">▶ Play in Landscape</div>
     </div>
-    <div class="ghost mt12">v1.9.5 “Lunar Substantial” • WASD/Arrows + Space • Desktop & Mobile</div>
+    
+    <div class="row mt12">
+      <div id="avatarsBtn" class="btn">𓁷 CHARACTERS</div>
+      <div id="themesBtn" class="btn">✿ AESTHETICS</div>
+    </div>
+
+    <div class="row mt12">
+      <div id="lbBtn" class="btn">★ LEADERBOARD</div>
+      <!-- PROTOCOL changed to TUTORIAL -->
+      <div id="howBtn" class="btn">? HOW TO PLAY</div>
+      <!-- CONFIG changed to SETTINGS -->
+      <div id="settingsBtn" class="btn">☼ SETTINGS</div>
+      <div id="creditsBtn" class="btn">ℹ CREDITS</div>
+    </div>
+    <!-- VERSION TEXT UPDATED -->
+    <div class="ghost mt12" id="versionText">v3.4 “Synthwave” • WASD/Arrows + Space</div>
   </div>
 </div>
 
 <!-- Pause -->
 <div id="pause" class="ui">
   <div class="card">
-    <h2>Paused</h2>
+    <h2>[ P A U S E D ]</h2>
     <div class="row mt12">
-      <div id="resumeBtn" class="btn">Resume</div>
-      <div id="restartBtn" class="btn">Restart</div>
-      <div id="pauseSettingsBtn" class="btn">Settings</div>
-      <div id="exitBtn" class="btn">Exit to Menu</div>
+      <div id="resumeBtn" class="btn">RESUME</div>
+      <div id="restartBtn" class="btn">RESTART PROTOCOL</div>
+      <!-- CONFIG changed to SETTINGS -->
+      <div id="pauseSettingsBtn" class="btn">SETTINGS</div>
+      <div id="exitBtn" class="btn">EXIT TO MENU</div>
     </div>
     <div class="tips" id="tipsLine">Tip: Esc to pause.</div>
   </div>
@@ -348,92 +360,145 @@ body.playing .mobile .jump{
 <!-- Game Over -->
 <div id="over" class="ui">
   <div class="card">
-    <h2>Game Over</h2>
+    <h2>G A M E • O V E R</h2>
     <div id="overScore" class="mt8">Score: 00000 • Best: 00000</div>
-    <div id="recap" class="mt8 ghost"></div>
+    <!-- RECAP: Changed from text to canvases + span IDs -->
+    <div id="recap" class="mt8 ghost" style="display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">
+      Run Recap —
+      <canvas id="recapChip" width="10" height="10" style="width:10px;height:10px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+      <span id="recapChipScore">0</span> •
+      <canvas id="recapShield" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+      <span id="recapShieldScore">0</span> •
+      <canvas id="recapSlow" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+      <span id="recapSlowScore">0</span>
+    </div>
     <div id="nameGate" class="mt12">
       <div class="ghost">Enter name to submit score:</div>
       <div class="row mt8">
         <input id="nameInput" type="text" maxlength="12" placeholder="Your Name"/>
-        <div id="submitBtn" class="btn">Submit</div>
+        <div id="submitBtn" class="btn">SUBMIT</div>
       </div>
     </div>
     <div id="submitMsg" class="mt12 ghost" style="display:none">Submitted ✓</div>
     <div class="row mt12">
-      <div id="retryBtn" class="btn">Retry</div>
-      <div id="overLbBtn" class="btn">Leaderboard</div>
-      <div id="overMenuBtn" class="btn">Menu</div>
+      <div id="retryBtn" class="btn">RETRY</div>
+      <div id="overLbBtn" class="btn">LEADERBOARD</div>
+      <div id="overMenuBtn" class="btn">MENU</div>
     </div>
   </div>
 </div>
 
-<!-- Settings -->
+<!-- Settings (TITLE UPDATED + NEW BUTTON) -->
 <div id="settings" class="ui">
   <div class="card">
-    <h2>Settings</h2>
+    <h2>System Settings</h2>
     <div class="row mt12">
       <div id="setSound" class="btn">🔈 SFX: On</div>
       <div id="setMusic" class="btn">♪ Music: On</div>
-      <div id="setContrast" class="btn">⬛/⬜ Contrast</div>
+      <div id="setContrast" class="btn">⬛/⬜ CONTRAST</div>
+    </div>
+    <!-- NEW: MUSIC TRACK ROW -->
+    <div class="row mt12">
+      <div id="setTrack" class="btn">♫ TRACK: CLASSIC</div>
+    </div>
+    <div class="row mt12">
       <div id="setSpeed" class="btn">Speed: Normal (×1.5)</div>
     </div>
     <div class="mt12">Name: <input id="setName" type="text" maxlength="12" style="width:260px"/></div>
     <div class="row mt12">
-      <div id="settingsClose" class="btn">Close</div>
+      <div id="settingsClose" class="btn">CLOSE</div>
     </div>
   </div>
 </div>
 
-<!-- Avatars -->
+<!-- Avatars (5 CHARACTERS) -->
 <div id="avatars" class="ui" style="display:none">
   <div class="card">
-    <h2>Choose Avatar</h2>
+    <h2>SELECT RUNNER</h2>
     <div class="grid">
       <div class="preview">
         <canvas id="pvClassic" width="32" height="44"></canvas>
-        <div class="btn" data-skin="classic">Select Classic</div>
+        <div class="btn" data-skin="classic">ASTRONAUT</div>
       </div>
       <div class="preview">
         <canvas id="pvStripe" width="32" height="44"></canvas>
-        <div class="btn" data-skin="stripe">Select Stripe</div>
+        <div class="btn" data-skin="stripe">GLITCH SUIT</div>
       </div>
       <div class="preview">
         <canvas id="pvAlien" width="32" height="44"></canvas>
-        <div class="btn" data-skin="alien">Select Lil Alien</div>
+        <div class="btn" data-skin="alien">ALIEN</div>
+      </div>
+      <div class="preview">
+        <canvas id="pvPilot" width="32" height="44"></canvas>
+        <div class="btn" data-skin="pilot">NEO-PILOT</div>
+      </div>
+      <div class="preview">
+        <canvas id="pvRobot" width="32" height="44"></canvas>
+        <div class="btn" data-skin="robot">CYBER-DRONE</div>
       </div>
     </div>
-    <div class="row mt12"><div id="avatarsClose" class="btn">Back</div></div>
+    <div class="row mt12"><div id="avatarsClose" class="btn">BACK</div></div>
   </div>
 </div>
 
-<!-- How To -->
+<!-- Themes Menu (UPDATED WITH NEW THEME) -->
+<div id="themes" class="ui" style="display:none">
+  <div class="card">
+    <h2>SELECT AESTHETIC</h2>
+    <div class="grid">
+      <div class="preview">
+        <div class="btn" data-theme="cyber">CYBER GRID (Vaporwave)</div>
+      </div>
+      <div class="preview">
+        <div class="btn" data-theme="classic">CLASSIC COSMOS (B/W)</div>
+      </div>
+      <div class="preview">
+        <div class="btn" data-theme="pulsar">NEO-PULSAR (Teal/Orange)</div>
+      </div>
+      <div class="preview">
+        <div class="btn" data-theme="sunset">DIGITAL SUNSET (New!)</div>
+      </div>
+    </div>
+    <div class="row mt12"><div id="themesClose" class="btn">BACK</div></div>
+  </div>
+</div>
+
+
+<!-- How To (RENAMED & REVERTED TO v2.3.0) -->
 <div id="how" class="ui">
   <div class="card">
     <h2>How to Play</h2>
     <div class="mt8">Controls: ←/→ move • W/↑/Space jump • Esc pause</div>
-    <div class="mt8">Goal: Survive and run as far as you can!</div>
-    <div class="mt8">Collect:</div>
-    <div class="mt6 ghost">💠 Chips = +200 pts (× difficulty multiplier)</div>
-    <div class="mt6 ghost">🛡 Shields = up to 3 hits of protection</div>
-    <div class="mt6 ghost">⏳ Slow Field = 3 s slow-motion</div>
-    <div class="mt8">Avoid: Spikes and Aliens — they cost a shield or your life!</div>
-    <div class="row mt12"><div id="howClose" class="btn">Close</div></div>
+    <div class="mt8">Goal: Survive and run as far as you can across the digital moon.</div>
+    <div class="mt8">Collectibles:</div>
+    <div class="mt6 ghost" style="display:flex; align-items:center; gap:8px;">
+        <canvas id="itemChip" width="10" height="10" style="width:10px;height:10px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+        Floppy Disks = +200 pts (× difficulty multiplier)
+    </div>
+    <div class="mt6 ghost" style="display:flex; align-items:center; gap:8px;">
+        <canvas id="itemShield" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+        Roman Busts = up to 3 hits of protection (🛡)
+    </div>
+    <div class="mt6 ghost" style="display:flex; align-items:center; gap:8px;">
+        <canvas id="itemSlow" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+        Cassettes = 3 s slow-motion (⏳)
+    </div>
+    <div class="mt8">Threats: Glitch Aliens and Wireframe Spikes — avoid them or lose a shield/life!</div>
+    <div class="row mt12"><div id="howClose" class="btn">CLOSE</div></div>
   </div>
 </div>
 
-<!-- Leaderboard -->
+<!-- Leaderboard (UNCHANGED) -->
 <div id="lb" class="ui">
   <div class="card">
     <div class="row" style="justify-content:space-between;align-items:center;">
-      <h2>Leaderboard <span id="lbSub" class="ghost" style="font:12px 'Press Start 2P',monospace;margin-left:8px;"></span></h2>
+      <h2>LEADERBOARD <span id="lbSub" class="ghost" style="font:12px 'Press Start 2P',monospace;margin-left:8px;"></span></h2>
       <div class="row">
         <div id="lbToday"   class="btn">Daily</div>
         <div id="lbWeekly"  class="btn">Weekly</div>
         <div id="lbMonthly" class="btn">Monthly</div>
         <div id="lbAll"     class="btn">All-time</div>
-        <div id="lb20"      class="btn">Top 20</div>
-        <div id="lb10"      class="btn">Top 10</div>
-        <div id="lbClose"   class="btn">Back</div>
+        <div id="lbClose"   class="btn">BACK</div>
       </div>
     </div>
     <div class="mt12" id="lbSelf" class="ghost"></div>
@@ -446,44 +511,117 @@ body.playing .mobile .jump{
   </div>
 </div>
 
-<!-- Credits -->
+<!-- Credits (UPDATED NAME) -->
 <div id="credits" class="ui">
   <div class="card">
-    <h2>Credits</h2>
+    <h2>CREDITS</h2>
     <div class="mt8">Design & code: <b>MkhkAsg</b></div>
+    <div class="mt6">Vaporwave Redesign: <b>A.I. Collaborative</b></div>
     <div class="mt6">Font: <b>Press Start 2P</b> (CodeMan38) — SIL Open Font License 1.1</div>
-    <div class="mt6">Music & SFX: <b>Original in-engine chiptune</b> via Web Audio API</div>
-    <div class="mt6">Assisted by <b>Mira</b> (AI collaborator)</div>
+    <!-- CREDITS UPDATED -->
+    <div class="mt6">Music & SFX: <b>Original in-engine chiptune & synthwave</b> via Web Audio API</div>
     <div class="mt6 ghost">Scores go to a Google Sheet leaderboard. Keep names clean.</div>
-    <div class="row mt12"><div id="creditsClose" class="btn">Close</div></div>
+    <div class="row mt12"><div id="creditsClose" class="btn">CLOSE</div></div>
   </div>
 </div>
 
 
 <script>
-/* ===== Config ===== */
-const GAME_VERSION='1.9.1a';
+/* ===== Config (UPDATED VERSION) ===== */
+const GAME_VERSION='3.4.0-Synthwave'; // Updated version
 const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
-  
-/* ===== Canvas & DPR ===== */
-const STAGE = document.getElementById('stage'); // NEW: wrapper for fullscreen
+const STAGE = document.getElementById('stage');
 const CV=document.getElementById('cv');
-const ctx=CV.getContext('2d',{alpha:false}); ctx.imageSmoothingEnabled=false;
-const W=960,H=540; let DPR=1;
+let ctx=CV.getContext('2d',{alpha:false}); ctx.imageSmoothingEnabled=false; // FIX: Use let for ctx
+// FIX: Removed 'const' so W and H don't conflict with global declarations.
+W=960,H=540; let DPR=1;
 function resizeCanvas(){ DPR=Math.min(2,Math.max(1,window.devicePixelRatio||1)); CV.width=(W*DPR)|0; CV.height=(H*DPR)|0; ctx.setTransform(DPR,0,0,DPR,0,0); }
 addEventListener('resize',resizeCanvas); resizeCanvas();
 
-/* ===== Colors & helpers ===== */
+/* ===== Theme Definitions (NEW) ===== */
+const THEMES = {
+  cyber: {
+    name: "Cyber Grid",
+    bg: '#080020', // Deep Night Violet
+    fg: '#FF0080', // Bright Fuchsia
+    gr: '#00FFCC', // Neon Aqua
+    ac: '#FFA500', // Bright Orange
+    al: '#FF00FF', // Alien Magenta
+    earth: true,
+    city: true,
+  },
+  classic: {
+    name: "Classic Cosmos",
+    bg: '#000000', // Black
+    fg: '#FFFFFF', // White
+    gr: '#CCCCCC', // Light Gray
+    ac: '#888888', // Medium Gray
+    al: '#FF0000', // Red (Monsters pop)
+    earth: true, // FIX: Earth should be visible, but B/W
+    city: false,
+  },
+  pulsar: {
+    name: "Neo-Pulsar",
+    bg: '#002233', // Deep Teal
+    fg: '#FF6600', // Bright Orange
+    gr: '#FFFF00', // Neon Yellow
+    ac: '#FF0000', // Intense Red
+    al: '#00FFFF', // Cyan
+    earth: true,
+    city: false,
+  },
+  sunset: { // NEW THEME
+    name: "Digital Sunset",
+    bg: '#14002C', // Deep Violet/Blue
+    fg: '#FFCC00', // Bright Gold/Yellow
+    gr: '#CC3300', // Dark Red/Rust
+    ac: '#FF6633', // Lighter Orange
+    al: '#00FFFF', // Cyan
+    earth: false,
+    city: false,
+  }
+};
+let currentTheme = localStorage.getItem('moon_theme') || 'cyber';
+
+/* ===== Colors & helpers (UPDATED to use theme object) ===== */
+function applyTheme(themeKey) {
+  currentTheme = themeKey;
+  localStorage.setItem('moon_theme', themeKey);
+  const theme = THEMES[themeKey] || THEMES.cyber;
+  
+  // Set CSS variables for UI elements
+  document.documentElement.style.setProperty('--bg-dark', theme.bg);
+  document.documentElement.style.setProperty('--fg-neon', theme.fg);
+  document.documentElement.style.setProperty('--ground-neon', theme.gr);
+  document.documentElement.style.setProperty('--accent-pale', theme.ac);
+  document.documentElement.style.setProperty('--alien-sec', theme.al);
+  
+  // Update UI text (if needed)
+  // VERSION TEXT UPDATED
+  document.getElementById('versionText').textContent = `v3.4 “Synthwave” - ${theme.name}`;
+  // Redraw item previews immediately when theme changes
+  drawHowToPreviews(); // Redraw item icons for 'How to Play'
+  drawRecapPreviews(); // NEW: Redraw item icons for Game Over
+}
+
 function inverted(){return document.body.classList.contains('invert');}
-function FG(){return inverted()?'#000':'#fff';}
-function BG(){return inverted()?'#fff':'#000';}
+function T(){ return THEMES[currentTheme] || THEMES.cyber; }
+
+function FG(){return inverted()?T().bg:T().fg;} 
+function BG(){return inverted()?T().fg:T().bg;}
+function GR(){return inverted()?T().bg:T().gr;}
+function AC(){return inverted()?T().fg:T().ac;}
+function AL(){return inverted()?T().bg:T().al;}
+
 const i=v=>v|0, i2=v=>(v>>1)<<1;
 const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
 const pad=(n,w=5)=>String(n).padStart(w,'0');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-/* ===== WebAudio ===== */
+/* ===== WebAudio (NEW TRACK LOGIC) ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
+// NEW: Music track state variable
+let currentMusicTrack = localStorage.getItem('moon_track') || 'classic';
 let musicVol=0.045, sfxVol=0.28;
 let musicBus=null, sfxBus=null;
 function ensureAC(){
@@ -499,10 +637,29 @@ function beep(kind='jump'){
   if(sfxMuted) return; ensureAC();
   const o=ac.createOscillator(), g=ac.createGain(); o.type='square';
   const t=ac.currentTime;
-  const T={jump:[440,220,.13,.10], coin:[660,440,.12,.12], hit:[110,55,.16,.12], shield:[880,660,.10,.12]};
+  const T={
+    jump:[440,220,.13,.10], 
+    coin:[660,440,.12,.12], 
+    hit:[110,55,.16,.12], 
+    shield:[880,660,.10,.12], 
+    slow:[550,770,.10,.12],
+    flyby:[120, 1200, 0.4, 0.15],
+    slow_off:[770, 550, 0.1, 0.12],
+    game_over:[220, 110, 0.5, 0.15] // NEW: Game Over sound
+  };
   const [f1,f2,dur,vol]=T[kind]||T.jump;
-  o.frequency.setValueAtTime(f1,t);
-  o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  
+  if (kind === 'game_over') {
+    // Descending arpeggio for game over
+    o.frequency.setValueAtTime(f1, t);
+    o.frequency.exponentialRampToValueAtTime(f1 * 0.8, t + 0.1);
+    o.frequency.exponentialRampToValueAtTime(f1 * 0.6, t + 0.2);
+    o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  } else {
+    o.frequency.setValueAtTime(f1,t);
+    o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  }
+  
   g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   o.connect(g); g.connect(sfxBus||ac.destination); o.start(); o.stop(t+dur);
   if(musicBus && !musicMuted){
@@ -512,51 +669,203 @@ function beep(kind='jump'){
     musicBus.gain.setTargetAtTime(back,t+0.35,0.25);
   }
 }
-/* Simple chiptune loop (unchanged) */
-let musicRunning=false, musicTimer=null, musicStep=0;
-const bpm=140, stepSec=60/bpm/2;
+
+// --- REWRITTEN MUSIC ENGINE (v3.4) ---
+let musicRunning=false, musicTimer=null, musicStep=0, musicStepSynth=0; // NEW: separate synth step
+const bpm=140, stepSec=60/bpm/2; // Classic BPM
+const bpmSynth=110, stepSecSynth=60/bpmSynth/2; // Synthwave BPM (8th notes)
+
 const NT=n=>440*Math.pow(2,(n-69)/12);
-const N={C4:60,D4:62,E4:64,F4:65,G4:67,A4:69,B4:71,C5:72,D5:74,E5:76,F5:77,G5:79,A5:81};
-function leadPattern(){return[[N.E5,1],[N.G5,1],[N.C5,1],[N.D5,1],[N.E5,1],[N.G5,1],[N.A5,1],[N.G5,1],[N.E5,1],[N.C5,1],[N.A4,1],[N.C5,1],[N.E5,1],[N.D5,1],[N.C5,2],[N.F5,1],[N.A5,1],[N.C5,1],[N.D5,1],[N.F5,1],[N.A5,1],[N.G5,1],[N.F5,1],[N.E5,1],[N.D5,1],[N.C5,1],[N.B4,1],[N.C5,4]];}
-function bassPattern(){const root=[N.C4,N.A4-12,N.F5-24,N.G5-24];const seq=[];for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]);return seq;}
+// FIX: Renamed 'N' to 'NOTES' to avoid global scope conflict
+const NOTES={C4:60,D4:62,E4:64,F4:65,G4:67,A4:69,B4:71,C5:72,D5:74,E5:76,F5:77,G5:79,A5:81};
+function leadPattern(){return[[NOTES.E5,1],[NOTES.G5,1],[NOTES.C5,1],[NOTES.D5,1],[NOTES.E5,1],[NOTES.G5,1],[NOTES.A5,1],[NOTES.G5,1],[NOTES.E5,1],[NOTES.C5,1],[NOTES.A4,1],[NOTES.C5,1],[NOTES.E5,1],[NOTES.D5,1],[NOTES.C5,2],[NOTES.F5,1],[NOTES.A5,1],[NOTES.C5,1],[NOTES.D5,1],[NOTES.F5,1],[NOTES.A5,1],[NOTES.G5,1],[NOTES.F5,1],[NOTES.E5,1],[NOTES.D5,1],[NOTES.C5,1],[NOTES.B4,1],[NOTES.C5,4]];}
+function bassPattern(){const root=[NOTES.C4,NOTES.A4-12,NOTES.F5-24,NOTES.G5-24];const seq=[];for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]);return seq;}
+
 function playNote(freq,mul,type='square',vol=0.10){
   ensureAC(); const t=ac.currentTime,osc=ac.createOscillator(),g=ac.createGain();
   osc.type=type; osc.frequency.setValueAtTime(freq,t);
   g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.01); g.gain.linearRampToValueAtTime(vol*0.6,t+0.06);
-  const end=t+mul*stepSec; g.gain.exponentialRampToValueAtTime(0.0001,end+0.08);
-  osc.connect(g).connect(musicBus||ac.destination); osc.start(t); osc.stop(end+0.1);
+  
+  // NEW: Calculate duration based on active track
+  const duration = (currentMusicTrack === 'classic' ? stepSec : stepSecSynth);
+  const end=t + mul * duration; 
+  g.gain.exponentialRampToValueAtTime(0.0001, end + 0.18);
+  
+  osc.connect(g).connect(musicBus||ac.destination); osc.start(t); osc.stop(end+0.2);
 }
 function playBass(freq,mul){ playNote(NT(freq),mul,'triangle',0.07); }
+
+// --- NEW SYNTHWAVE FUNCTIONS START ---
+            
+// NEW: Drum sound generator
+function playDrum(kind='kick', vol=0.2){
+  if (musicMuted) return; // Respects master mute
+  ensureAC();
+  const t = ac.currentTime;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0, t);
+  
+  if(kind === 'kick') {
+    const o = ac.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(120, t);
+    o.frequency.exponentialRampToValueAtTime(60, t + 0.15);
+    g.gain.linearRampToValueAtTime(vol * 1.5, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+    o.connect(g).connect(musicBus || ac.destination); // Connects to main music bus
+    o.start(t); o.stop(t + 0.25);
+  } 
+  else if (kind === 'snare') {
+    const noise = ac.createBufferSource();
+    const buffer = ac.createBuffer(1, ac.sampleRate * 0.2, ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    noise.buffer = buffer;
+    
+    // Filter the noise to make it "snappy"
+    const bqf = ac.createBiquadFilter();
+    bqf.type = 'highpass';
+    bqf.frequency.value = 1500;
+    
+    g.gain.linearRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+    
+    noise.connect(bqf).connect(g).connect(musicBus || ac.destination); // Connects to main music bus
+    noise.start(t); noise.stop(t + 0.15);
+  }
+}
+
+// NEW: Synthwave Patterns
+function drumPatternSynth(){
+  const s = 'snare', k = 'kick', _ = null;
+  // 16 steps per bar, 2 bars
+  const seq = [
+    k,_,s,_, k,_,s,_,
+    k,_,s,_, k,_,s,_,
+    k,_,s,_, k,k,s,_,
+    k,_,s,_, k,_,s,_,
+  ];
+  // We need to return it in the same format [note, duration]
+  return seq.map(note => [note, 1]); // Each note is 1 "step"
+}
+
+function bassPatternSynth(){
+  // Using MIDI note numbers
+  const C2=36, G2=43, A2=45, F2=41;
+  const _ = null;
+  // Classic 80s progression: C - Am - F - G
+  const seq = [
+    C2,C2,C2,C2, C2,C2,C2,C2, // C
+    A2,A2,A2,A2, A2,A2,A2,A2, // Am
+    F2,F2,F2,F2, F2,F2,F2,F2, // F
+    G2,G2,G2,G2, G2,G2,G2,G2, // G
+  ];
+  return seq.map(note => [note, 1]); // 8th notes
+}
+
+function leadPatternSynth(){
+  const C4=60, G4=67, A4=69, F4=65, E4=64, D4=62;
+  const _ = null; // Rest
+  // A long, slow melody (note, duration in steps)
+  const seq = [
+    C4,4, _,4, G4,2, A4,2, G4,4, _,4, // Bar 1-2
+    F4,4, _,4, C4,2, D4,2, E4,4, _,4, // Bar 3-4
+  ];
+  
+  // Convert to [note, duration] list
+  const pattern = [];
+  for(let i=0; i<seq.length; i+=2) {
+    pattern.push([seq[i], seq[i+1]]);
+  }
+  return pattern;
+}
+// --- END SYNTHWAVE FUNCTIONS ---
+
+
+// REWRITTEN: startMusic function to handle both tracks
 function startMusic(){
   if(musicRunning||musicMuted) return;
-  musicRunning=true; musicStep=0;
-  const lead=leadPattern(), bass=bassPattern();
-  function tick(){
-    if(!musicRunning) return;
-    for(let k=0;k<4;k++){
-      const l=lead[musicStep%lead.length], b=bass[musicStep%bass.length];
-      if(l) playNote(NT(l[0]),l[1],'square',0.10);
-      if(b) playBass(b[0],b[1]);
-      musicStep++;
+  musicRunning=true; 
+  
+  // Stop any previous track
+  if(musicTimer) clearTimeout(musicTimer);
+  musicStep = 0;
+  musicStepSynth = 0;
+  
+  // --- Classic Track Logic ---
+  if (currentMusicTrack === 'classic') {
+    const lead=leadPattern(), bass=bassPattern();
+    function tickClassic(){
+      if(!musicRunning || currentMusicTrack !== 'classic') return; // Stop if track changed
+      for(let k=0;k<4;k++){
+        const l=lead[musicStep%lead.length], b=bass[musicStep%bass.length];
+        if(l) playNote(NT(l[0]),l[1],'square',0.10);
+        if(b) playBass(b[0],b[1]);
+        musicStep++;
+      }
+      musicTimer=setTimeout(tickClassic, stepSec*1000*4);
     }
-    musicTimer=setTimeout(tick, stepSec*1000*4);
-  }
-  tick();
-}
-function stopMusic(){ musicRunning=false; if(musicTimer){clearTimeout(musicTimer); musicTimer=null;} }
+    tickClassic();
+  } 
+  // --- Synthwave Track Logic ---
+  else if (currentMusicTrack === 'synthwave') {
+    const lead=leadPatternSynth(), bass=bassPatternSynth(), drum=drumPatternSynth();
+    const leadLen = lead.reduce((t,n)=>t+n[1], 0); // Total steps in melody
+    const bassLen = bass.length;
+    const drumLen = drum.length;
 
-/* ===== RNG & timebase ===== */
+    function tickSynth(){
+      if(!musicRunning || currentMusicTrack !== 'synthwave') return; // Stop if track changed
+      
+      // This "tick" represents one 16th note
+      const step = musicStepSynth;
+      
+      // Play drums
+      const d = drum[step % drumLen];
+      if(d[0]) playDrum(d[0], d[0]==='kick' ? 0.25 : 0.12);
+      
+      // Play bass
+      const b = bass[step % bassLen];
+      if(b[0]) playBass(b[0], b[1]); // Use 'triangle' wave
+      
+      // Play lead (melody)
+      // We need a separate counter for the melody as it has different note lengths
+      const leadStep = step % leadLen;
+      let currentLeadStep = 0;
+      for(const l of lead) {
+        if (leadStep === currentLeadStep && l[0]) {
+          // Use 'sawtooth' for that synth sound
+          playNote(NT(l[0]), l[1], 'sawtooth', 0.08);
+        }
+        currentLeadStep += l[1]; // Add duration
+        if (currentLeadStep > leadStep) break; // We are past the current step
+      }
+      
+      musicStepSynth++;
+      musicTimer=setTimeout(tickSynth, stepSecSynth*1000); // 1 step at a time
+    }
+    tickSynth();
+  }
+}
+
+// REWRITTEN: stopMusic function to be safe
+function stopMusic(){ 
+  musicRunning=false; 
+  if(musicTimer){ clearTimeout(musicTimer); musicTimer=null; } 
+}
+// --- END REWRITTEN MUSIC ENGINE ---
+
+
+/* ===== RNG & timebase (UNCHANGED) ===== */
 let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
 const TARGET_FPS=75; let last=performance.now(); let timeMs=0;
 
-/* ===== Game State ===== */
-let state='boot'; // boot | menu | play | paused | over
+/* ===== Game State, Speed Modes, Name & Avatar, Input (RESTORED) ===== */
+let state='boot';
 let score=0, best=Number(localStorage.getItem('moon_best')||0);
 let scroll=0; let uiReturn='menu';
 let returnFromSettings = 'menu';
 const statusEl=document.getElementById('status');
-
-/* ===== Speed Modes ===== */
 const speedModes=[
   {name:'Casual', speed:2.4, score:1.0, coin:200},
   {name:'Normal', speed:3.2, score:1.5, coin:300},
@@ -568,15 +877,11 @@ function setMode(idx){
   speedMode=( (idx%speedModes.length)+speedModes.length)%speedModes.length;
   baseSpeed=speedModes[speedMode].speed; scoreMul=speedModes[speedMode].score; coinValue=speedModes[speedMode].coin;
   statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
-  const setBtn=document.getElementById('setSpeed'); if(setBtn) setBtn.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
+  const setBtn=document.getElementById('setSpeed'); if(setBtn) setBtn.textContent=`SPEED: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
 }
-
-/* ===== Name & Avatar ===== */
 const NAME_RE=/[^A-Za-z0-9 _\-.]/g;
 function cleanName(s){ return (s||'').toString().trim().replace(/\s+/g,' ').replace(NAME_RE,'').slice(0,12)||'Player'; }
 let charSkin = localStorage.getItem('moon_char') || 'classic';
-
-/* ===== Input ===== */
 const keys={};
 addEventListener('keydown',e=>{
   if (document.activeElement && document.activeElement.tagName==='INPUT') return;
@@ -590,8 +895,6 @@ addEventListener('keydown',e=>{
   if(state==='over' && (e.key===' '||e.key==='Enter')) { hideUI('over'); start(); }
 });
 addEventListener('keyup',e=>{ if (document.activeElement && document.activeElement.tagName==='INPUT') return; keys[e.key]=false; });
-
-/* Touch pads */
 function bindTouch(id,on,off){ const el=document.getElementById(id);
   const down=ev=>{ev.preventDefault();on();};
   const up=ev=>{ev.preventDefault();off();};
@@ -602,18 +905,14 @@ function bindTouch(id,on,off){ const el=document.getElementById(id);
 bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
 bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
 bindTouch('btnJump', ()=>{ keys[' ']=true; }, ()=>{ keys[' ']=false; });
-
-/* Toolbar */
 document.getElementById('music').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent = musicMuted?'♪ Music Off':'♪ Music'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('mute').onclick =(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent = sfxMuted?'🔇 SFX':'🔈 SFX'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
 document.getElementById('invert').onclick=()=> document.body.classList.toggle('invert');
 document.getElementById('fs').onclick = () => document.documentElement.requestFullscreen?.();
-document.getElementById('landBtn').onclick=()=> goLandscape(); // NEW
+document.getElementById('landBtn').onclick=()=> goLandscape();
 document.getElementById('speedup').onclick =()=> setMode(speedMode+1);
 document.getElementById('speeddown').onclick=()=> setMode(speedMode-1);
 document.getElementById('menuBtn').onclick =()=>{ hideAllUI(); showUI('menu'); state='menu'; setPlaying(false); };
-
-/* ===== Center Caption (story/tutorial) ===== */
 const cap = document.getElementById('caption');
 const capT=cap.querySelector('.title');
 const capS=cap.querySelector('.sub');
@@ -623,11 +922,8 @@ function showCaption(title='',sub='',ms=2400){
   cap.classList.add('show'); clearTimeout(capTimer);
   capTimer=setTimeout(()=>cap.classList.remove('show'),ms);
 }
-
-/* ===== Orientation helper ===== */
 async function goLandscape(){
   try{
-    // was: await STAGE.requestFullscreen();
     if (document.documentElement.requestFullscreen) {
       await document.documentElement.requestFullscreen();
     }
@@ -644,41 +940,52 @@ async function goLandscape(){
     }
   }
 }
-
-
-
-/* UI helpers */
 function showUI(id,lock=false){ document.getElementById(id).style.display='flex'; if(lock&&state==='play') state='paused'; }
 function hideUI(id){ document.getElementById(id).style.display='none'; }
-function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','avatars'].forEach(hideUI); }
-
+function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','avatars', 'themes'].forEach(hideUI); }
 function setPlaying(on){ document.body.classList.toggle('playing', !!on); }
-  
-/* Menu wiring */
 document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
+// FIX: howBtn is now PROTOCOL
 document.getElementById('howBtn').onclick =()=> showUI('how');
-document.getElementById('avatarsBtn').onclick=()=>{ showUI('avatars'); drawPreviews(); };
-document.getElementById('avatarsClose').onclick=()=> hideUI('avatars');
+document.getElementById('avatarsBtn').onclick=()=>{ hideUI('menu'); showUI('avatars'); drawPreviews(); };
+document.getElementById('themesBtn').onclick=()=>{ hideUI('menu'); showUI('themes'); };
+document.getElementById('avatarsClose').onclick=()=> { hideUI('avatars'); showUI('menu'); };
+document.getElementById('themesClose').onclick=()=> { hideUI('themes'); showUI('menu'); };
 document.querySelectorAll('#avatars .btn[data-skin]').forEach(b=>{
   b.addEventListener('click',()=>{
     charSkin = b.getAttribute('data-skin');
     localStorage.setItem('moon_char', charSkin);
+    drawPreviews(); // Refresh previews to show selection border if needed
     hideUI('avatars');
+    showUI('menu');
   });
 });
+document.querySelectorAll('#themes .btn[data-theme]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    applyTheme(b.getAttribute('data-theme'));
+    drawPreviews(); // Redraw character previews with new theme colors
+    hideUI('themes');
+    showUI('menu');
+  });
+});
+// FIX: settingsBtn is now SETTINGS (UPDATED)
 document.getElementById('settingsBtn').onclick = () => {
   document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
+  // NEW: Update track button text
+  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`;
   returnFromSettings = 'menu';
   showUI('settings');
 };
 document.getElementById('lbBtn').onclick  =()=>{ uiReturn='menu'; showUI('lb'); lbActivate('daily'); };
 document.getElementById('creditsBtn').onclick=()=> showUI('credits');
-
 document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
 document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
+// FIX: pauseSettingsBtn is now SETTINGS (UPDATED)
 document.getElementById('pauseSettingsBtn').onclick = () => {
   hideUI('pause');
   document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
+  // NEW: Update track button text
+  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`;
   returnFromSettings = 'play';
   showUI('settings');
 };
@@ -686,25 +993,40 @@ document.getElementById('exitBtn').onclick=()=>{
   hideUI('pause');
   showUI('menu');
   state='menu';
-  setPlaying(false); // hide pads when returning to menu
+  setPlaying(false);
 };
-
 document.getElementById('retryBtn').onclick=()=>{ hideUI('over'); start(); };
 document.getElementById('overMenuBtn').onclick=()=>{
   hideUI('over');
   showUI('menu');
   state='menu';
-  setPlaying(false); // hide pads when returning to menu
+  setPlaying(false);
 };
 document.getElementById('overLbBtn').onclick =()=>{ uiReturn='over'; hideUI('over'); showUI('lb'); lbActivate('daily'); };
-
 document.getElementById('howClose').onclick=()=> hideUI('how');
 document.getElementById('creditsClose').onclick=()=> hideUI('credits');
-
 document.getElementById('setSound').onclick=(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent=sfxMuted?'🔇 SFX: Off':'🔈 SFX: On'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
 document.getElementById('setMusic').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent=musicMuted?'♪ Music: Off':'♪ Music: On'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('setContrast').onclick=()=> document.body.classList.toggle('invert');
 document.getElementById('setSpeed').onclick =()=> setMode(speedMode+1);
+
+// NEW: Music Track Selector
+document.getElementById('setTrack').onclick = (e) => {
+  if (currentMusicTrack === 'classic') {
+    currentMusicTrack = 'synthwave';
+  } else {
+    currentMusicTrack = 'classic';
+  }
+  localStorage.setItem('moon_track', currentMusicTrack);
+  e.currentTarget.textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`;
+  
+  // Restart music to apply the change
+  stopMusic();
+  if (!musicMuted) {
+    startMusic();
+  }
+};
+            
 document.getElementById('settingsClose').onclick = () => {
   const nm = cleanName(document.getElementById('setName').value || '');
   localStorage.setItem('moon_name', nm);
@@ -721,35 +1043,31 @@ document.getElementById('lbClose').onclick=()=>{
   hideUI('lb');
   showUI(uiReturn);
   if(uiReturn==='over') state='over'; else state='menu';
-  if(state==='menu') setPlaying(false); // pads hide if we land on menu
+  if(state==='menu') setPlaying(false);
 };
-
-/* Leaderboard tabs (unchanged) */
 const lbSub     = document.getElementById('lbSub');
 const lbToday   = document.getElementById('lbToday');
 const lbWeekly  = document.getElementById('lbWeekly');
 const lbMonthly = document.getElementById('lbMonthly');
 const lbAll     = document.getElementById('lbAll');
-const lb20      = document.getElementById('lb20');
-const lb10      = document.getElementById('lb10');
-function lbSetActive(btn){ [lbToday,lbWeekly,lbMonthly,lbAll,lb20,lb10].forEach(b=> b.classList.remove('active')); btn.classList.add('active'); }
+// Removed top 20/10 buttons for cleaner UI
+// const lb20      = document.getElementById('lb20');
+// const lb10      = document.getElementById('lb10');
+function lbSetActive(btn){ [lbToday,lbWeekly,lbMonthly,lbMonthly,lbAll].forEach(b=> b.classList.remove('active')); btn.classList.add('active'); }
 lbToday.onclick = ()=> lbActivate('daily');
 lbWeekly.onclick= ()=> lbActivate('weekly');
 lbMonthly.onclick=()=> lbActivate('monthly');
 lbAll.onclick   = ()=> lbActivate('all');
-lb20.onclick    = ()=> lbActivate('top20');
-lb10.onclick    = ()=> lbActivate('top10');
-
+// lb20.onclick    = ()=> lbActivate('top20');
+// lb10.onclick    = ()=> lbActivate('top10');
 function lbActivate(kind){
   if (kind === 'daily')   { lbSetActive(lbToday);   loadLeaderboard({ period:'daily',   limit:20,  unique:false }); }
   else if (kind==='weekly'){ lbSetActive(lbWeekly); loadLeaderboard({ period:'weekly',  limit:50,  unique:true  }); }
   else if (kind==='monthly'){lbSetActive(lbMonthly);loadLeaderboard({ period:'monthly', limit:100, unique:true  }); }
   else if (kind==='all')  { lbSetActive(lbAll);     loadLeaderboard({ period:'all',     limit:200, unique:true  }); }
-  else if (kind==='top20'){ lbSetActive(lb20);      loadLeaderboard({ period:'all',     limit:20,  unique:true  }); }
-  else                    { lbSetActive(lb10);      loadLeaderboard({ period:'all',     limit:10,  unique:true  }); }
+  else if (kind==='top20'){ lbSetActive(lbToday);   loadLeaderboard({ period:'all',     limit:20,  unique:true  }); } // Re-using daily button style
+  else                    { lbSetActive(lbToday);   loadLeaderboard({ period:'all',     limit:10,  unique:true  }); } // Re-using daily button style
 }
-
-/* ===== Leaderboard I/O ===== */
 async function loadLeaderboard({period='daily',limit=20,unique=false}={}){
   try{
     const tbodyEl = document.querySelector('#lbTable tbody');
@@ -791,9 +1109,27 @@ async function submitScore(name,score){
   }catch(err){ return { ok:false, error: 'network' }; }
 }
 
-/* ===== World / Difficulty / Physics (unchanged) ===== */
+/* ===== World / Difficulty / Physics (RESTORED) ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
+let particles = []; // NEW: For collection animations
+let screenShake = 0; // NEW: For screen shake
+let wasSlowed = false; // NEW: For slow-mo sound
+
+// NEW: Particle spawner
+function spawnParticles(x, y, color, count = 10) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            vx: (RND() - 0.5) * 4,
+            vy: (RND() - 0.5) * 4 - 2,
+            life: 20 + RND() * 20, // frames
+            color: color
+        });
+    }
+}
+
 function getDiff(){
   const tScore=Math.min(1,(score/2800));
   const tTime =Math.min(1,(timeMs/16000));
@@ -810,14 +1146,13 @@ function getDiff(){
 const GRAV=0.65,JUMP=11.6,FRICTION=0.86;
 const JUMP_BUFFER_MS=120;
 const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0};
-
 let coinsPicked=0, shieldsPicked=0, slowUsed=0;
 let lastNearMissTime=0;
 let milestoneIndex=0, flyby=null;
-function triggerFlyby(){ const dir = Math.random()<0.5 ? -1 : 1; flyby = { x: dir<0 ? W+60 : -60, y: 80 + Math.random()*60, dir, t: 0 }; }
-
+function triggerFlyby(){ const dir = Math.random()<0.5 ? -1 : 1; flyby = { x: dir<0 ? W+60 : -60, y: 80 + Math.random()*60, dir, t: 0, w: 56, h: 20 }; beep('flyby'); }
 function resetWorld(){
-  segments=[];entities=[];items=[];scroll=0;timeMs=0;score=0;
+  segments=[];entities=[];items=[];particles=[];scroll=0;timeMs=0;score=0; // Clear particles
+  screenShake = 0; wasSlowed = false; // NEW: Reset flags
   coinsPicked=0; shieldsPicked=0; slowUsed=0;
   lastNearMissTime=0; milestoneIndex=0; flyby=null;
   Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0});
@@ -826,15 +1161,6 @@ function resetWorld(){
 }
 function spawnAhead(targetX){
   while ((segments.length ? segments[segments.length - 1].x + segments[segments.length - 1].w : 0) < targetX) {
-
-    // ----- timeline (ms) -----
-    // 0   - 2000  : warmup, no items
-    // 2000- 4500  : coins only
-    // 4500- 7000  : coins OR alien
-    // 7000- 9000  : coins OR alien OR spike
-    // 9000-11000  : + shield (still max 1)
-    // 11000-13000 : + slow (still max 1)
-    // >13000      : normal game
     let phase = 0;
     if      (timeMs > 13000) phase = 6;
     else if (timeMs > 11000) phase = 5;
@@ -843,23 +1169,12 @@ function spawnAhead(targetX){
     else if (timeMs >  4500) phase = 2;
     else if (timeMs >  2000) phase = 1;
     else                     phase = 0;
-
     const { gapMin, gapMax, gMin, gMax } = getDiff();
     const segW = Math.floor(gMin + RND() * (gMax - gMin));
     const gx   = (segments.length ? segments[segments.length - 1].x + segments[segments.length - 1].w : 0);
-
-    // make the floor
     segments.push({ x: gx, w: segW, type: 'ground' });
-
-    // we only allow ONE thing per platform during tutorial (phase <=5)
     let spawned = false;
-
-    // PHASE 0 — nothing, just run
-    if (phase === 0) {
-      // no items/spawns
-    }
-
-    // PHASE 1 — coins only
+    if (phase === 0) {}
     else if (phase === 1) {
       if (RND() < 0.75 && segW > 80) {
         const ix = gx + 40 + Math.floor(RND() * (segW - 80));
@@ -867,16 +1182,12 @@ function spawnAhead(targetX){
         spawned = true;
       }
     }
-
-    // PHASE 2 — coin OR alien
     else if (phase === 2) {
       if (RND() < 0.6) {
-        // coin
         const ix = gx + 40 + Math.floor(RND() * (segW - 80));
         items.push({ kind: 'chip', x: ix, y: floorY - 42, w: 10, h: 10, phase: RND()*6.28 });
         spawned = true;
       } else if (segW > 110) {
-        // alien
         const ax = gx + 46 + Math.floor(RND() * (segW - 110));
         entities.push({
           kind: 'alien',
@@ -891,8 +1202,6 @@ function spawnAhead(targetX){
         spawned = true;
       }
     }
-
-    // PHASE 3 — coin OR alien OR spike
     else if (phase === 3) {
       const roll = RND();
       if (roll < 0.45) {
@@ -918,8 +1227,6 @@ function spawnAhead(targetX){
         spawned = true;
       }
     }
-
-    // PHASE 4 — add shield, but still 1 item max
     else if (phase === 4) {
       const roll = RND();
       if (roll < 0.42) {
@@ -943,15 +1250,19 @@ function spawnAhead(targetX){
         const sx = gx + 44 + Math.floor(RND() * (segW - 90));
         entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
         spawned = true;
+      } else if (roll < 0.95) { // NEW: Drone
+        const dx = gx + 40 + Math.floor(RND() * (segW - 80));
+        entities.push({
+          kind: 'drone', x: dx, y: floorY - 80, w: 16, h: 10,
+          baseY: floorY - 80, range: 40 + RND() * 30, phase: RND() * 6.28
+        });
+        spawned = true;
       } else {
-        // shield (rare in tutorial)
         const ix = gx + segW - 60;
         items.push({ kind: 'shield', x: ix, y: floorY - 50, w: 12, h: 12, phase: RND()*6.28 });
         spawned = true;
       }
     }
-
-    // PHASE 5 — add slow, but still max 1
     else if (phase === 5) {
       const roll = RND();
       if (roll < 0.40) {
@@ -975,6 +1286,13 @@ function spawnAhead(targetX){
         const sx = gx + 44 + Math.floor(RND() * (segW - 90));
         entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
         spawned = true;
+      } else if (roll < 0.90) { // NEW: Drone
+        const dx = gx + 40 + Math.floor(RND() * (segW - 80));
+        entities.push({
+          kind: 'drone', x: dx, y: floorY - 90, w: 16, h: 10,
+          baseY: floorY - 90, range: 50 + RND() * 30, phase: RND() * 6.28
+        });
+        spawned = true;
       } else if (roll < 0.93) {
         const ix = gx + segW - 60;
         items.push({ kind: 'shield', x: ix, y: floorY - 50, w: 12, h: 12, phase: RND()*6.28 });
@@ -985,15 +1303,11 @@ function spawnAhead(targetX){
         spawned = true;
       }
     }
-
-    // PHASE 6 — back to your old random, but powerups not too frequent
     else {
-      // coins (same)
       if (RND() < 0.6) {
         const ix = gx + 30 + Math.floor(RND() * (segW - 60));
         items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: RND()*6.28 });
       }
-      // alien (same)
       if (RND() < 0.35 && segW > 100) {
         const ax = gx + 40 + Math.floor(RND() * (segW - 100));
         entities.push({
@@ -1007,119 +1321,376 @@ function spawnAhead(targetX){
           range: 36 + Math.floor(RND() * 44)
         });
       }
-      // spike (same)
       if (RND() < 0.20 && segW > 120) {
         const sx = gx + 40 + Math.floor(RND() * (segW - 80));
         entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
       }
-      // shield (LOWERED)
+      if (RND() < 0.15) { // NEW: Drone
+        const dx = gx + 40 + Math.floor(RND() * (segW - 80));
+        entities.push({
+          kind: 'drone', x: dx, y: floorY - 80, w: 16, h: 10,
+          baseY: floorY - 80, range: 40 + RND() * 40, phase: RND() * 6.28
+        });
+      }
       if (RND() < 0.09) {
         const ix = gx + segW - 58;
         items.push({ kind: 'shield', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
-      // slow (LOWERED)
       if (RND() < 0.07) {
         const ix = gx + 46;
         items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
     }
-
-    // gaps: small for early phases
     let gap;
     if (phase <= 1) {
       gap = Math.floor(22 + RND() * 22);
     } else {
       gap = Math.floor(gapMin + RND() * gapMax);
     }
-
     segments.push({ x: gx + segW, w: gap, type: 'gap' });
   }
 }
 
+/* ===== 8-BIT VAPORWAVE SPRITE FUNCTIONS (UPDATED FOR 5 SKINS) ===== */
 
-/* Sprites (unchanged) */
-function astroClassic(x,y,pose='idle'){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b);
-  if(pose==='run1'){FILL(x+2,y+18,5,2,b);FILL(x+11,y+18,3,2,b);} if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+9,y+18,6,2,b);} if(pose==='jump'){FILL(x+3,y+18,10,2,b);} }
-function astroStripe(x,y,pose='idle'){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x-3,y+6,3,10,f); FILL(x,y,16,22,f); FILL(x+5,y+6,6,6,b); FILL(x+7,y+1,2,20,b);
-  if(pose==='run1'){FILL(x+2,y+18,5,2,b);FILL(x+11,y+18,3,2,b);} if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+9,y+18,6,2,b);} if(pose==='jump'){FILL(x+3,y+18,10,2,b);} }
-function astroAlien(x,y,pose='idle'){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x+3,y,10,8,f); FILL(x+2,y+8,12,10,f); FILL(x+4,y+18,8,4,f);
-  FILL(x+5,y+3,2,2,b); FILL(x+9,y+3,2,2,b); if(pose==='run1'){FILL(x+2,y+18,4,2,b);FILL(x+10,y+18,4,2,b);} if(pose==='run2'){FILL(x+1,y+18,4,2,b);FILL(x+11,y+18,4,2,b);} if(pose==='jump'){FILL(x+3,y+18,10,2,b);} }
-function astronaut(x,y,pose='idle'){ if(charSkin==='stripe') return astroStripe(x,y,pose); if(charSkin==='alien') return astroAlien(x,y,pose); return astroClassic(x,y,pose); }
-function enemyAlien(x,y,blink=false){ const f=FG(),b=BG(); x=i(x); y=i(y); FILL(x,y,22,14,f); if(!blink){ FILL(x+4,y+4,4,4,b); FILL(x+14,y+4,2,2,b); } }
-function ufo(x,y){ const f=FG(); x=i(x); y=i(y); FILL(x-28,y,56,8,f); FILL(x-22,y-8,44,6,f); FILL(x-4,y-14,8,6,f); }
-function beamScan(cx,topY,t){ const f=FG(); cx=i2(cx); topY=i2(topY); const wob=(Math.sin(t/420)+1)*1.2; for(let k=0;k<56;k+=6){ const y=topY+14+k; const half=8+((k/56)*9)|0; FILL(cx-(half+wob),y,(half+wob)*2,2,f);} }
-function tileGround(x,y,w){ const f=FG(),b=BG(); x=i(x); y=i2(y); w=i(w); FILL(x,y-2,w,2,f); FILL(x,y,w,44,f);
-  for(let dx=0;dx<w;dx+=8) for(let dy=0;dy<44;dy+=8) if(((dx+dy)>>3)&1) FILL(x+dx,y+dy,4,4,b); }
-
-/* Avatar previews */
-function drawPreviewTo(canvas, kind){
-  const c=canvas.getContext('2d'); c.imageSmoothingEnabled=false;
-  c.fillStyle=BG(); c.fillRect(0,0,canvas.width,canvas.height);
-  const f=FG(), b=BG(); c.fillStyle=f; c.fillRect(2,40,28,2);
-  if(kind==='alien'){ c.fillRect(11,6,10,8); c.fillRect(10,14,12,10); c.fillRect(12,24,8,4); c.fillStyle=b; c.fillRect(13,9,2,2); c.fillRect(17,9,2,2); }
-  else { c.fillRect(5,12,3,10); c.fillStyle=f; c.fillRect(8,6,16,22); c.fillStyle=b; c.fillRect(13,12,6,6); if(kind==='stripe'){ c.fillRect(15,7,2,20); } }
+function astroClassic(x,y,pose='idle'){ 
+  const f=FG(), b=BG(), g=GR(); 
+  x=i(x); y=i(y); 
+  
+  FILL(x+2,y+4,12,18,f);
+  FILL(x+3,y,10,10,f); FILL(x+5,y+2,6,6,b);
+  FILL(x-4,y+8,4,8,g); 
+  
+  if(pose==='run1'){
+    FILL(x+2,y+20,4,2,g); FILL(x+10,y+20,4,2,f); 
+  } else if(pose==='run2'){
+    FILL(x+1,y+20,4,2,f); FILL(x+11,y+20,4,2,g);
+  } else if(pose==='jump'){
+    FILL(x+3,y+20,10,2,g); 
+  }
 }
-function drawPreviews(){ drawPreviewTo(document.getElementById('pvClassic'),'classic'); drawPreviewTo(document.getElementById('pvStripe'),'stripe'); drawPreviewTo(document.getElementById('pvAlien'),'alien'); }
+function astroStripe(x,y,pose='idle'){ 
+  astroClassic(x,y,pose); 
+  FILL(i(x)+7,i(y)+4,2,14,GR()); 
+} 
+function astroAlien(x,y,pose='idle'){ 
+  const f=FG(), b=BG(), g=GR(), a=AL();
+  x=i(x); y=i(y); 
+  FILL(x+3,y+2,10,8,g);
+  FILL(x+1,y+10,14,12,g); 
+  FILL(x+5,y+4,2,2,f); FILL(x+9,y+4,2,2,f);
+  FILL(x+4,y+22,2,2,f); FILL(x+10,y+22,2,2,f);
+  FILL(x+4,y,2,2,f); FILL(x+10,y,2,2,g);
+}
+function astroPilot(x,y,pose='idle'){ 
+  const f=FG(), b=BG(), g=GR(), a=AL();
+  x=i(x); y=i(y); 
+  
+  // Body/Suit
+  FILL(x+2,y+4,12,18,g); 
+  // Helmet/Visor (Accent Pale)
+  FILL(x+3,y,10,10,f); FILL(x+5,y+2,6,6,a); // Visor
+  // Arms
+  FILL(x-4,y+8,4,8,f); 
+  
+  if(pose==='run1'){
+    FILL(x+2,y+20,4,2,f); FILL(x+10,y+20,4,2,g); 
+  } else if(pose==='run2'){
+    FILL(x+1,y+20,4,2,g); FILL(x+11,y+20,4,2,f);
+  } else if(pose==='jump'){
+    FILL(x+3,y+20,10,2,f); 
+  }
+}
+function astroRobot(x,y,pose='idle'){ 
+  const f=FG(), b=BG(), g=GR(), a=AC();
+  x=i(x); y=i(y); 
+  
+  // Body/Head (Grounded Color)
+  FILL(x+2,y,12,22,g);
+  // Joints/Core (Accent Pale)
+  FILL(x+4,y+6,8,2,a);
+  FILL(x+4,y+14,8,2,a);
+  // Eyes (FG Neon)
+  FILL(x+5,y+2,2,2,f); FILL(x+9,y+2,2,2,f);
+  // Arms
+  FILL(x-2,y+8,2,8,g); FILL(x+16,y+8,2,8,g);
+  
+  if(pose==='run1'){
+    FILL(x+3,y+22,3,2,f); FILL(x+10,y+22,3,2,g); 
+  } else if(pose==='run2'){
+    FILL(x+2,y+22,3,2,g); FILL(x+11,y+22,3,2,f);
+  } else if(pose==='jump'){
+    FILL(x+3,y+22,10,2,a); 
+  }
+}
 
-/* Collision */
+function astronaut(x,y,pose='idle'){ 
+  if(charSkin==='stripe') return astroStripe(x,y,pose); 
+  if(charSkin==='alien') return astroAlien(x,y,pose); 
+  if(charSkin==='pilot') return astroPilot(x,y,pose);
+  if(charSkin==='robot') return astroRobot(x,y,pose);
+  return astroClassic(x,y,pose); 
+}
+function enemyAlien(x,y,blink=false){ 
+  const f=FG(), b=BG(), g=GR(), a=AL(); 
+  x=i(x); y=i(y); 
+  
+  FILL(x+2,y+2,18,10,g);
+  FILL(x+4,y,14,4,f);
+  FILL(x,y+4,2,4,a); FILL(x+20,y+4,2,4,a);
+  
+  if(!blink){ 
+    FILL(x+5,y+5,4,2,b); 
+    FILL(x+13,y+5,4,2,b); 
+  } else {
+    FILL(x+8,y+6,6,2,b); 
+  }
+}
+function drone(x,y,t){ // NEW
+  const f=FG(), b=BG(), g=GR(), a=AL(); 
+  x=i(x); y=i(y);
+  const blink = (t/100|0) % 2 === 0;
+  
+  // Body
+  FILL(x, y+2, 16, 6, g);
+  // "Eye"
+  if (blink) FILL(x+6, y+4, 4, 2, f);
+  else FILL(x+6, y+4, 4, 2, a);
+  
+  // Propellers (animated)
+  const propY = y + (Math.sin(t/50) * 1);
+  FILL(x-4, i(propY), 8, 2, g);
+  FILL(x+12, i(propY), 8, 2, g);
+}
+function ufo(x,y){ 
+  const f=FG(); x=i(x); y=i(y); 
+  FILL(x-28,y,56,6,f); 
+  FILL(x-22,y-8,44,8,GR()); 
+  FILL(x-4,y-14,8,6,f); 
+}
+function beamScan(cx,topY,t){ 
+  const f=FG(); cx=i2(cx); topY=i2(topY); 
+  const wob=(Math.sin(t/420)+1)*1.2; 
+  for(let k=0;k<56;k+=6){ 
+    const y=topY+14+k; 
+    const half=8+((k/56)*9)|0; 
+    ctx.globalAlpha = 0.5 - (k/56) * 0.4;
+    FILL(cx-(half+wob),y,(half+wob)*2,2,f);
+  } 
+  ctx.globalAlpha = 1;
+}
+function tileGround(x,y,w){ 
+  const f=FG(), b=BG(), g=GR();
+  x=i(x); y=i2(y); w=i(w); 
+  
+  FILL(x,y,w,44,g);
+  
+  for(let dx=0;dx<w;dx+=8) {
+    for(let dy=0;dy<44;dy+=8) {
+      if(((dx+dy)>>3)&1) {
+        FILL(x+dx,y+dy,4,4,b);
+      } else {
+        FILL(x+dx,y+dy,4,4,f);
+      }
+    }
+  }
+  
+  FILL(x,y-2,w,2,f); 
+}
+
+// Item preview drawing utility (REMOVED)
+function drawItemPreviews(){
+    // This function is now empty
+}
+
+
+// FIX: Rewritten drawPreviewTo based on v2.3.0 logic
+function drawPreviewTo(canvas, kind){
+  const c = canvas.getContext('2d'); 
+  c.imageSmoothingEnabled = false;
+  // Get colors dynamically
+  const f=FG(), b=BG(), g=GR(), a=AC(), al=AL();
+  
+  c.fillStyle = b; // Use dynamic BG
+  c.fillRect(0, 0, canvas.width, canvas.height); // clear
+  
+  // Ground line
+  c.fillStyle = g; // Use dynamic GR
+  c.fillRect(0, 40, 32, 2); // Ground line at y=40
+
+  // x=7, y=11 (from v3.0.4) was wrong. v2.3.0 logic is hardcoded for 32x44 canvas
+  
+  if (kind === 'classic') {
+    c.fillStyle=g; c.fillRect(5, 12, 3, 8); // arm
+    c.fillStyle=f; c.fillRect(10, 8, 12, 18); // body
+    c.fillStyle=f; c.fillRect(11, 4, 10, 10); c.fillStyle=b; c.fillRect(13, 6, 6, 6); // head
+    c.fillStyle=g; c.fillRect(12, 28, 8, 2); // legs (pose)
+  }
+  else if (kind === 'stripe') {
+    c.fillStyle=g; c.fillRect(5, 12, 3, 8); // arm
+    c.fillStyle=f; c.fillRect(10, 8, 12, 18); // body
+    c.fillStyle=f; c.fillRect(11, 4, 10, 10); c.fillStyle=b; c.fillRect(13, 6, 6, 6); // head
+    c.fillStyle=g; c.fillRect(15, 10, 2, 14); // stripe
+    c.fillStyle=g; c.fillRect(12, 28, 8, 2); // legs (pose)
+  }
+  else if (kind === 'alien') {
+    c.fillStyle=g; c.fillRect(10, 8, 12, 6); c.fillRect(8, 14, 16, 16); 
+    c.fillStyle=f; c.fillRect(11, 10, 2, 2); c.fillRect(17, 10, 2, 2);
+    c.fillStyle=b; c.fillRect(12, 12, 3, 3); c.fillRect(17, 12, 3, 3); 
+    c.fillStyle=f; c.fillRect(13, 30, 6, 2); 
+  }
+  else if (kind === 'pilot') {
+    // Manually drawing pilot based on astroPilot (x=8, y=10 logic from v3.0)
+    // Centered at x=16, y=18 (approx) on a 32x44 canvas
+    const xOffset = 8, yOffset = 10;
+    c.fillStyle=f; c.fillRect(xOffset-4,yOffset+8,4,8); // Arm
+    c.fillStyle=g; c.fillRect(xOffset+2,yOffset+4,12,18); // Body/Suit
+    c.fillStyle=f; c.fillRect(xOffset+3,yOffset,10,10); c.fillStyle=al; c.fillRect(xOffset+5,yOffset+2,6,6); // Helmet/Visor
+    c.fillStyle=g; c.fillRect(xOffset+1,yOffset+20,4,2); // Leg (run2 pose)
+    c.fillStyle=f; c.fillRect(xOffset+11,yOffset+20,4,2); // Leg (run2 pose)
+  }
+  else if (kind === 'robot') {
+    // Manually drawing robot based on astroRobot (x=8, y=10 logic from v3.0)
+    const xOffset = 8, yOffset = 10;
+    c.fillStyle=g; c.fillRect(xOffset+2,yOffset,12,22); // Body/Head
+    c.fillStyle=a; c.fillRect(xOffset+4,yOffset+6,8,2); c.fillRect(xOffset+4,yOffset+14,8,2); // Joints/Core
+    c.fillStyle=f; c.fillRect(xOffset+5,yOffset+2,2,2); c.fillRect(xOffset+9,yOffset+2,2,2); // Eyes
+    c.fillStyle=g; c.fillRect(xOffset-2,yOffset+8,2,8); c.fillRect(xOffset+16,yOffset+8,2,8); // Arms
+    c.fillStyle=g; c.fillRect(xOffset+2,yOffset+22,3,2); // Leg (run2 pose)
+    c.fillStyle=f; c.fillRect(xOffset+11,yOffset+22,3,2); // Leg (run2 pose)
+  }
+  
+  // Draw selection border
+  if (kind === charSkin) {
+      c.strokeStyle = FG();
+      c.lineWidth = 2;
+      c.strokeRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function drawPreviews(){ 
+  drawPreviewTo(document.getElementById('pvClassic'),'classic'); 
+  drawPreviewTo(document.getElementById('pvStripe'),'stripe'); 
+  drawPreviewTo(document.getElementById('pvAlien'),'alien'); 
+  drawPreviewTo(document.getElementById('pvPilot'),'pilot');
+  drawPreviewTo(document.getElementById('pvRobot'),'robot');
+}
+
+
+// Item preview drawing utility (used for How to Play menu)
+function drawItem(canvas, itemKind) {
+    if (!canvas) return; // Safety check
+    const c = canvas.getContext('2d');
+    c.imageSmoothingEnabled = false;
+    const f=FG(), b=BG(), g=GR();
+    c.fillStyle = b; c.fillRect(0, 0, canvas.width, canvas.height);
+    const x = 0, y = 0; // Canvas is sized to the item
+    
+    if (itemKind === 'chip') {
+      c.fillStyle = g; c.fillRect(x, y, 10, 10);
+      c.fillStyle = b; c.fillRect(x + 1, y + 1, 8, 8);
+      c.fillStyle = g; c.fillRect(x + 3, y + 3, 4, 4);
+    }
+    if (itemKind === 'shield') {
+      c.fillStyle = f; c.fillRect(x + 2, y + 1, 8, 10);
+      c.fillStyle = f; c.fillRect(x + 3, y, 6, 1); 
+      c.fillStyle = f; c.fillRect(x + 4, y + 11, 4, 1); 
+      c.fillStyle = b; c.fillRect(x + 4, y + 3, 4, 4); 
+      c.fillStyle = g; c.fillRect(x + 5, y + 5, 2, 2);
+    }
+    if (itemKind === 'slow') {
+      c.fillStyle = f; c.fillRect(x, y + 2, 12, 8); 
+      c.fillStyle = b; c.fillRect(x + 1, y + 3, 10, 6); 
+      c.fillStyle = g; c.fillRect(x + 2, y + 4, 3, 3); 
+      c.fillStyle = g; c.fillRect(x + 7, y + 4, 3, 3);
+      c.fillStyle = g; c.fillRect(x + 1, y + 1, 10, 1);
+    }
+}
+function drawHowToPreviews(){
+    try {
+      drawItem(document.getElementById('itemChip'), 'chip');
+      drawItem(document.getElementById('itemShield'), 'shield');
+      drawItem(document.getElementById('itemSlow'), 'slow');
+    } catch(e) {
+      console.error("Error drawing item previews:", e);
+    }
+}
+
+// NEW: Function to draw sprites on Game Over recap
+function drawRecapPreviews(){
+    try {
+      drawItem(document.getElementById('recapChip'), 'chip');
+      drawItem(document.getElementById('recapShield'), 'shield');
+      drawItem(document.getElementById('recapSlow'), 'slow'); // FIX: Was 'itemSlow'
+    } catch(e) {
+      console.error("Error drawing recap previews:", e);
+    }
+}
+
+/* Collision, Callouts, Tips (UNCHANGED) */
 function AABB(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
-
-/* Callouts (unchanged) */
 const callouts=[];
 function addCall(text,x,y){ callouts.push({x,y,vy:-0.35,life:60,text}); }
 function updateCallouts(u){ for(let i=callouts.length-1;i>=0;i--){ const c=callouts[i]; c.y+=c.vy*u; c.life-=u; if(c.life<=0) callouts.splice(i,1);} }
 function drawCallouts(){ ctx.save(); ctx.fillStyle=FG(); ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.font="12px 'Press Start 2P', monospace"; for(const c of callouts){ ctx.globalAlpha=Math.max(0,c.life/60); ctx.fillText(c.text,c.x,c.y); } ctx.restore(); ctx.globalAlpha=1; }
-
-/* Pause tips rotator */
 const tips=["Esc to pause. Close resumes.","Tap ⤒ to jump on mobile.","Collect 💠 for points (× mode).","🛡 protects up to 3 hits.","⏳ gives 3s slow motion."];
 let tipIdx=0, tipTimer=null;
 function startTips(){ const el=document.getElementById('tipsLine'); clearInterval(tipTimer); el.textContent=tips[tipIdx%tips.length]; tipTimer=setInterval(()=>{tipIdx++; el.textContent=tips[tipIdx%tips.length];}, 2400); }
 function stopTips(){ clearInterval(tipTimer); tipTimer=null; }
-
-/* Tutorial seen flags (NEW, UI only) */
-let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:false};
-
-/* Control */
+let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:false, drone:false};
 let jumpBuffer=0;
 function start(){
   hideAllUI(); resetWorld(); state='play';
     setPlaying(true);
-  // NEW: show tutorial popups again for each fresh run
-  seenTutorial = { coin:false, shield:false, slow:false, alien:false, spike:false };
+  seenTutorial = { coin:false, shield:false, slow:false, alien:false, spike:false, drone:false };
 
   statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   document.getElementById('menuBtn').style.display='none';
   if(!musicMuted) startMusic(); beep('coin');
   stopTips();
-  // Story beat
   showCaption('MoonRunner — keep moving…','Collect chips, avoid danger.',2200);
 }
-
-function useShield(){ player.shields=clamp(player.shields-1,0,3); player.auraFlash=180; player.inv=150; addCall('HIT!',player.x+8,player.y-6); beep('hit'); }
+function useShield(){ player.shields=clamp(player.shields-1,0,3); player.auraFlash=180; player.inv=150; addCall('HIT!',player.x+8,player.y-6); beep('hit'); screenShake = 15; }
 function gameOver(){
   state='over';
-    setPlaying(false);
+  setPlaying(false);
+  beep('game_over'); // NEW: Play sound
+  screenShake = 15;
+  spawnParticles(player.x + player.w / 2, player.y + player.h / 2, FG(), 30);
+  spawnParticles(player.x + player.w / 2, player.y + player.h / 2, GR(), 20);
+  
   best=Math.max(best,Math.floor(score)); localStorage.setItem('moon_best',String(best));
   statusEl.textContent='Game Over';
-  document.getElementById('overScore').textContent=`Score: ${pad(Math.floor(score))} • Best: ${pad(best)}`;
-  document.getElementById('recap').innerHTML = `Run Recap — 💠 ${coinsPicked} • 🛡 ${shieldsPicked} • ⏳ ${slowUsed}`;
-  const saved=(localStorage.getItem('moon_name')||'').trim();
-  if(saved){
-    submitScore(saved,score).then(res=>{
-      const m=document.getElementById('submitMsg');
-      m.style.display='block';
-      m.textContent = res.ok ? 'Submitted ✓'
-        : (res.error==='rate_limited' ? 'Too fast — try again in a moment'
-        : (res.error==='bad_name' ? 'Name rejected — change it in Settings'
-        : 'Submit failed'));
-    });
-    document.getElementById('nameGate').style.display='none';
-  }else{
-    document.getElementById('nameGate').style.display='block';
-    document.getElementById('nameInput').value='';
-    document.getElementById('submitMsg').style.display='none';
-  }
-  showUI('over',true); document.getElementById('menuBtn').style.display='';
+  
+  // NEW: Delay showing the Game Over screen
+  setTimeout(() => {
+    document.getElementById('overScore').textContent=`Score: ${pad(Math.floor(score))} • Best: ${pad(best)}`;
+    
+    // FIX: Use the span IDs instead of overwriting innerHTML with emojis
+    document.getElementById('recapChipScore').textContent = coinsPicked;
+    document.getElementById('recapShieldScore').textContent = shieldsPicked;
+    document.getElementById('recapSlowScore').textContent = slowUsed;
+    drawRecapPreviews(); // Redraw icons just in case
+
+    const saved=(localStorage.getItem('moon_name')||'').trim();
+    if(saved){
+      submitScore(saved,score).then(res=>{
+        const m=document.getElementById('submitMsg');
+        m.style.display='block';
+        m.textContent = res.ok ? 'Submitted ✓'
+          : (res.error==='rate_limited' ? 'Too fast — try again in a moment'
+          : (res.error==='bad_name' ? 'Name rejected — change it in Settings'
+          : 'Submit failed'));
+      });
+      document.getElementById('nameGate').style.display='none';
+    }else{
+      document.getElementById('nameGate').style.display='block';
+      document.getElementById('nameInput').value='';
+      document.getElementById('submitMsg').style.display='none';
+    }
+    showUI('over',true); 
+    document.getElementById('menuBtn').style.display='';
+  }, 750); // 750ms delay
 }
 document.getElementById('submitBtn').onclick=async()=>{
   const nm=(document.getElementById('nameInput').value||'').trim().slice(0,12); if(!nm) return;
@@ -1134,7 +1705,7 @@ document.getElementById('submitBtn').onclick=async()=>{
   document.getElementById('nameGate').style.display='none';
 };
 
-/* Update (unchanged logic, + tutorial triggers only) */
+/* Update (RESTORED) */
 const GRAV_U=GRAV, ACCEL_U=0.7;
 function update(u){
   timeMs += (u / TARGET_FPS) * 1000;
@@ -1180,11 +1751,12 @@ function update(u){
     else{ gameOver(); }
   }
 
-  // enemies + near-miss + tutorial captions when first seen
   let nearMissNow=false;
   for(const e of entities){
     if(!seenTutorial.alien && e.kind==='alien' && e.x - scroll < W-20){ showCaption('Avoid aliens!','They pace the platforms.'); seenTutorial.alien=true; }
     if(!seenTutorial.spike && e.kind==='spike' && e.x - scroll < W-20){ showCaption('Watch the spikes!','Jump early, not late.'); seenTutorial.spike=true; }
+    if(!seenTutorial.drone && e.kind==='drone' && e.x - scroll < W-20){ showCaption('Look out for Drones!','They move up and down.'); seenTutorial.drone=true; }
+    
     if(e.kind==='alien'){
       e.x+=e.dir*0.7*m; if(Math.abs(e.x-e.baseX)>e.range) e.dir*=-1;
       const intersect = AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h});
@@ -1197,6 +1769,14 @@ function update(u){
         const dy = Math.abs((e.y) - (player.y + player.h/2));
         if(dx < 6 && dy < 20) nearMissNow = true;
       }
+    }else if (e.kind === 'drone') { // NEW
+      e.y = e.baseY + Math.sin(timeMs / 300 + e.phase) * e.range; // Up/down sine wave
+      const intersect = AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h});
+      if(intersect){
+        if(player.inv>0){ player.vx*=0.9; }
+        else if(player.shields>0){ useShield(); player.vx-=Math.sign(player.vx||1)*0.8; player.vy=-JUMP*0.5; }
+        else{ gameOver(); }
+      }
     }else if(e.kind==='spike'){
       if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
         if(player.inv>0){} else if(player.shields>0){ useShield(); player.vy=-JUMP*0.5; } else { gameOver(); }
@@ -1208,7 +1788,6 @@ function update(u){
     lastNearMissTime = performance.now();
   }
 
-  // items + first-sighting captions
   for(let k=items.length-1;k>=0;k--){
     const it=items[k];
     const bob=Math.sin((timeMs/260)+(it.phase||0))*2;
@@ -1219,80 +1798,318 @@ function update(u){
     if(!seenTutorial.slow   && it.kind==='slow'   && it.x - scroll < W-20){ showCaption('Slow field','3s slow motion'); seenTutorial.slow=true; }
 
     if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:rect.x,y:rect.y,w:rect.w,h:rect.h})){
-      if(it.kind==='chip'){ const add=Math.floor(coinValue*scoreMul); score+=add; coinsPicked++; addCall(`+${add}`,player.x+8,player.y-6); beep('coin'); }
-      if(it.kind==='shield'){ if(player.shields<3){ player.shields++; shieldsPicked++; addCall('Shield!',player.x+8,player.y-6); beep('shield'); } else { const bonus=Math.floor(coinValue*0.5*scoreMul); score+=bonus; addCall(`+${bonus}`,player.x+8,player.y-6); beep('coin'); } }
-      if(it.kind==='slow'){ player.slow=180; slowUsed++; addCall('Slow-mo!',player.x+8,player.y-6); beep('coin'); }
+      if(it.kind==='chip'){ 
+          const add=Math.floor(coinValue*scoreMul); score+=add; coinsPicked++; 
+          addCall(`+${add}`,player.x+8,player.y-6); beep('coin'); 
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, GR(), 8);
+      }
+      if(it.kind==='shield'){ 
+          if(player.shields<3){ player.shields++; shieldsPicked++; 
+              addCall('Shield!',player.x+8,player.y-6); beep('shield'); 
+          } else { 
+              const bonus=Math.floor(coinValue*0.5*scoreMul); score+=bonus; 
+              addCall(`+${bonus}`,player.x+8,player.y-6); beep('coin'); 
+          } 
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, FG(), 12);
+      }
+      if(it.kind==='slow'){ 
+          player.slow=180; slowUsed++; 
+          addCall('Slow-mo!',player.x+8,player.y-6); beep('slow'); 
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 12);
+      }
       items.splice(k,1);
     }else{ it._drawY=rect.y; }
   }
 
-  // timers
   player.auraPulse=(player.auraPulse+m)%360;
   if(player.auraFlash>0) player.auraFlash=Math.max(0,player.auraFlash-m*8);
-  if(player.slow>0)      player.slow=Math.max(0,player.slow-m);
+  if(player.slow>0) {
+    player.slow=Math.max(0,player.slow-m);
+    wasSlowed = true; // Mark that we are currently in slow-mo
+  } else if (wasSlowed) { // player.slow is 0, but wasSlowed is true
+    wasSlowed = false; // Reset the flag
+    beep('slow_off'); // Play the sound
+  }
   if(player.inv>0)       player.inv=Math.max(0,player.inv-m);
 
-  // distance scoring
   score += (0.069*m + Math.max(0,player.vx)*0.03*m) * scoreMul;
 
-  // milestone UFO
   const targetMilestone = Math.floor(score/5000);
   if(targetMilestone>milestoneIndex){ milestoneIndex = targetMilestone; triggerFlyby(); }
   if(flyby){ flyby.t += m; flyby.x += flyby.dir * 6 * m; if(flyby.x < -100 || flyby.x > W+100) flyby=null; }
 
-  updateCallouts(m);
+  // NEW: Update particles (MOVED TO LOOP)
+  /*
+  for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * m;
+      p.y += p.vy * m;
+      p.vy += 0.1 * m; // a little gravity
+      p.life -= m;
+      if (p.life <= 0) {
+          particles.splice(i, 1);
+      }
+  }
+  */
+  // updateCallouts(m); // MOVED TO LOOP
 }
 
-/* Draw (unchanged except title text) */
+/* ===== Draw Loop (THEMED & REDESIGNED BACKGROUND) ===== */
 function draw(){
-  const f=FG(),b=BG(); ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
+  ctx.save(); // NEW: Save context for screen shake
+  const f=FG(),b=BG(), g=GR(), a=AC(), al=AL(); ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
+  const theme = T();
 
-  ctx.fillStyle=f;
-  for(let n=0;n<100;n++){
-    const x1=((n*83)%2000)-(scroll*0.25%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
-    const x2=((n*211)%2400)-(scroll*0.10%2400), y2=(n*97)%H;  const xx2=((x2+2400)%2400)-100; if(xx2>=0&&xx2<W) ctx.fillRect(i(xx2),i(y2),1,1);
+  // NEW: Screen Shake
+  if(screenShake > 0){
+    const shakeAmount = screenShake * 0.5; // Intensity diminishes as it ends
+    const shakeX = (RND() - 0.5) * shakeAmount;
+    const shakeY = (RND() - 0.5) * shakeAmount;
+    ctx.translate(i(shakeX), i(shakeY));
   }
 
+  // --- Background Overhaul ---
+  
+  // 1. Denser, multi-layer parallax stars (Only if NOT sunset)
+  if (theme.name !== 'Digital Sunset') {
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = a;
+    for(let n=0;n<120;n++){ // Slow, dim stars
+      const x1=((n*83)%2000)-(scroll*0.15%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; 
+      if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),2,2); // Made stars 2x2
+    }
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = f;
+    for(let n=0;n<75;n++){ // Brighter, faster stars
+      const x1=((n*123)%2000)-(scroll*0.25%2000), y1=(n*141)%H; const xx1=((x1+2000)%2000)-100; 
+      if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),2,2); // Made stars 2x2
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // 2. Distant, static Earth (REMOVED)
+  /*
+  if (theme.earth) { // Only draw if theme allows it
+    const earthX = W * 0.85;
+    const earthY = H * 0.2;
+    
+    if (theme.name === 'Classic Cosmos') {
+        // B&W Earth
+        ctx.fillStyle = f; // White
+        ctx.beginPath();
+        ctx.arc(earthX, earthY, 20, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = b; // Black continents
+        ctx.beginPath();
+        ctx.arc(earthX + 5, earthY - 3, 10, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = f; // White clouds
+        ctx.beginPath();
+        ctx.arc(earthX - 4, earthY + 4, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    } else {
+        // Color Earth
+        ctx.fillStyle = '#1E90FF'; // Blue
+        ctx.beginPath();
+        ctx.arc(earthX, earthY, 20, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#3CB371'; // Green continents
+        ctx.beginPath();
+        ctx.arc(earthX + 5, earthY - 3, 10, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = (theme.name === 'Pulsar' ? g : '#FFFFFF'); // Clouds/Ice
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.arc(earthX - 4, earthY + 4, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+  }
+  */
+
+  // 3. NEW: Theme-specific background elements
+  ctx.globalAlpha = 1;
+  
+  if (theme.city) { // CYBER GRID
+    ctx.globalAlpha = 0.15;
+    ctx.strokeStyle = g;
+    const horizonY = H * 0.4;
+    const focalX = W / 2;
+    for(let k=0; k<W; k+=40){ // V-lines
+      ctx.beginPath(); ctx.moveTo(focalX, horizonY); ctx.lineTo(k, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(focalX, horizonY); ctx.lineTo(W-k, H); ctx.stroke();
+    }
+    ctx.globalAlpha = 0.1;
+    for(let k=0; k<H; k+=20){ // H-lines
+      const y = horizonY + k*k*0.01;
+      if (y > H) break;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  else if (theme.name === 'Classic Cosmos') { // CLASSIC COSMOS
+    ctx.globalAlpha = 0.5;
+    for(let n=0;n<6;n++){
+      const x1=((n*313)%2000)-(scroll*0.1%2000); // Very slow scroll
+      const y1=(n*179)% (H*0.4); // Only in top 40%
+      const xx1=((x1+2000)%2000)-100; 
+      if(xx1>=0&&xx1<W) ufo(i(xx1), i(y1 + 30)); // draw a small ufo
+    }
+    ctx.globalAlpha = 1;
+  }
+  else if (theme.name === 'Neo-Pulsar') { // NEO-PULSAR
+    ctx.globalAlpha = 0.3;
+    for(let n=0;n<30;n++){
+      const x1=((n*137)%2000)-(scroll*0.1%2000); // Very slow scroll
+      const y1=(n*191)%H;
+      const xx1=((x1+2000)%2000)-100;
+      if(xx1>=0&&xx1<W) {
+        const size = (n%3) + 1;
+        ctx.fillStyle = (n%2 === 0) ? a : al; // Use Accent and Alien colors
+        ctx.fillRect(i(xx1), i(y1), size, size);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+  else if (theme.name === 'Digital Sunset') { // DIGITAL SUNSET
+    const sunY = H * 0.5;
+    // Draw Sun
+    ctx.fillStyle = a; // Lighter Orange
+    ctx.beginPath(); ctx.arc(W/2, sunY, 100, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = f; // Bright Gold
+    ctx.beginPath(); ctx.arc(W/2, sunY, 70, 0, 2 * Math.PI); ctx.fill();
+    
+    // Draw Far Mountains (dark red)
+    ctx.fillStyle = g;
+    ctx.globalAlpha = 0.6;
+    const mtnX1 = i(scroll * 0.1);
+    for(let n=0; n<10; n++){
+        const x = (n * 150 - mtnX1) % (W + 150) - 150;
+        ctx.beginPath();
+        ctx.moveTo(x, H);
+        ctx.lineTo(x + 100, H - 200 - (n%3)*30);
+        ctx.lineTo(x + 200, H);
+        ctx.fill();
+    }
+    
+    // Draw Near Mountains (silhouette)
+    ctx.fillStyle = b;
+    ctx.globalAlpha = 0.8;
+    const mtnX2 = i(scroll * 0.15);
+    for(let n=0; n<10; n++){
+        const x = (n * 200 - mtnX2) % (W + 200) - 200;
+        ctx.beginPath();
+        ctx.moveTo(x, H);
+        ctx.lineTo(x + 120, H - 150 - (n%2)*40);
+        ctx.lineTo(x + 240, H);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // 3. Large, detailed Moon on horizon (FIX: REMOVED)
+  // ... (Code for moon is now gone) ...
+
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle=f;
+  // --- End Background Overhaul ---
+
+
+  // Draw Ground Platforms
   for(const s of segments){
     if(s.type!=='ground') continue;
     const x=i(s.x-scroll), w=i(s.w); if(x>W||x+w<-50) continue;
     tileGround(x,floorY,w);
   }
 
+  // Draw Entities (enemies)
   const blink=((performance.now()/1500|0)%2)===0;
   for(const e of entities){
     const x=i(e.x-scroll), y=i(e.y);
-    if(e.kind==='alien') enemyAlien(x,y,blink); else if(e.kind==='spike') FILL(x,y,e.w,e.h,f);
+    if(e.kind==='alien') enemyAlien(x,y,blink); 
+    else if(e.kind==='drone') drone(x,y, timeMs); // NEW
+    else if(e.kind==='spike') {
+      // Wireframe spike effect
+      ctx.fillStyle = GR();
+      ctx.fillRect(x, y + e.h * 0.8, e.w, e.h * 0.2); // Base
+      ctx.beginPath();
+      ctx.moveTo(x, y + e.h * 0.8);
+      ctx.lineTo(x + e.w / 2, y);
+      ctx.lineTo(x + e.w, y + e.h * 0.8);
+      ctx.fillStyle = f;
+      ctx.fill();
+      ctx.strokeStyle = f;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
   }
 
+  // Draw Items (Floppy, Bust, Cassette)
   for(const it of items){
     const x=i2(it.x-scroll), y=i2((it._drawY ?? it.y));
     if(it.kind==='chip'){
-      FILL(x,y,10,10,f);
-      const tw=((performance.now()/120)|0)%2;
-      if(tw){ FILL(x+3,y+3,4,4,BG()); } else { FILL(x+4,y+2,2,2,BG()); FILL(x+4,y+6,2,2,BG()); FILL(x+2,y+4,2,2,BG()); FILL(x+6,y+4,2,2,BG()); }
+      FILL(x,y,10,10,GR()); FILL(x+1,y+1,8,8,BG());
+      FILL(x+3,y+3,4,4,GR());
     }
     if(it.kind==='shield'){
       const pulse=(Math.sin((timeMs/500)+(it.phase||0))*0.5+0.5)|0;
-      FILL(x,y,12,12,f); FILL(x+2,y+2,8,8,BG()); if(pulse){ FILL(x+5,y+5,2,2,f); }
+      FILL(x+2,y+1,8,10,f); 
+      FILL(x+3,y,6,1,f); FILL(x+4,y+11,4,1,f); 
+      FILL(x+4,y+3,4,4,b); 
+      if(pulse) FILL(x+5,y+5,2,2,GR());
     }
     if(it.kind==='slow'){
-      FILL(x,y,12,12,f); FILL(x+2,y+2,8,8,BG()); const scan=((timeMs/120+(it.phase||0))%10)|0; FILL(x+2,y+2+scan,8,1,f);
+      FILL(x,y+2,12,8,f); FILL(x+1,y+3,10,6,b); 
+      FILL(x+2,y+4,3,3,GR()); FILL(x+7,y+4,3,3,GR());
+      const scan=((timeMs/120+(it.phase||0))%10)|0; 
+      FILL(x+1,y+1,10,1,GR());
     }
   }
 
+  // Draw Player
   const frame=(performance.now()/120|0);
   const pose=player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
-  if(player.shields>0){
-    const intense=player.auraFlash>0?1:0, th=intense?3:2;
+  if(player.shields>0 || player.slow > 0){
+    const isFlashing = (player.auraFlash>0) && (frame % 2 === 0);
+    const intense = (player.auraFlash>0 || player.slow > 0) ? 1 : 0;
+    const th = isFlashing || player.slow > 0 ? 3 : 2; // Bolder border when hit/slow
     const ax=player.x-3, ay=player.y-3, aw=player.w+6, ah=player.h+6;
-    for(let t=0;t<th;t++){ FILL(ax-t,ay-t,aw+2*t,1,f); FILL(ax-t,ay+ah+t,aw+2*t,1,f); FILL(ax-t,ay-t,1,ah+2*t,f); FILL(ax+aw+t,ay-t,1,ah+2*t,f); }
+    ctx.globalAlpha = intense ? 1.0 : 0.6;
+    
+    // Shield color is FG, Slow-mo color is AC
+    const color = player.slow > 0 ? AC() : FG();
+    
+    for(let t=0;t<th;t++){ 
+        FILL(ax-t,ay-t,aw+2*t,1,color); 
+        FILL(ax-t,ay+ah+t,aw+2*t,1,color); 
+        FILL(ax-t,ay-t,1,ah+2*t,color); 
+        FILL(ax+aw+t,ay-t,1,ah+2*t,color); 
+    }
+    ctx.globalAlpha = 1;
   }
   const invBlink=(player.inv>0)&&(frame%2===0);
   if(!invBlink){ astronaut(player.x,player.y,pose); }
   else{ FILL(player.x,player.y,player.w,1,f); FILL(player.x,player.y+player.h-1,player.w,1,f); FILL(player.x,player.y,1,player.h,f); FILL(player.x+player.w-1,player.y,1,player.h,f); }
 
-  if(flyby){ const yy = flyby.y + Math.sin(flyby.t*0.3)*2; ufo(flyby.x, yy); }
+  // NEW: Draw particles
+  ctx.globalAlpha = 0.8;
+  for (const p of particles) {
+      ctx.fillStyle = p.color;
+      FILL(p.x - scroll, p.y, 2, 2, p.color); // Draw particles relative to screen
+  }
+  ctx.globalAlpha = 1;
+
+  if(flyby){ 
+    const yy = flyby.y + Math.sin(flyby.t*0.3)*2; 
+    ufo(flyby.x, yy); 
+    // Add small trail behind UFO for animation
+    ctx.globalAlpha = 0.3;
+    const trailLength = clamp(flyby.t * 0.8, 20, 100); 
+    FILL(flyby.x - flyby.dir * (trailLength), yy + 3, trailLength * 0.5, 2, f);
+    ctx.globalAlpha = 1;
+  }
 
   drawCallouts();
 
@@ -1301,31 +2118,55 @@ function draw(){
   ctx.fillText(hudL,10,18);
   ctx.textAlign='right';
   const dots=['○','○','○']; for(let k=0;k<player.shields;k++) dots[k]='●';
-  ctx.fillText(`🛡 ${dots.join(' ')}`, W-10, 18);
+  const slowText = player.slow > 0 ? `⏳ ${Math.ceil(player.slow/TARGET_FPS)}s` : '';
+  ctx.fillText(`${slowText} 🛡 ${dots.join(' ')}`, W-10, 18);
   ctx.textAlign='left';
 
+  // Menu Screen Drawing (Simplified, less text background)
   if(state==='menu'){
     const t=performance.now(); const cx=i(W/2), cy=i(H*0.30);
-    const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
-    ctx.font="22px 'Press Start 2P',monospace"; const title="MKHKASG: MOONRUNNER";
+    const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); 
+    // --- SYNTAX ERROR FIX ---
+    // Was: beamScan(cx,cy-4MkhkAsg MoonRunner — v3.0 Aesthetic Apex.html0+hover,t);
+    beamScan(cx,cy-40+hover,t); 
+    // --- END FIX ---
+    const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
+    
+    // Title shadow effect
+    ctx.fillStyle = inverted() ? '#AAAAAA' : '#666666'; 
+    ctx.font="26px 'Press Start 2P',monospace"; 
+    const title="M O O N R U N N E R";
+    ctx.fillText(title,i((W-ctx.measureText(title).width)/2) - 2,cy+66);
+    
+    // Title foreground effect
+    ctx.fillStyle = GR();
     ctx.fillText(title,i((W-ctx.measureText(title).width)/2),cy+64);
+
     ctx.font="10px 'Press Start 2P',monospace";
-    const t1="Press SPACE to start • ←/→ move • W/↑/Space jump • Esc pause";
-    const t2="Collect: 💠 (+200 × mode), 🛡 (max 3), ⏳ (3s slow motion)";
-    const t3="Avoid: Aliens & Spikes. Survive as long as you can.";
-    ctx.fillText(t1,i((W-ctx.measureText(t1).width)/2),cy+86);
-    ctx.fillText(t2,i((W-ctx.measureText(t2).width)/2),cy+104);
-    ctx.fillText(t3,i((W-ctx.measureText(t3).width)/2),cy+122);
+    const sub="— V A P O R W A V E • E N D L E S S • R U N N E R —";
+    ctx.fillStyle = f;
+    ctx.fillText(sub,i((W-ctx.measureText(sub).width)/2),cy+86);
   }
+  
+  ctx.restore(); // NEW: Restore context to undo screen shake
 }
 
-/* Boot & Loop */
+/* Boot & Loop (RESTORED) */
 async function boot(){
   try{ await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  
+  // Initialize theme on boot
+  applyTheme(localStorage.getItem('moon_theme') || 'cyber');
+
+  // Draw item previews immediately for the How To menu
+  drawHowToPreviews(); 
+  
   resetWorld(); setMode(speedMode); state='menu'; statusEl.textContent='Menu — ready';
-  // Show "Play in Landscape" on touch devices
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     const pl=document.getElementById('playLandBtn'); pl.style.display='inline-block'; pl.onclick=()=>{ hideUI('menu'); goLandscape().then(()=>start()); };
+    document.getElementById('landBtn').style.display='none'; // Hide desktop landscape button on mobile menu
+  } else {
+    document.getElementById('playLandBtn').style.display='none';
   }
   requestAnimationFrame(loop); showUI('menu');
 }
@@ -1333,28 +2174,51 @@ function loop(now){
   const dtSec=(now-last)/1000; last=now;
   const u=Math.min(dtSec,0.10)*TARGET_FPS;
   if(state==='play') update(u);
+  
+  // NEW: Update particles & callouts ALWAYS (even in menu/pause)
+  for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * u;
+      p.y += p.vy * u;
+      p.vy += 0.1 * u; // a little gravity
+      p.life -= u;
+      if (p.life <= 0) {
+          particles.splice(i, 1);
+      }
+  }
+  updateCallouts(u);
+
+  // NEW: Screen Shake Logic (applied to stage wrapper for UI shake)
+  if (screenShake > 0) {
+      screenShake = Math.max(0, screenShake - u);
+      const shakeAmount = screenShake * 0.8; // Intensity
+      const shakeX = (RND() - 0.5) * shakeAmount;
+      const shakeY = (RND() - 0.5) * shakeAmount;
+      STAGE.style.transform = `translate(${shakeX}px, ${shakeY}px)`;
+  } else {
+      STAGE.style.transform = 'none'; // Reset
+  }
+  
   draw();
   requestAnimationFrame(loop);
 }
 
-/* Hook tips for pause open/close */
 const __showUI = showUI;
 showUI = function(id, lock=false){
   document.getElementById(id).style.display='flex';
   if(lock && state==='play'){ state='paused'; }
-  if(id==='pause'){ startTips(); setPlaying(false); }   // <— add setPlaying(false)
+  if(id==='pause'){ startTips(); setPlaying(false); }
 };
 
 const __hideUI = hideUI;
 hideUI = function(id){
   document.getElementById(id).style.display='none';
-  if(id==='pause'){ stopTips(); setPlaying(true); }     // <— add setPlaying(true)
+  if(id==='pause'){ stopTips(); setPlaying(true); }
 };
 
-  // make sure avatar thumbs exist even before opening
 drawPreviews();
-
-  
+drawHowToPreviews();
+drawRecapPreviews(); // NEW: Call on initial load
 boot();
 </script>
 </body>
