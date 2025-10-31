@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>MKHKASG: MoonRunner — V A P O R E T R O</title>
+<title>MkhkAsg : MoonRunner — v2.0.0 “Cyber Moon”</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   /* --- VAPORWAVE COLOR PALETTE --- */
@@ -41,7 +41,14 @@
     pointer-events:none;
     z-index:30; /* above canvas */
   }
+  /* FORCE show pads when game is playing (needed for touch devices) */
   body.playing .mobile{ display:block !important; pointer-events:auto; }
+  
+  /* FIX: Hide mobile pads on mouse/keyboard devices */
+  @media (hover:hover) and (pointer:fine){
+    .mobile{ display:none !important; }
+  }
+
   .mobile .leftGrp{ position:absolute; left:12px; bottom:0; display:flex; gap:10px; pointer-events:none; }
   .mobile .rightGrp{ position:absolute; right:12px; bottom:0; display:flex; gap:10px; pointer-events:none; }
 
@@ -195,7 +202,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
   body.playing .mobile .pad{ width:80px; height:80px; }
   body.playing .mobile .jump{ width:94px; height:94px; }
 }
-@media (hover:hover) and (pointer:fine){ .mobile{ display:none !important; } }
+
   
 /* --- DESKTOP VIEW (mouse/keyboard) - UNCHANGED LAYOUT --- */
 @media (hover:hover) and (pointer:fine){
@@ -262,7 +269,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
 
 <div id="menu" class="ui" style="display:flex">
   <div class="card">
-    <h1>M O O N R U N N E R</h1>
+    <h1>MKHKASG : M O O N R U N N E R</h1>
     <div class="ghost mt6">Retro-futuristic endless run on the low-poly moon.</div>
     <div class="row mt12">
       <div id="playBtn" class="btn">▶ Start Run</div>
@@ -272,7 +279,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <div id="lbBtn" class="btn">★ Leaderboard</div>
       <div id="creditsBtn" class="btn">ℹ Credits</div>
     </div>
-    <div class="ghost mt12">v1.9.5 “Lunar Substantial” • WASD/Arrows + Space • Desktop & Mobile</div>
+    <div class="ghost mt12">v2.0.0 “Cyber Moon” • WASD/Arrows + Space • Desktop & Mobile</div>
   </div>
 </div>
 
@@ -400,8 +407,8 @@ body.playing .mobile .jump{ width:108px; height:108px; }
 
 
 <script>
-/* ===== Config & Setup (UNCHANGED) ===== */
-const GAME_VERSION='1.9.5-VAPOR';
+/* ===== Config & Setup (UPDATED VERSION) ===== */
+const GAME_VERSION='2.0.0';
 const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
 const STAGE = document.getElementById('stage');
 const CV=document.getElementById('cv');
@@ -412,16 +419,15 @@ addEventListener('resize',resizeCanvas); resizeCanvas();
 
 /* ===== Colors & helpers (UPDATED FOR VAPORWAVE) ===== */
 function inverted(){return document.body.classList.contains('invert');}
-// NEW: Use CSS variables for a global color change
 const VAPOR_BG = document.documentElement.style.getPropertyValue('--bg-dark') || '#1A0A4B';
 const VAPOR_FG = document.documentElement.style.getPropertyValue('--fg-neon') || '#FF3DF9';
 const VAPOR_GR = document.documentElement.style.getPropertyValue('--ground-neon') || '#00FBFB';
 const VAPOR_AC = document.documentElement.style.getPropertyValue('--accent-pale') || '#FFC9E3';
 
-function FG(){return inverted()?VAPOR_BG:VAPOR_FG;} // Main foreground color (Neon Pink)
-function BG(){return inverted()?VAPOR_FG:VAPOR_BG;} // Main background color (Deep Blue/Purple)
-function GR(){return inverted()?VAPOR_BG:VAPOR_GR;} // Ground color (Neon Cyan)
-function AC(){return inverted()?VAPOR_FG:VAPOR_AC;} // Accent color (Pale Pink - Used for stars)
+function FG(){return inverted()?VAPOR_BG:VAPOR_FG;} 
+function BG(){return inverted()?VAPOR_FG:VAPOR_BG;}
+function GR(){return inverted()?VAPOR_BG:VAPOR_GR;}
+function AC(){return inverted()?VAPOR_FG:VAPOR_AC;}
 
 const i=v=>v|0, i2=v=>(v>>1)<<1;
 const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
@@ -458,7 +464,6 @@ function beep(kind='jump'){
     musicBus.gain.setTargetAtTime(back,t+0.35,0.25);
   }
 }
-/* Simple chiptune loop (unchanged) */
 let musicRunning=false, musicTimer=null, musicStep=0;
 const bpm=140, stepSec=60/bpm/2;
 const NT=n=>440*Math.pow(2,(n-69)/12);
@@ -469,8 +474,8 @@ function playNote(freq,mul,type='square',vol=0.10){
   ensureAC(); const t=ac.currentTime,osc=ac.createOscillator(),g=ac.createGain();
   osc.type=type; osc.frequency.setValueAtTime(freq,t);
   g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.01); g.gain.linearRampToValueAtTime(vol*0.6,t+0.06);
-  const end=t+mul*stepSec; g.gain.exponentialRampToValueAtTime(0.0001,end+0.08);
-  osc.connect(g).connect(musicBus||ac.destination); osc.start(t); osc.stop(end+0.1);
+  const end=t+mul*stepSec; g.gain.exponentialRampToValueAtTime(0.0001,end+0.18);
+  osc.connect(g).connect(musicBus||ac.destination); osc.start(t); osc.stop(end+0.2);
 }
 function playBass(freq,mul){ playNote(NT(freq),mul,'triangle',0.07); }
 function startMusic(){
@@ -496,7 +501,7 @@ function stopMusic(){ musicRunning=false; if(musicTimer){clearTimeout(musicTimer
 let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
 const TARGET_FPS=75; let last=performance.now(); let timeMs=0;
 
-/* ===== Game State, Speed Modes, Name & Avatar, Input (UNCHANGED) ===== */
+/* ===== Game State, Speed Modes, Name & Avatar, Input (RESTORED) ===== */
 let state='boot'; // boot | menu | play | paused | over
 let score=0, best=Number(localStorage.getItem('moon_best')||0);
 let scroll=0; let uiReturn='menu';
@@ -707,7 +712,6 @@ async function submitScore(name,score){
   }catch(err){ return { ok:false, error: 'network' }; }
 }
 
-
 /* ===== World / Difficulty / Physics (RESTORED) ===== */
 const floorY=H-84;
 let segments=[],entities=[],items=[];
@@ -757,7 +761,6 @@ function spawnAhead(targetX){
     const segW = Math.floor(gMin + RND() * (gMax - gMin));
     const gx   = (segments.length ? segments[segments.length - 1].x + segments[segments.length - 1].w : 0);
 
-    // make the floor
     segments.push({ x: gx, w: segW, type: 'ground' });
 
     let spawned = false;
@@ -775,12 +778,10 @@ function spawnAhead(targetX){
 
     else if (phase === 2) {
       if (RND() < 0.6) {
-        // coin
         const ix = gx + 40 + Math.floor(RND() * (segW - 80));
         items.push({ kind: 'chip', x: ix, y: floorY - 42, w: 10, h: 10, phase: RND()*6.28 });
         spawned = true;
       } else if (segW > 110) {
-        // alien
         const ax = gx + 46 + Math.floor(RND() * (segW - 110));
         entities.push({
           kind: 'alien',
@@ -846,7 +847,6 @@ function spawnAhead(targetX){
         entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
         spawned = true;
       } else {
-        // shield (rare in tutorial)
         const ix = gx + segW - 60;
         items.push({ kind: 'shield', x: ix, y: floorY - 50, w: 12, h: 12, phase: RND()*6.28 });
         spawned = true;
@@ -888,12 +888,10 @@ function spawnAhead(targetX){
     }
 
     else {
-      // coins (same)
       if (RND() < 0.6) {
         const ix = gx + 30 + Math.floor(RND() * (segW - 60));
         items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: RND()*6.28 });
       }
-      // alien (same)
       if (RND() < 0.35 && segW > 100) {
         const ax = gx + 40 + Math.floor(RND() * (segW - 100));
         entities.push({
@@ -907,17 +905,14 @@ function spawnAhead(targetX){
           range: 36 + Math.floor(RND() * 44)
         });
       }
-      // spike (same)
       if (RND() < 0.20 && segW > 120) {
         const sx = gx + 40 + Math.floor(RND() * (segW - 80));
         entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
       }
-      // shield (LOWERED)
       if (RND() < 0.09) {
         const ix = gx + segW - 58;
         items.push({ kind: 'shield', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
-      // slow (LOWERED)
       if (RND() < 0.07) {
         const ix = gx + 46;
         items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
@@ -935,35 +930,44 @@ function spawnAhead(targetX){
   }
 }
 
+/* ===== 8-BIT VAPORWAVE SPRITE FUNCTIONS (REDESIGNED) ===== */
 
-/* ===== VAPORWAVE SPRITE FUNCTIONS (REDESIGNED) ===== */
-
+// Player/Astronaut: 8-bit style, 16x22
 function astroClassic(x,y,pose='idle'){ 
   const f=FG(), b=BG(), g=GR(); 
   x=i(x); y=i(y); 
-  FILL(x+1,y,14,22,f); 
-  FILL(x+5,y+6,6,6,b); 
-  FILL(x-3,y+6,3,10,g);
+  
+  // Body (Neon Pink/Main FG)
+  FILL(x,y+2,16,20,f); 
+  // Helmet/Visor (12x10)
+  FILL(x+2,y,12,12,f); FILL(x+4,y+2,8,8,b);
+  // Jetpack / Tank (Cyan/Teal)
+  FILL(x-4,y+6,4,10,g);
+  
+  // Legs/Pose
   if(pose==='run1'){
-    FILL(x+2,y+18,5,2,g); FILL(x+10,y+18,4,2,f);
+    FILL(x+2,y+20,4,2,g); FILL(x+10,y+20,4,2,f); 
   } else if(pose==='run2'){
-    FILL(x+1,y+18,4,2,f); FILL(x+11,y+18,4,2,g);
+    FILL(x+1,y+20,4,2,f); FILL(x+11,y+20,4,2,g);
   } else if(pose==='jump'){
-    FILL(x+3,y+18,10,2,g); 
+    FILL(x+3,y+20,10,2,g); 
   }
 }
 function astroStripe(x,y,pose='idle'){ 
   astroClassic(x,y,pose); 
-  FILL(i(x)+7,i(y)+1,2,20,GR()); 
+  FILL(i(x)+7,i(y)+2,2,18,GR()); 
 } 
 function astroAlien(x,y,pose='idle'){ 
   const f=FG(), b=BG(), g=GR();
   x=i(x); y=i(y); 
-  FILL(x+3,y,10,8,g); FILL(x+2,y+8,12,10,g); FILL(x+4,y+18,8,4,g);
-  FILL(x+5,y+3,2,2,b); FILL(x+9,y+3,2,2,b);
-  if(pose==='run1'||pose==='run2'||pose==='jump'){ 
-    FILL(x+3,y+18,10,2,f); 
-  } 
+  // Blocky Alien Head/Body (16x22)
+  FILL(x+2,y,12,10,g); FILL(x,y+10,16,10,g); 
+  // Eyes
+  FILL(x+3,y+2,3,3,b); FILL(x+10,y+2,3,3,b);
+  // Legs
+  FILL(x+4,y+20,2,2,f); FILL(x+10,y+20,2,2,f);
+  // Antennae
+  FILL(x+6,y-2,4,2,g);
 }
 function astronaut(x,y,pose='idle'){ 
   if(charSkin==='stripe') return astroStripe(x,y,pose); 
@@ -971,20 +975,26 @@ function astronaut(x,y,pose='idle'){
   return astroClassic(x,y,pose); 
 }
 
+// Enemy Alien: 22x14
 function enemyAlien(x,y,blink=false){ 
   const f=FG(), b=BG(), g=GR(); 
   x=i(x); y=i(y); 
-  FILL(x,y,22,14,g); 
+  // Body (Cyan/Teal)
+  FILL(x+2,y,18,14,g); 
+  // Glitch/Neon Eyes (Pink)
   if(!blink){ 
     FILL(x+4,y+4,4,4,f); 
-    FILL(x+14,y+4,2,2,f); 
+    FILL(x+14,y+4,4,4,f); 
   } else {
-    FILL(x+8,y+6,6,2,f); 
+    // Glitch effect: add a dark block
+    FILL(x+8,y+6,6,2,b); 
   }
 }
 
+// UFO: 56 wide
 function ufo(x,y){ 
   const f=FG(); x=i(x); y=i(y); 
+  // Neon Pink Ship
   FILL(x-28,y,56,8,f); 
   FILL(x-22,y-8,44,6,f); 
   FILL(x-4,y-14,8,6,f); 
@@ -992,10 +1002,12 @@ function ufo(x,y){
 function beamScan(cx,topY,t){ const f=FG(); cx=i2(cx); topY=i2(topY); const wob=(Math.sin(t/420)+1)*1.2; for(let k=0;k<56;k+=6){ const y=topY+14+k; const half=8+((k/56)*9)|0; FILL(cx-(half+wob),y,(half+wob)*2,2,f);} }
 
 
+// Tile Ground: Checkered Vaporwave Grid
 function tileGround(x,y,w){ 
   const f=FG(), b=BG(), g=GR();
   x=i(x); y=i2(y); w=i(w); 
   
+  // Base platform (Cyan)
   FILL(x,y,w,44,g);
   
   // Grid Pattern 
@@ -1009,6 +1021,7 @@ function tileGround(x,y,w){
     }
   }
   
+  // Top neon line (Pink)
   FILL(x,y-2,w,2,f); 
 }
 
@@ -1017,19 +1030,19 @@ function drawPreviewTo(canvas, kind){
   const c=canvas.getContext('2d'); c.imageSmoothingEnabled=false;
   c.fillStyle=BG(); c.fillRect(0,0,canvas.width,canvas.height);
   const f=FG(), b=BG(), g=GR(); 
-  c.fillStyle=g; c.fillRect(2,40,28,2);
+  c.fillStyle=g; c.fillRect(2,40,28,2); // Cyan Ground
   
   if(kind==='alien'){ 
-    c.fillStyle=g; c.fillRect(11,6,10,8); c.fillRect(10,14,12,10); c.fillRect(12,24,8,4); 
-    c.fillStyle=b; c.fillRect(13,9,2,2); c.fillRect(17,9,2,2); 
-    c.fillStyle=f; c.fillRect(13,28,6,2); 
+    c.fillStyle=g; c.fillRect(10,6,12,6); c.fillRect(8,12,16,16,g); // Alien Body
+    c.fillStyle=b; c.fillRect(12,14,3,3); c.fillRect(17,14,3,3); // Dark Visor/Eyes
+    c.fillStyle=f; c.fillRect(13,28,6,2); // Pink Feet
   }
   else { 
-    c.fillStyle=g; c.fillRect(5,12,3,10); 
-    c.fillStyle=f; c.fillRect(8,6,16,22); 
-    c.fillStyle=b; c.fillRect(13,12,6,6); 
-    if(kind==='stripe'){ c.fillStyle=g; c.fillRect(15,7,2,20); }
-    c.fillStyle=f; c.fillRect(12,28,8,2);
+    c.fillStyle=g; c.fillRect(5,12,3,10); // Cyan Jetpack
+    c.fillStyle=f; c.fillRect(8,8,16,20); // Pink Body
+    c.fillStyle=f; c.fillRect(10,4,12,8); c.fillStyle=b; c.fillRect(13,6,6,4); // Helmet/Visor
+    if(kind==='stripe'){ c.fillStyle=g; c.fillRect(15,10,2,16); } // Cyan Stripe
+    c.fillStyle=f; c.fillRect(12,28,8,2); // Pink Feet
   }
 }
 function drawPreviews(){ drawPreviewTo(document.getElementById('pvClassic'),'classic'); drawPreviewTo(document.getElementById('pvStripe'),'stripe'); drawPreviewTo(document.getElementById('pvAlien'),'alien'); }
@@ -1050,7 +1063,7 @@ let tipIdx=0, tipTimer=null;
 function startTips(){ const el=document.getElementById('tipsLine'); clearInterval(tipTimer); el.textContent=tips[tipIdx%tips.length]; tipTimer=setInterval(()=>{tipIdx++; el.textContent=tips[tipIdx%tips.length];}, 2400); }
 function stopTips(){ clearInterval(tipTimer); tipTimer=null; }
 
-/* Tutorial seen flags (NEW, UI only) */
+/* Tutorial seen flags (UNCHANGED) */
 let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:false};
 
 /* Control (RESTORED) */
@@ -1210,13 +1223,13 @@ function update(u){
   updateCallouts(m);
 }
 
-/* ===== Draw Loop (UPDATED AESTHETICS) ===== */
+/* ===== Draw Loop (UPDATED AESTHETICS & BG) ===== */
 function draw(){
   const f=FG(),b=BG(), g=GR(), a=AC(); ctx.fillStyle=b; ctx.fillRect(0,0,W,H);
 
-  // 1. Pale Pink Stars/Accents
+  // 1. Pale Pink Stars/Accents (Sparse, less distracting)
   ctx.fillStyle=a; 
-  for(let n=0;n<100;n++){
+  for(let n=0;n<60;n++){ // Reduced count from 100 to 60
     const x1=((n*83)%2000)-(scroll*0.25%2000), y1=(n*131)%H; const xx1=((x1+2000)%2000)-100; if(xx1>=0&&xx1<W) ctx.fillRect(i(xx1),i(y1),1,1);
   }
   
@@ -1224,19 +1237,21 @@ function draw(){
   ctx.fillStyle='#FF71CE'; 
   const sunY = H*0.4;
   for(let r=40; r>0; r-=4) {
-      ctx.globalAlpha = 0.8 - r/40;
+      ctx.globalAlpha = 0.6 - r/40; // Reduced opacity
       ctx.beginPath();
       ctx.arc(W/2, sunY, r, 0, 2 * Math.PI);
       ctx.fill();
   }
   ctx.globalAlpha = 1;
 
-  // 3. Horizon Grid (Perspective effect)
+  // 3. Horizon Grid (Reduced opacity/drawings for less distraction)
   ctx.strokeStyle=g;
-  for(let k=0; k<W; k+=40){
+  ctx.globalAlpha = 0.45; // NEW: overall reduced opacity for the grid
+  for(let k=0; k<W; k+=80){ // Reduced density from 40 to 80
     ctx.beginPath(); ctx.moveTo(W/2, sunY); ctx.lineTo(k, H); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(W/2, sunY); ctx.lineTo(W-k, H); ctx.stroke();
   }
+  ctx.globalAlpha = 1;
   ctx.strokeStyle=f;
 
   // Draw Ground Platforms
@@ -1310,7 +1325,7 @@ function draw(){
     const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); beamScan(cx,cy-40+hover,t); const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
     
     ctx.font="22px 'Press Start 2P',monospace"; 
-    const title="M O O N R U N N E R";
+    const title="MKHKASG : M O O N R U N N E R";
     ctx.fillText(title,i((W-ctx.measureText(title).width)/2),cy+64);
     
     ctx.font="10px 'Press Start 2P',monospace";
