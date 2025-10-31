@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>MkhkAsg : MoonRunner — v3.0 "Aesthetic Apex"</title>
+<title>MkhkAsg : MoonRunner — v3.1 "Retro Controls"</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   /* --- BASE COLORS (Dynamically set via JS/Themes) --- */
@@ -215,7 +215,7 @@
   .ui[style*="display: none"]{pointer-events:none !important}
   
   
-/* Mobile pad adjustments for better touch targets */
+/* Hafiy mobile pad adjust (FROM v2.2.0) */
 body.playing #stage{ padding-bottom:1px; }
 body.playing canvas{
   width: 100vw;
@@ -226,14 +226,16 @@ body.playing canvas{
   margin:0 auto;
   transform:none;
 }
-.mobile .pad  { width:80px; height:80px; }
-.mobile .jump { width:100px; height:100px; }
+.mobile .pad  { width:76px; height:76px; }
+.mobile .jump { width:90px; height:90px; }
 .hud, .hud_right { display:none !important; }
-body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:10px; }
+body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:130px; }
+body.playing .mobile .pad{ width:92px; height:92px; font-size:20px; }
+body.playing .mobile .jump{ width:108px; height:108px; }
 @media (max-height:700px){
-  body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:10px; }
-  .mobile .pad{ width:68px; height:68px; }
-  .mobile .jump{ width:84px; height:84px; }
+  body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:105px; }
+  body.playing .mobile .pad{ width:80px; height:80px; }
+  body.playing .mobile .jump{ width:94px; height:94px; }
 }
 
 /* --- DESKTOP VIEW (mouse/keyboard) --- */
@@ -329,7 +331,7 @@ body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:10px; }
       <div id="settingsBtn" class="btn">☼ SETTINGS</div>
       <div id="creditsBtn" class="btn">ℹ CREDITS</div>
     </div>
-    <div class="ghost mt12" id="versionText">v3.0 “Aesthetic Apex” • WASD/Arrows + Space</div>
+    <div class="ghost mt12" id="versionText">v3.1 “Retro Controls” • WASD/Arrows + Space</div>
   </div>
 </div>
 
@@ -514,7 +516,7 @@ body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:10px; }
 
 <script>
 /* ===== Config (UPDATED VERSION) ===== */
-const GAME_VERSION='3.0.6-SYNTAX-FIX'; // Updated version
+const GAME_VERSION='3.1.0-RetroControls'; // Updated version
 const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
 const STAGE = document.getElementById('stage');
 const CV=document.getElementById('cv');
@@ -583,7 +585,7 @@ function applyTheme(themeKey) {
   document.documentElement.style.setProperty('--alien-sec', theme.al);
   
   // Update UI text (if needed)
-  document.getElementById('versionText').textContent = `v3.0 “Aesthetic Apex” - ${theme.name}`;
+  document.getElementById('versionText').textContent = `v3.1 “Retro Controls” - ${theme.name}`;
   // Redraw item previews immediately when theme changes
   drawHowToPreviews(); // Redraw item icons for 'How to Play'
   drawRecapPreviews(); // NEW: Redraw item icons for Game Over
@@ -1821,5 +1823,6 @@ boot();
 </script>
 </body>
 </html>
+
 
 
