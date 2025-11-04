@@ -1019,7 +1019,7 @@ document.getElementById('settingsBtn').onclick = () => {
 };
 document.getElementById('lbBtn').onclick  =()=>{ uiReturn='menu'; showUI('lb'); lbActivate('daily'); };
 document.getElementById('creditsBtn').onclick=()=> showUI('credits');
-document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
+document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; setPlaying(true); };
 document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
 // FIX: pauseSettingsBtn is now SETTINGS
 document.getElementById('pauseSettingsBtn').onclick = () => {
@@ -1073,6 +1073,7 @@ document.getElementById('settingsClose').onclick = () => {
   hideUI('settings');
   if (returnFromSettings === 'play') {
     state = 'play';
+    setPlaying(true); // <-- ADDED THIS FIX
     document.getElementById('menuBtn').style.display = 'none';
   } else {
     showUI('menu');
@@ -2349,15 +2350,15 @@ function loop(now){
 
 const __showUI = showUI;
 showUI = function(id, lock=false){
-  document.getElementById(id).style.display='flex';
+  __showUI(id); // Use the original function
   if(lock && state==='play'){ state='paused'; }
   if(id==='pause'){ startTips(); setPlaying(false); }
 };
 
 const __hideUI = hideUI;
 hideUI = function(id){
-  document.getElementById(id).style.display='none';
-  if(id==='pause'){ stopTips(); setPlaying(true); }
+  __hideUI(id); // Use the original function
+  if(id==='pause'){ stopTips(); } // Removed setPlaying(true) to fix visual bug
 };
 
 drawPreviews();
@@ -2367,4 +2368,5 @@ boot();
 </script>
 </body>
 </html>
+
 
