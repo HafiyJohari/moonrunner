@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <!-- TITLE UPDATED -->
-<title>MkhkAsg : MoonRunner — v3.4 "Synthwave"</title>
+<title>MkhkAsg : MoonRunner — v3.8 "Re-balance"</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   /* --- BASE COLORS (Dynamically set via JS/Themes) --- */
@@ -15,6 +15,8 @@
     --ground-neon: #00FFCC;
     --accent-pale: #FFA500;
     --alien-sec: #FF00FF;
+    /* NEW: Text stroke color for readability */
+    --text-stroke: #000000;
   }
 
   html,body{
@@ -40,7 +42,8 @@
   /* Mobile HUD overlay */
   .mobile{
     position:absolute;
-    inset:auto 0 max(env(safe-area-inset-bottom,0px), 10px) 0;
+    /* CHANGED: inset-top from 'auto' to '0' to allow top-right positioning */
+    inset: 0 0 max(env(safe-area-inset-bottom,0px), 10px) 0;
     display:none;
     pointer-events:none;
     z-index:30;
@@ -186,15 +189,22 @@
   /* Grid settings for character previews */
   .grid{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
   /* Constrained the individual preview item width to allow 5 to wrap cleanly on small screens */
-  .preview{display:flex;flex-direction:column;align-items:center;gap:4px; width: 80px; text-align: center;}
+  .preview{display:flex;flex-direction:column;align-items:center;gap:4px; width: 100px; text-align: center;}
   
   /* NEW: Constrain avatar grid to force 3-2 layout */
   #avatars .grid {
-    max-width: 270px; /* 3 * 80px + 2 * 10px gap = 260px. Add padding. */
+    max-width: 320px; /* 3 * 100px + 2 * 10px gap = 320px. */
   }
   /* Let theme buttons be wider than 80px */
   #themes .preview {
     width: auto; 
+  }
+  
+  /* NEW: Fix line-height overlap on buttons */
+  #avatars .grid .btn {
+    line-height: 1.4;
+    padding-top: 8px;
+    padding-bottom: 8px;
   }
   
   /* Style for items in the How To menu (REMOVED) */
@@ -202,6 +212,15 @@
   /* Center Caption */
   #captionWrap{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:20}
   #caption{max-width:min(92vw,900px);text-align:center;font-family:'Press Start 2P',monospace;line-height:1.8;color:var(--accent-pale);opacity:0;transform:translateY(6px);transition:opacity .28s, transform .28s}
+  /* NEW: Text outline for readability on bright backgrounds */
+  #caption .title, #caption .sub {
+    text-shadow:
+      -1px -1px 0 var(--text-stroke),
+       1px -1px 0 var(--text-stroke),
+      -1px  1px 0 var(--text-stroke),
+       1px  1px 0 var(--text-stroke),
+       0    0 4px var(--text-stroke);
+  }
   #caption.show{opacity:1;transform:translateY(0)}
   #caption .title{font-size:18px;letter-spacing:1px;color:var(--fg-neon)}
   #caption .sub{font-size:14px;color:var(--ground-neon)}
@@ -242,6 +261,19 @@ body.playing .mobile .jump{ width:108px; height:108px; }
   body.playing .mobile .leftGrp, body.playing .mobile .rightGrp{ bottom:105px; }
   body.playing .mobile .pad{ width:80px; height:80px; }
   body.playing .mobile .jump{ width:94px; height:94px; }
+}
+
+/* NEW: Mobile Pause Button (Top Right) */
+.mobile #btnPause {
+  position: absolute;
+  top: max(env(safe-area-inset-top, 0px), 10px);
+  right: 10px;
+  bottom: auto; /* Unset bottom */
+  left: auto; /* Unset left */
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  border-radius: 12px;
 }
 
 /* --- DESKTOP VIEW (mouse/keyboard) --- */
@@ -302,8 +334,11 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <div id="btnRight" class="pad">▶</div>
     </div>
     <div class="rightGrp">
+      <!-- MOVED: Pause Button is now a direct child of .mobile -->
       <div id="btnJump" class="pad jump">⤒</div>
     </div>
+    <!-- NEW: Mobile Pause Button (Moved here for CSS positioning) -->
+    <div id="btnPause" class="pad">☰</div>
   </div>
 </div>
 
@@ -337,8 +372,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <div id="settingsBtn" class="btn">☼ SETTINGS</div>
       <div id="creditsBtn" class="btn">ℹ CREDITS</div>
     </div>
-    <!-- VERSION TEXT UPDATED -->
-    <div class="ghost mt12" id="versionText">v3.4 “Synthwave” • WASD/Arrows + Space</div>
+    <div class="ghost mt12" id="versionText">v3.8 “Re-balance” • WASD/Arrows + Space</div>
   </div>
 </div>
 
@@ -370,7 +404,10 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <canvas id="recapShield" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
       <span id="recapShieldScore">0</span> •
       <canvas id="recapSlow" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
-      <span id="recapSlowScore">0</span>
+      <span id="recapSlowScore">0</span> •
+      <!-- NEW: Jetpack Recap -->
+      <canvas id="recapJetpack" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+      <span id="recapJetpackScore">0</span>
     </div>
     <div id="nameGate" class="mt12">
       <div class="ghost">Enter name to submit score:</div>
@@ -388,7 +425,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
   </div>
 </div>
 
-<!-- Settings (TITLE UPDATED + NEW BUTTON) -->
+<!-- Settings (TITLE UPDATED) -->
 <div id="settings" class="ui">
   <div class="card">
     <h2>System Settings</h2>
@@ -397,7 +434,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <div id="setMusic" class="btn">♪ Music: On</div>
       <div id="setContrast" class="btn">⬛/⬜ CONTRAST</div>
     </div>
-    <!-- NEW: MUSIC TRACK ROW -->
+    <!-- NEW: Music Track Selector -->
     <div class="row mt12">
       <div id="setTrack" class="btn">♫ TRACK: CLASSIC</div>
     </div>
@@ -483,6 +520,11 @@ body.playing .mobile .jump{ width:108px; height:108px; }
         <canvas id="itemSlow" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
         Cassettes = 3 s slow-motion (⏳)
     </div>
+    <!-- NEW: Jetpack How To -->
+    <div class="mt6 ghost" style="display:flex; align-items:center; gap:8px;">
+        <canvas id="itemJetpack" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+        Fuel Cans = 5 s of jetpack flight (🚀)
+    </div>
     <div class="mt8">Threats: Glitch Aliens and Wireframe Spikes — avoid them or lose a shield/life!</div>
     <div class="row mt12"><div id="howClose" class="btn">CLOSE</div></div>
   </div>
@@ -518,8 +560,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
     <div class="mt8">Design & code: <b>MkhkAsg</b></div>
     <div class="mt6">Vaporwave Redesign: <b>A.I. Collaborative</b></div>
     <div class="mt6">Font: <b>Press Start 2P</b> (CodeMan38) — SIL Open Font License 1.1</div>
-    <!-- CREDITS UPDATED -->
-    <div class="mt6">Music & SFX: <b>Original in-engine chiptune & synthwave</b> via Web Audio API</div>
+    <div class="mt6">Music & SFX: <b>Original in-engine chiptune</b> via Web Audio API</div>
     <div class="mt6 ghost">Scores go to a Google Sheet leaderboard. Keep names clean.</div>
     <div class="row mt12"><div id="creditsClose" class="btn">CLOSE</div></div>
   </div>
@@ -528,7 +569,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
 
 <script>
 /* ===== Config (UPDATED VERSION) ===== */
-const GAME_VERSION='3.4.0-Synthwave'; // Updated version
+const GAME_VERSION='3.8.0-Re-balance'; // Updated version
 const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
 const STAGE = document.getElementById('stage');
 const CV=document.getElementById('cv');
@@ -595,10 +636,12 @@ function applyTheme(themeKey) {
   document.documentElement.style.setProperty('--ground-neon', theme.gr);
   document.documentElement.style.setProperty('--accent-pale', theme.ac);
   document.documentElement.style.setProperty('--alien-sec', theme.al);
+  // NEW: Set text stroke color (black for most, but white for classic)
+  document.documentElement.style.setProperty('--text-stroke', theme.name === 'Classic Cosmos' ? '#FFFFFF' : '#000000');
   
   // Update UI text (if needed)
   // VERSION TEXT UPDATED
-  document.getElementById('versionText').textContent = `v3.4 “Synthwave” - ${theme.name}`;
+  document.getElementById('versionText').textContent = `v3.8 “Re-balance” - ${theme.name}`;
   // Redraw item previews immediately when theme changes
   drawHowToPreviews(); // Redraw item icons for 'How to Play'
   drawRecapPreviews(); // NEW: Redraw item icons for Game Over
@@ -618,11 +661,10 @@ const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
 const pad=(n,w=5)=>String(n).padStart(w,'0');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-/* ===== WebAudio (NEW TRACK LOGIC) ===== */
+/* ===== WebAudio (UNCHANGED) ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
-// NEW: Music track state variable
-let currentMusicTrack = localStorage.getItem('moon_track') || 'classic';
-let musicVol=0.085, sfxVol=0.40;
+let currentMusicTrack = localStorage.getItem('moon_track') || 'classic'; // <-- ADD THIS
+let musicVol=0.045, sfxVol=0.28;
 let musicBus=null, sfxBus=null;
 function ensureAC(){
   if(!ac){
@@ -645,6 +687,8 @@ function beep(kind='jump'){
     slow:[550,770,.10,.12],
     flyby:[120, 1200, 0.4, 0.15],
     slow_off:[770, 550, 0.1, 0.12],
+    jetpack_get:[1100, 1400, .15, .10], // NEW: Jetpack pickup sound
+    warn:[550, 550, .08, .08], // NEW: Warning blip
     game_over:[220, 110, 0.5, 0.15] // NEW: Game Over sound
   };
   const [f1,f2,dur,vol]=T[kind]||T.jump;
@@ -669,8 +713,6 @@ function beep(kind='jump'){
     musicBus.gain.setTargetAtTime(back,t+0.35,0.25);
   }
 }
-
-// --- REWRITTEN MUSIC ENGINE (v3.4) ---
 let musicRunning=false, musicTimer=null, musicStep=0, musicStepSynth=0; // NEW: separate synth step
 const bpm=140, stepSec=60/bpm/2; // Classic BPM
 const bpmSynth=110, stepSecSynth=60/bpmSynth/2; // Synthwave BPM (8th notes)
@@ -680,7 +722,6 @@ const NT=n=>440*Math.pow(2,(n-69)/12);
 const NOTES={C4:60,D4:62,E4:64,F4:65,G4:67,A4:69,B4:71,C5:72,D5:74,E5:76,F5:77,G5:79,A5:81};
 function leadPattern(){return[[NOTES.E5,1],[NOTES.G5,1],[NOTES.C5,1],[NOTES.D5,1],[NOTES.E5,1],[NOTES.G5,1],[NOTES.A5,1],[NOTES.G5,1],[NOTES.E5,1],[NOTES.C5,1],[NOTES.A4,1],[NOTES.C5,1],[NOTES.E5,1],[NOTES.D5,1],[NOTES.C5,2],[NOTES.F5,1],[NOTES.A5,1],[NOTES.C5,1],[NOTES.D5,1],[NOTES.F5,1],[NOTES.A5,1],[NOTES.G5,1],[NOTES.F5,1],[NOTES.E5,1],[NOTES.D5,1],[NOTES.C5,1],[NOTES.B4,1],[NOTES.C5,4]];}
 function bassPattern(){const root=[NOTES.C4,NOTES.A4-12,NOTES.F5-24,NOTES.G5-24];const seq=[];for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]);return seq;}
-
 function playNote(freq,mul,type='square',vol=0.10){
   ensureAC(); const t=ac.currentTime,osc=ac.createOscillator(),g=ac.createGain();
   osc.type=type; osc.frequency.setValueAtTime(freq,t);
@@ -779,8 +820,8 @@ function leadPatternSynth(){
   }
   return pattern;
 }
-// --- END SYNTHWAVE FUNCTIONS ---
 
+// --- END SYNTHWAVE FUNCTIONS ---
 
 // REWRITTEN: startMusic function to handle both tracks
 function startMusic(){
@@ -853,8 +894,6 @@ function stopMusic(){
   musicRunning=false; 
   if(musicTimer){ clearTimeout(musicTimer); musicTimer=null; } 
 }
-// --- END REWRITTEN MUSIC ENGINE ---
-
 
 /* ===== RNG & timebase (UNCHANGED) ===== */
 let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
@@ -885,6 +924,7 @@ let charSkin = localStorage.getItem('moon_char') || 'classic';
 const keys={};
 addEventListener('keydown',e=>{
   if (document.activeElement && document.activeElement.tagName==='INPUT') return;
+  if(state === 'gameover_transition') return; // NEW: Block input in transition
   if(['ArrowLeft','ArrowRight','ArrowUp',' ','w','W','a','A','d','D','Escape','Enter'].includes(e.key)) e.preventDefault();
   keys[e.key]=true;
   if(e.key==='Escape'){
@@ -896,7 +936,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{ if (document.activeElement && document.activeElement.tagName==='INPUT') return; keys[e.key]=false; });
 function bindTouch(id,on,off){ const el=document.getElementById(id);
-  const down=ev=>{ev.preventDefault();on();};
+  const down=ev=>{ev.preventDefault();if(state === 'gameover_transition') return;on();};
   const up=ev=>{ev.preventDefault();off();};
   el.addEventListener('touchstart',down,{passive:false});
   el.addEventListener('touchend',up,{passive:false});
@@ -905,6 +945,8 @@ function bindTouch(id,on,off){ const el=document.getElementById(id);
 bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
 bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
 bindTouch('btnJump', ()=>{ keys[' ']=true; }, ()=>{ keys[' ']=false; });
+// NEW: Bind mobile pause button
+bindTouch('btnPause', ()=>{ if(state==='play'){ state='paused'; showUI('pause',true); } }, ()=>{}); 
 document.getElementById('music').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent = musicMuted?'♪ Music Off':'♪ Music'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('mute').onclick =(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent = sfxMuted?'🔇 SFX':'🔈 SFX'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
 document.getElementById('invert').onclick=()=> document.body.classList.toggle('invert');
@@ -968,11 +1010,10 @@ document.querySelectorAll('#themes .btn[data-theme]').forEach(b=>{
     showUI('menu');
   });
 });
-// FIX: settingsBtn is now SETTINGS (UPDATED)
+// FIX: settingsBtn is now SETTINGS
 document.getElementById('settingsBtn').onclick = () => {
   document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
-  // NEW: Update track button text
-  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`;
+  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`; // UPDATE TEXT
   returnFromSettings = 'menu';
   showUI('settings');
 };
@@ -980,12 +1021,11 @@ document.getElementById('lbBtn').onclick  =()=>{ uiReturn='menu'; showUI('lb'); 
 document.getElementById('creditsBtn').onclick=()=> showUI('credits');
 document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
 document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
-// FIX: pauseSettingsBtn is now SETTINGS (UPDATED)
+// FIX: pauseSettingsBtn is now SETTINGS
 document.getElementById('pauseSettingsBtn').onclick = () => {
   hideUI('pause');
   document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
-  // NEW: Update track button text
-  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`;
+  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`; // UPDATE TEXT
   returnFromSettings = 'play';
   showUI('settings');
 };
@@ -1145,17 +1185,17 @@ function getDiff(){
 }
 const GRAV=0.65,JUMP=11.6,FRICTION=0.86;
 const JUMP_BUFFER_MS=120;
-const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0};
-let coinsPicked=0, shieldsPicked=0, slowUsed=0;
+const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,jetpack:0, warnedSlow: false, warnedJetpack: false, warnedInv: false, auraPulse:0,auraFlash:0,inv:0};
+let coinsPicked=0, shieldsPicked=0, slowUsed=0, jetpacksUsed=0;
 let lastNearMissTime=0;
 let milestoneIndex=0, flyby=null;
 function triggerFlyby(){ const dir = Math.random()<0.5 ? -1 : 1; flyby = { x: dir<0 ? W+60 : -60, y: 80 + Math.random()*60, dir, t: 0, w: 56, h: 20 }; beep('flyby'); }
 function resetWorld(){
   segments=[];entities=[];items=[];particles=[];scroll=0;timeMs=0;score=0; // Clear particles
   screenShake = 0; wasSlowed = false; // NEW: Reset flags
-  coinsPicked=0; shieldsPicked=0; slowUsed=0;
+  coinsPicked=0; shieldsPicked=0; slowUsed=0; jetpacksUsed=0;
   lastNearMissTime=0; milestoneIndex=0; flyby=null;
-  Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0});
+  Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,jetpack:0, warnedSlow: false, warnedJetpack: false, warnedInv: false, auraPulse:0,auraFlash:0,inv:0});
   segments.push({x:0,w:440,type:'ground'});
   spawnAhead(W*2.4);
 }
@@ -1304,11 +1344,16 @@ function spawnAhead(targetX){
       }
     }
     else {
+      // PHASE 6+ (RE-BALANCED)
+      // We can spawn a chip (60% chance)
       if (RND() < 0.6) {
         const ix = gx + 30 + Math.floor(RND() * (segW - 60));
         items.push({ kind: 'chip', x: ix, y: floorY - 40, w: 10, h: 10, phase: RND()*6.28 });
       }
-      if (RND() < 0.35 && segW > 100) {
+      
+      // We can ALSO spawn one enemy or powerup (if...else chain)
+      const roll = RND();
+      if (roll < 0.20 && segW > 100) { // alien (20% chance)
         const ax = gx + 40 + Math.floor(RND() * (segW - 100));
         entities.push({
           kind: 'alien',
@@ -1321,25 +1366,30 @@ function spawnAhead(targetX){
           range: 36 + Math.floor(RND() * 44)
         });
       }
-      if (RND() < 0.20 && segW > 120) {
+      else if (roll < 0.35 && segW > 120) { // spike (15% chance)
         const sx = gx + 40 + Math.floor(RND() * (segW - 80));
         entities.push({ kind: 'spike', x: sx, y: floorY - 60, w: 40, h: 10 });
       }
-      if (RND() < 0.15) { // NEW: Drone
+      else if (roll < 0.45) { // drone (10% chance)
         const dx = gx + 40 + Math.floor(RND() * (segW - 80));
         entities.push({
           kind: 'drone', x: dx, y: floorY - 80, w: 16, h: 10,
           baseY: floorY - 80, range: 40 + RND() * 40, phase: RND() * 6.28
         });
       }
-      if (RND() < 0.09) {
+      else if (roll < 0.52) { // shield (7% chance)
         const ix = gx + segW - 58;
         items.push({ kind: 'shield', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
-      if (RND() < 0.07) {
+      else if (roll < 0.58) { // slow (6% chance)
         const ix = gx + 46;
         items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
+      else if (roll < 0.63) { // jetpack (5% chance)
+        const ix = gx + 40 + Math.floor(RND() * (segW - 80));
+        items.push({ kind: 'jetpack', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
+      }
+      // ... 37% chance of nothing extra spawning
     }
     let gap;
     if (phase <= 1) {
@@ -1582,7 +1632,7 @@ function drawItem(canvas, itemKind) {
     if (!canvas) return; // Safety check
     const c = canvas.getContext('2d');
     c.imageSmoothingEnabled = false;
-    const f=FG(), b=BG(), g=GR();
+    const f=FG(), b=BG(), g=GR(), a=AC();
     c.fillStyle = b; c.fillRect(0, 0, canvas.width, canvas.height);
     const x = 0, y = 0; // Canvas is sized to the item
     
@@ -1605,12 +1655,19 @@ function drawItem(canvas, itemKind) {
       c.fillStyle = g; c.fillRect(x + 7, y + 4, 3, 3);
       c.fillStyle = g; c.fillRect(x + 1, y + 1, 10, 1);
     }
+    if (itemKind === 'jetpack') { // NEW
+      c.fillStyle = g; c.fillRect(x + 3, y, 6, 12);
+      c.fillStyle = f; c.fillRect(x + 4, y + 1, 4, 10);
+      c.fillStyle = b; c.fillRect(x + 5, y + 2, 2, 8);
+      c.fillStyle = a; c.fillRect(x + 4, y + 9, 4, 2);
+    }
 }
 function drawHowToPreviews(){
     try {
       drawItem(document.getElementById('itemChip'), 'chip');
       drawItem(document.getElementById('itemShield'), 'shield');
       drawItem(document.getElementById('itemSlow'), 'slow');
+      drawItem(document.getElementById('itemJetpack'), 'jetpack'); // NEW
     } catch(e) {
       console.error("Error drawing item previews:", e);
     }
@@ -1622,6 +1679,7 @@ function drawRecapPreviews(){
       drawItem(document.getElementById('recapChip'), 'chip');
       drawItem(document.getElementById('recapShield'), 'shield');
       drawItem(document.getElementById('recapSlow'), 'slow'); // FIX: Was 'itemSlow'
+      drawItem(document.getElementById('recapJetpack'), 'jetpack'); // NEW
     } catch(e) {
       console.error("Error drawing recap previews:", e);
     }
@@ -1637,12 +1695,12 @@ const tips=["Esc to pause. Close resumes.","Tap ⤒ to jump on mobile.","Collect
 let tipIdx=0, tipTimer=null;
 function startTips(){ const el=document.getElementById('tipsLine'); clearInterval(tipTimer); el.textContent=tips[tipIdx%tips.length]; tipTimer=setInterval(()=>{tipIdx++; el.textContent=tips[tipIdx%tips.length];}, 2400); }
 function stopTips(){ clearInterval(tipTimer); tipTimer=null; }
-let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:false, drone:false};
+let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:false, drone:false, jetpack:false};
 let jumpBuffer=0;
 function start(){
   hideAllUI(); resetWorld(); state='play';
     setPlaying(true);
-  seenTutorial = { coin:false, shield:false, slow:false, alien:false, spike:false, drone:false };
+  seenTutorial = { coin:false, shield:false, slow:false, alien:false, spike:false, drone:false, jetpack:false };
 
   statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   document.getElementById('menuBtn').style.display='none';
@@ -1650,9 +1708,9 @@ function start(){
   stopTips();
   showCaption('MoonRunner — keep moving…','Collect chips, avoid danger.',2200);
 }
-function useShield(){ player.shields=clamp(player.shields-1,0,3); player.auraFlash=180; player.inv=150; addCall('HIT!',player.x+8,player.y-6); beep('hit'); screenShake = 15; }
+function useShield(){ player.shields=clamp(player.shields-1,0,3); player.auraFlash=180; player.inv=150; player.warnedInv = false; addCall('HIT!',player.x+8,player.y-6); beep('hit'); screenShake = 15; }
 function gameOver(){
-  state='over';
+  state='gameover_transition'; // NEW: Intermediate state to prevent key mashing
   setPlaying(false);
   beep('game_over'); // NEW: Play sound
   screenShake = 15;
@@ -1670,6 +1728,7 @@ function gameOver(){
     document.getElementById('recapChipScore').textContent = coinsPicked;
     document.getElementById('recapShieldScore').textContent = shieldsPicked;
     document.getElementById('recapSlowScore').textContent = slowUsed;
+    document.getElementById('recapJetpackScore').textContent = jetpacksUsed; // NEW
     drawRecapPreviews(); // Redraw icons just in case
 
     const saved=(localStorage.getItem('moon_name')||'').trim();
@@ -1717,11 +1776,18 @@ function update(u){
   if(left)  player.vx -= ACCEL_U*m;
   if(right) player.vx += ACCEL_U*m;
   player.vx *= Math.pow(FRICTION,m);
-  player.vy += GRAV_U*m;
+  
+  // UPDATED: Gravity (only applies if not using jetpack)
+  if (player.jetpack > 0 && jump) {
+      player.vy = clamp(player.vy - (ACCEL_U * 0.5 * m), -JUMP * 0.7, 10); // Jetpack thrust
+  } else {
+      player.vy += GRAV_U*m; // Normal gravity
+  }
 
   const now=performance.now();
   if(player.on) jumpBuffer=now+JUMP_BUFFER_MS;
-  if(jump && now<=jumpBuffer){ player.vy=-JUMP; player.on=false; jumpBuffer=0; beep('jump'); }
+  // UPDATED: Jump (only if not using jetpack)
+  if(jump && now<=jumpBuffer && player.jetpack <= 0){ player.vy=-JUMP; player.on=false; jumpBuffer=0; beep('jump'); }
 
   const prevX=player.x, prevY=player.y;
   player.x += player.vx*m; player.y += player.vy*m; scroll += worldScroll*m;
@@ -1796,6 +1862,7 @@ function update(u){
     if(!seenTutorial.coin   && it.kind==='chip'   && it.x - scroll < W-20){ showCaption('Collect chips','Score +200 × mode'); seenTutorial.coin=true; }
     if(!seenTutorial.shield && it.kind==='shield' && it.x - scroll < W-20){ showCaption('Shield','Protects up to 3 hits'); seenTutorial.shield=true; }
     if(!seenTutorial.slow   && it.kind==='slow'   && it.x - scroll < W-20){ showCaption('Slow field','3s slow motion'); seenTutorial.slow=true; }
+    if(!seenTutorial.jetpack && it.kind==='jetpack' && it.x - scroll < W-20){ showCaption('Jetpack Fuel!','Hold jump to fly'); seenTutorial.jetpack=true; } // NEW
 
     if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:rect.x,y:rect.y,w:rect.w,h:rect.h})){
       if(it.kind==='chip'){ 
@@ -1817,6 +1884,12 @@ function update(u){
           addCall('Slow-mo!',player.x+8,player.y-6); beep('slow'); 
           spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 12);
       }
+      if(it.kind==='jetpack'){ // NEW
+          player.jetpack = 5 * TARGET_FPS; // 5 seconds of fuel
+          jetpacksUsed++; 
+          addCall('Jetpack!',player.x+8,player.y-6); beep('jetpack_get'); 
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 20);
+      }
       items.splice(k,1);
     }else{ it._drawY=rect.y; }
   }
@@ -1826,11 +1899,42 @@ function update(u){
   if(player.slow>0) {
     player.slow=Math.max(0,player.slow-m);
     wasSlowed = true; // Mark that we are currently in slow-mo
+    // NEW: Warning sound
+    if (player.slow > 0 && player.slow < (1.0 * TARGET_FPS) && !player.warnedSlow) {
+        player.warnedSlow = true;
+        beep('warn');
+    }
   } else if (wasSlowed) { // player.slow is 0, but wasSlowed is true
     wasSlowed = false; // Reset the flag
+    player.warnedSlow = false; // Reset flag
     beep('slow_off'); // Play the sound
   }
-  if(player.inv>0)       player.inv=Math.max(0,player.inv-m);
+  if(player.jetpack > 0) { // NEW: Deplete jetpack fuel
+    player.jetpack = Math.max(0, player.jetpack - m);
+    // NEW: Warning sound
+    if (player.jetpack > 0 && player.jetpack < (1.0 * TARGET_FPS) && !player.warnedJetpack) {
+        player.warnedJetpack = true;
+        beep('warn');
+    }
+    
+    if (player.jetpack === 0) {
+        player.warnedJetpack = false; // Reset flag
+        if (player.slow === 0) { // Only play if slow isn't *also* ending
+            beep('slow_off'); // Reuse "powerup over" sound
+        }
+    }
+  }
+  if(player.inv > 0) {
+      player.inv=Math.max(0,player.inv-m);
+      // NEW: Warning sound
+      if (player.inv > 0 && player.inv < (1.0 * TARGET_FPS) && !player.warnedInv) {
+          player.warnedInv = true;
+          beep('warn');
+      }
+      if (player.inv === 0) {
+          player.warnedInv = false; // Reset flag
+      }
+  }
 
   score += (0.069*m + Math.max(0,player.vx)*0.03*m) * scoreMul;
 
@@ -2066,6 +2170,13 @@ function draw(){
       const scan=((timeMs/120+(it.phase||0))%10)|0; 
       FILL(x+1,y+1,10,1,GR());
     }
+    if(it.kind==='jetpack'){ // NEW
+      const pulse=(Math.sin((timeMs/500)+(it.phase||0))*0.5+0.5)|0;
+      FILL(x+3,y,6,12,GR());
+      FILL(x+4,y+1,4,10,f);
+      FILL(x+5,y+2,2,8,b);
+      if(pulse) FILL(x+4,y+9,4,2,AC());
+    }
   }
 
   // Draw Player
@@ -2093,6 +2204,22 @@ function draw(){
   if(!invBlink){ astronaut(player.x,player.y,pose); }
   else{ FILL(player.x,player.y,player.w,1,f); FILL(player.x,player.y+player.h-1,player.w,1,f); FILL(player.x,player.y,1,player.h,f); FILL(player.x+player.w-1,player.y,1,player.h,f); }
 
+  // NEW: Jetpack particles
+  if (player.jetpack > 0 && (keys['ArrowUp']||keys['w']||keys['W']||keys[' '])) {
+      const pX = player.x + player.w / 2;
+      const pY = player.y + player.h - 2;
+      for(let i=0; i<2; i++) {
+          particles.push({
+              x: pX + (RND() - 0.5) * 8,
+              y: pY,
+              vx: (RND() - 0.5) * 1,
+              vy: RND() * 3 + 2, // Downwards
+              life: 10 + RND() * 10,
+              color: (RND() < 0.5) ? a : f // Accent and FG colors
+          });
+      }
+  }
+
   // NEW: Draw particles
   ctx.globalAlpha = 0.8;
   for (const p of particles) {
@@ -2119,7 +2246,8 @@ function draw(){
   ctx.textAlign='right';
   const dots=['○','○','○']; for(let k=0;k<player.shields;k++) dots[k]='●';
   const slowText = player.slow > 0 ? `⏳ ${Math.ceil(player.slow/TARGET_FPS)}s` : '';
-  ctx.fillText(`${slowText} 🛡 ${dots.join(' ')}`, W-10, 18);
+  const jetpackText = player.jetpack > 0 ? `🚀 ${Math.ceil(player.jetpack/TARGET_FPS)}s` : ''; // NEW
+  ctx.fillText(`${jetpackText} ${slowText} 🛡 ${dots.join(' ')}`, W-10, 18);
   ctx.textAlign='left';
 
   // Menu Screen Drawing (Simplified, less text background)
@@ -2173,7 +2301,23 @@ async function boot(){
 function loop(now){
   const dtSec=(now-last)/1000; last=now;
   const u=Math.min(dtSec,0.10)*TARGET_FPS;
+  
   if(state==='play') update(u);
+  // FIX: Don't update in transition state
+  else if (state==='gameover_transition') {
+      // Keep updating particles
+      updateCallouts(u);
+      for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx * u;
+          p.y += p.vy * u;
+          p.vy += 0.1 * u; // a little gravity
+          p.life -= u;
+          if (p.life <= 0) {
+              particles.splice(i, 1);
+          }
+      }
+  }
   
   // NEW: Update particles & callouts ALWAYS (even in menu/pause)
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -2223,3 +2367,4 @@ boot();
 </script>
 </body>
 </html>
+
