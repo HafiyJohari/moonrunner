@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <!-- TITLE UPDATED -->
-<title>MkhkAsg : MoonRunner — v3.4 "Synthwave"</title>
+<title>MkhkAsg : MoonRunner — v3.5 "Jetpack"</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   /* --- BASE COLORS (Dynamically set via JS/Themes) --- */
@@ -186,12 +186,20 @@
   /* Grid settings for character previews */
   .grid{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
   /* Constrained the individual preview item width to allow 5 to wrap cleanly on small screens */
-  .preview{display:flex;flex-direction:column;align-items:center;gap:4px; width: 80px; text-align: center;}
+  .preview{display:flex;flex-direction:column;align-items:center;gap:4px; width: 100px; text-align: center;}
   
   /* NEW: Constrain avatar grid to force 3-2 layout */
   #avatars .grid {
-    max-width: 270px; /* 3 * 80px + 2 * 10px gap = 260px. Add padding. */
+    /* max-width: 320px; */ /* REMOVED to allow natural flex wrap */
   }
+
+  /* NEW: Fix for overlapping text on 2-line avatar buttons */
+  #avatars .grid .btn {
+    line-height: 1.4; /* Give lines vertical space */
+    padding-top: 8px; /* Adjust padding for 2 lines */
+    padding-bottom: 8px;
+  }
+  
   /* Let theme buttons be wider than 80px */
   #themes .preview {
     width: auto; 
@@ -205,6 +213,12 @@
   #caption.show{opacity:1;transform:translateY(0)}
   #caption .title{font-size:18px;letter-spacing:1px;color:var(--fg-neon)}
   #caption .sub{font-size:14px;color:var(--ground-neon)}
+  
+  /* NEW: Fix for unreadable captions on bright backgrounds (e.g., Digital Sunset) */
+  #caption .title, #caption .sub {
+    text-shadow: 1px 1px 0 var(--bg-dark), -1px -1px 0 var(--bg-dark), 1px -1px 0 var(--bg-dark), -1px 1px 0 var(--bg-dark);
+  }
+
   @media (max-width:480px){ 
     #caption .title{font-size:14px} 
     #caption .sub{font-size:12px} 
@@ -302,6 +316,8 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <div id="btnRight" class="pad">▶</div>
     </div>
     <div class="rightGrp">
+      <!-- NEW: Mobile Pause Button -->
+      <div id="btnPause" class="pad">☰</div>
       <div id="btnJump" class="pad jump">⤒</div>
     </div>
   </div>
@@ -338,7 +354,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <div id="creditsBtn" class="btn">ℹ CREDITS</div>
     </div>
     <!-- VERSION TEXT UPDATED -->
-    <div class="ghost mt12" id="versionText">v3.4 “Synthwave” • WASD/Arrows + Space</div>
+    <div class="ghost mt12" id="versionText">v3.5 “Jetpack” • WASD/Arrows + Space</div>
   </div>
 </div>
 
@@ -370,7 +386,10 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <canvas id="recapShield" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
       <span id="recapShieldScore">0</span> •
       <canvas id="recapSlow" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
-      <span id="recapSlowScore">0</span>
+      <span id="recapSlowScore">0</span> •
+      <!-- NEW: Jetpack Recap -->
+      <canvas id="recapJetpack" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+      <span id="recapJetpackScore">0</span>
     </div>
     <div id="nameGate" class="mt12">
       <div class="ghost">Enter name to submit score:</div>
@@ -388,7 +407,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
   </div>
 </div>
 
-<!-- Settings (TITLE UPDATED + NEW BUTTON) -->
+<!-- Settings (TITLE UPDATED) -->
 <div id="settings" class="ui">
   <div class="card">
     <h2>System Settings</h2>
@@ -397,10 +416,12 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <div id="setMusic" class="btn">♪ Music: On</div>
       <div id="setContrast" class="btn">⬛/⬜ CONTRAST</div>
     </div>
-    <!-- NEW: MUSIC TRACK ROW -->
+    
+    <!-- NEW: Music Track Row -->
     <div class="row mt12">
       <div id="setTrack" class="btn">♫ TRACK: CLASSIC</div>
     </div>
+    
     <div class="row mt12">
       <div id="setSpeed" class="btn">Speed: Normal (×1.5)</div>
     </div>
@@ -426,6 +447,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       </div>
       <div class="preview">
         <canvas id="pvAlien" width="32" height="44"></canvas>
+        <!-- RENAMED -->
         <div class="btn" data-skin="alien">ALIEN</div>
       </div>
       <div class="preview">
@@ -483,6 +505,11 @@ body.playing .mobile .jump{ width:108px; height:108px; }
         <canvas id="itemSlow" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
         Cassettes = 3 s slow-motion (⏳)
     </div>
+    <!-- NEW: Jetpack How-To -->
+    <div class="mt6 ghost" style="display:flex; align-items:center; gap:8px;">
+        <canvas id="itemJetpack" width="12" height="12" style="width:12px;height:12px;image-rendering:pixelated; image-rendering:crisp-edges;"></canvas>
+        Fuel Can = 5 s jetpack fuel (🚀)
+    </div>
     <div class="mt8">Threats: Glitch Aliens and Wireframe Spikes — avoid them or lose a shield/life!</div>
     <div class="row mt12"><div id="howClose" class="btn">CLOSE</div></div>
   </div>
@@ -518,8 +545,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
     <div class="mt8">Design & code: <b>MkhkAsg</b></div>
     <div class="mt6">Vaporwave Redesign: <b>A.I. Collaborative</b></div>
     <div class="mt6">Font: <b>Press Start 2P</b> (CodeMan38) — SIL Open Font License 1.1</div>
-    <!-- CREDITS UPDATED -->
-    <div class="mt6">Music & SFX: <b>Original in-engine chiptune & synthwave</b> via Web Audio API</div>
+    <div class="mt6">Music & SFX: <b>Original in-engine chiptune</b> via Web Audio API</div>
     <div class="mt6 ghost">Scores go to a Google Sheet leaderboard. Keep names clean.</div>
     <div class="row mt12"><div id="creditsClose" class="btn">CLOSE</div></div>
   </div>
@@ -528,8 +554,8 @@ body.playing .mobile .jump{ width:108px; height:108px; }
 
 <script>
 /* ===== Config (UPDATED VERSION) ===== */
-const GAME_VERSION='3.4.0-Synthwave'; // Updated version
-const API_URL="https://script.google.com/macros/s/AKfycbyK7Wb7yYxaxbPBf78WcOWB9ywsAcc1-od5FIXp3WiujwzbI1sx4eu7WR43el72NaFI4g/exec";
+const GAME_VERSION='3.5.0-Jetpack'; // Updated version
+const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
 const STAGE = document.getElementById('stage');
 const CV=document.getElementById('cv');
 let ctx=CV.getContext('2d',{alpha:false}); ctx.imageSmoothingEnabled=false; // FIX: Use let for ctx
@@ -598,7 +624,7 @@ function applyTheme(themeKey) {
   
   // Update UI text (if needed)
   // VERSION TEXT UPDATED
-  document.getElementById('versionText').textContent = `v3.4 “Synthwave” - ${theme.name}`;
+  document.getElementById('versionText').textContent = `v3.5 “Jetpack” - ${theme.name}`;
   // Redraw item previews immediately when theme changes
   drawHowToPreviews(); // Redraw item icons for 'How to Play'
   drawRecapPreviews(); // NEW: Redraw item icons for Game Over
@@ -618,11 +644,10 @@ const FILL=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(i(x),i(y),i(w),i(h));};
 const pad=(n,w=5)=>String(n).padStart(w,'0');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-/* ===== WebAudio (NEW TRACK LOGIC) ===== */
+/* ===== WebAudio (UNCHANGED) ===== */
 let ac=null, sfxMuted=false, musicMuted=false;
-// NEW: Music track state variable
-let currentMusicTrack = localStorage.getItem('moon_track') || 'classic';
-let musicVol=0.085, sfxVol=0.28;
+let currentMusicTrack = localStorage.getItem('moon_track') || 'classic'; // <-- NEW
+let musicVol=0.045, sfxVol=0.28;
 let musicBus=null, sfxBus=null;
 function ensureAC(){
   if(!ac){
@@ -645,6 +670,7 @@ function beep(kind='jump'){
     slow:[550,770,.10,.12],
     flyby:[120, 1200, 0.4, 0.15],
     slow_off:[770, 550, 0.1, 0.12],
+    jetpack_get:[1100, 1400, .15, .10], // NEW: Jetpack pickup sound
     game_over:[220, 110, 0.5, 0.15] // NEW: Game Over sound
   };
   const [f1,f2,dur,vol]=T[kind]||T.jump;
@@ -669,8 +695,6 @@ function beep(kind='jump'){
     musicBus.gain.setTargetAtTime(back,t+0.35,0.25);
   }
 }
-
-// --- REWRITTEN MUSIC ENGINE (v3.4) ---
 let musicRunning=false, musicTimer=null, musicStep=0, musicStepSynth=0; // NEW: separate synth step
 const bpm=140, stepSec=60/bpm/2; // Classic BPM
 const bpmSynth=110, stepSecSynth=60/bpmSynth/2; // Synthwave BPM (8th notes)
@@ -680,7 +704,6 @@ const NT=n=>440*Math.pow(2,(n-69)/12);
 const NOTES={C4:60,D4:62,E4:64,F4:65,G4:67,A4:69,B4:71,C5:72,D5:74,E5:76,F5:77,G5:79,A5:81};
 function leadPattern(){return[[NOTES.E5,1],[NOTES.G5,1],[NOTES.C5,1],[NOTES.D5,1],[NOTES.E5,1],[NOTES.G5,1],[NOTES.A5,1],[NOTES.G5,1],[NOTES.E5,1],[NOTES.C5,1],[NOTES.A4,1],[NOTES.C5,1],[NOTES.E5,1],[NOTES.D5,1],[NOTES.C5,2],[NOTES.F5,1],[NOTES.A5,1],[NOTES.C5,1],[NOTES.D5,1],[NOTES.F5,1],[NOTES.A5,1],[NOTES.G5,1],[NOTES.F5,1],[NOTES.E5,1],[NOTES.D5,1],[NOTES.C5,1],[NOTES.B4,1],[NOTES.C5,4]];}
 function bassPattern(){const root=[NOTES.C4,NOTES.A4-12,NOTES.F5-24,NOTES.G5-24];const seq=[];for(let b=0;b<4;b++) for(let s=0;s<8;s++) seq.push([root[b],1]);return seq;}
-
 function playNote(freq,mul,type='square',vol=0.10){
   ensureAC(); const t=ac.currentTime,osc=ac.createOscillator(),g=ac.createGain();
   osc.type=type; osc.frequency.setValueAtTime(freq,t);
@@ -779,6 +802,7 @@ function leadPatternSynth(){
   }
   return pattern;
 }
+
 // --- END SYNTHWAVE FUNCTIONS ---
 
 
@@ -853,8 +877,6 @@ function stopMusic(){
   musicRunning=false; 
   if(musicTimer){ clearTimeout(musicTimer); musicTimer=null; } 
 }
-// --- END REWRITTEN MUSIC ENGINE ---
-
 
 /* ===== RNG & timebase (UNCHANGED) ===== */
 let seed=20251027; const RND=()=> (seed=(seed*1664525+1013904223)>>>0, (seed%1000)/1000);
@@ -885,6 +907,8 @@ let charSkin = localStorage.getItem('moon_char') || 'classic';
 const keys={};
 addEventListener('keydown',e=>{
   if (document.activeElement && document.activeElement.tagName==='INPUT') return;
+  // FIX: Only allow key presses if not in transition
+  if (state === 'gameover_transition') return; 
   if(['ArrowLeft','ArrowRight','ArrowUp',' ','w','W','a','A','d','D','Escape','Enter'].includes(e.key)) e.preventDefault();
   keys[e.key]=true;
   if(e.key==='Escape'){
@@ -905,6 +929,8 @@ function bindTouch(id,on,off){ const el=document.getElementById(id);
 bindTouch('btnLeft', ()=>keys['ArrowLeft']=true, ()=>keys['ArrowLeft']=false);
 bindTouch('btnRight',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
 bindTouch('btnJump', ()=>{ keys[' ']=true; }, ()=>{ keys[' ']=false; });
+// NEW: Bind mobile pause button
+bindTouch('btnPause', ()=>{ if(state==='play'){ state='paused'; showUI('pause',true); } }, ()=>{}); 
 document.getElementById('music').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent = musicMuted?'♪ Music Off':'♪ Music'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('mute').onclick =(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent = sfxMuted?'🔇 SFX':'🔈 SFX'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
 document.getElementById('invert').onclick=()=> document.body.classList.toggle('invert');
@@ -968,11 +994,10 @@ document.querySelectorAll('#themes .btn[data-theme]').forEach(b=>{
     showUI('menu');
   });
 });
-// FIX: settingsBtn is now SETTINGS (UPDATED)
+// FIX: settingsBtn is now SETTINGS
 document.getElementById('settingsBtn').onclick = () => {
   document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
-  // NEW: Update track button text
-  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`;
+  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`; // UPDATE TEXT
   returnFromSettings = 'menu';
   showUI('settings');
 };
@@ -980,12 +1005,11 @@ document.getElementById('lbBtn').onclick  =()=>{ uiReturn='menu'; showUI('lb'); 
 document.getElementById('creditsBtn').onclick=()=> showUI('credits');
 document.getElementById('resumeBtn').onclick=()=>{ hideUI('pause'); state='play'; };
 document.getElementById('restartBtn').onclick=()=>{ hideUI('pause'); start(); };
-// FIX: pauseSettingsBtn is now SETTINGS (UPDATED)
+// FIX: pauseSettingsBtn is now SETTINGS
 document.getElementById('pauseSettingsBtn').onclick = () => {
   hideUI('pause');
   document.getElementById('setName').value = (localStorage.getItem('moon_name') || '');
-  // NEW: Update track button text
-  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`;
+  document.getElementById('setTrack').textContent = `♫ TRACK: ${currentMusicTrack.toUpperCase()}`; // UPDATE TEXT
   returnFromSettings = 'play';
   showUI('settings');
 };
@@ -1008,7 +1032,6 @@ document.getElementById('creditsClose').onclick=()=> hideUI('credits');
 document.getElementById('setSound').onclick=(e)=>{ sfxMuted=!sfxMuted; ensureAC(); e.currentTarget.textContent=sfxMuted?'🔇 SFX: Off':'🔈 SFX: On'; if(sfxBus) sfxBus.gain.value=sfxMuted?0:sfxVol; };
 document.getElementById('setMusic').onclick=(e)=>{ musicMuted=!musicMuted; ensureAC(); e.currentTarget.textContent=musicMuted?'♪ Music: Off':'♪ Music: On'; if(musicBus) musicBus.gain.value=musicMuted?0:musicVol; if(musicMuted) stopMusic(); else startMusic(); };
 document.getElementById('setContrast').onclick=()=> document.body.classList.toggle('invert');
-document.getElementById('setSpeed').onclick =()=> setMode(speedMode+1);
 
 // NEW: Music Track Selector
 document.getElementById('setTrack').onclick = (e) => {
@@ -1027,6 +1050,7 @@ document.getElementById('setTrack').onclick = (e) => {
   }
 };
             
+document.getElementById('setSpeed').onclick =()=> setMode(speedMode+1);
 document.getElementById('settingsClose').onclick = () => {
   const nm = cleanName(document.getElementById('setName').value || '');
   localStorage.setItem('moon_name', nm);
@@ -1145,17 +1169,17 @@ function getDiff(){
 }
 const GRAV=0.65,JUMP=11.6,FRICTION=0.86;
 const JUMP_BUFFER_MS=120;
-const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0};
-let coinsPicked=0, shieldsPicked=0, slowUsed=0;
+const player={x:120,y:floorY-22,w:16,h:22,vx:0,vy:0,on:false,slow:0,shields:0,jetpack:0,auraPulse:0,auraFlash:0,inv:0};
+let coinsPicked=0, shieldsPicked=0, slowUsed=0, jetpacksUsed=0;
 let lastNearMissTime=0;
 let milestoneIndex=0, flyby=null;
 function triggerFlyby(){ const dir = Math.random()<0.5 ? -1 : 1; flyby = { x: dir<0 ? W+60 : -60, y: 80 + Math.random()*60, dir, t: 0, w: 56, h: 20 }; beep('flyby'); }
 function resetWorld(){
   segments=[];entities=[];items=[];particles=[];scroll=0;timeMs=0;score=0; // Clear particles
   screenShake = 0; wasSlowed = false; // NEW: Reset flags
-  coinsPicked=0; shieldsPicked=0; slowUsed=0;
+  coinsPicked=0; shieldsPicked=0; slowUsed=0; jetpacksUsed=0;
   lastNearMissTime=0; milestoneIndex=0; flyby=null;
-  Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,auraPulse:0,auraFlash:0,inv:0});
+  Object.assign(player,{x:120,y:floorY-22,vx:0,vy:0,on:false,slow:0,shields:0,jetpack:0,auraPulse:0,auraFlash:0,inv:0});
   segments.push({x:0,w:440,type:'ground'});
   spawnAhead(W*2.4);
 }
@@ -1297,9 +1321,14 @@ function spawnAhead(targetX){
         const ix = gx + segW - 60;
         items.push({ kind: 'shield', x: ix, y: floorY - 50, w: 12, h: 12, phase: RND()*6.28 });
         spawned = true;
-      } else {
+      } else if (roll < 0.96) {
         const ix = gx + 48;
         items.push({ kind: 'slow', x: ix, y: floorY - 50, w: 12, h: 12, phase: RND()*6.28 });
+        spawned = true;
+      } else {
+        // NEW: Jetpack spawn
+        const ix = gx + 40 + Math.floor(RND() * (segW - 80));
+        items.push({ kind: 'jetpack', x: ix, y: floorY - 50, w: 12, h: 12, phase: RND()*6.28 });
         spawned = true;
       }
     }
@@ -1339,6 +1368,10 @@ function spawnAhead(targetX){
       if (RND() < 0.07) {
         const ix = gx + 46;
         items.push({ kind: 'slow', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
+      }
+      if (RND() < 0.04) { // NEW: Jetpack spawn (rare)
+        const ix = gx + 40 + Math.floor(RND() * (segW - 80));
+        items.push({ kind: 'jetpack', x: ix, y: floorY - 48, w: 12, h: 12, phase: RND()*6.28 });
       }
     }
     let gap;
@@ -1582,7 +1615,7 @@ function drawItem(canvas, itemKind) {
     if (!canvas) return; // Safety check
     const c = canvas.getContext('2d');
     c.imageSmoothingEnabled = false;
-    const f=FG(), b=BG(), g=GR();
+    const f=FG(), b=BG(), g=GR(), a=AC();
     c.fillStyle = b; c.fillRect(0, 0, canvas.width, canvas.height);
     const x = 0, y = 0; // Canvas is sized to the item
     
@@ -1605,12 +1638,20 @@ function drawItem(canvas, itemKind) {
       c.fillStyle = g; c.fillRect(x + 7, y + 4, 3, 3);
       c.fillStyle = g; c.fillRect(x + 1, y + 1, 10, 1);
     }
+    if (itemKind === 'jetpack') { // NEW: Jetpack sprite
+      c.fillStyle = a; c.fillRect(x + 3, y, 6, 12); // Main tank (use Accent color)
+      c.fillStyle = f; c.fillRect(x + 4, y + 1, 4, 10); // Highlight
+      c.fillStyle = g; c.fillRect(x + 2, y + 2, 2, 6); // Handle
+      c.fillStyle = g; c.fillRect(x + 8, y + 2, 2, 6); // Handle
+      c.fillStyle = a; c.fillRect(x + 4, y + 10, 4, 2); // Nozzle base
+    }
 }
 function drawHowToPreviews(){
     try {
       drawItem(document.getElementById('itemChip'), 'chip');
       drawItem(document.getElementById('itemShield'), 'shield');
       drawItem(document.getElementById('itemSlow'), 'slow');
+      drawItem(document.getElementById('itemJetpack'), 'jetpack');
     } catch(e) {
       console.error("Error drawing item previews:", e);
     }
@@ -1622,6 +1663,7 @@ function drawRecapPreviews(){
       drawItem(document.getElementById('recapChip'), 'chip');
       drawItem(document.getElementById('recapShield'), 'shield');
       drawItem(document.getElementById('recapSlow'), 'slow'); // FIX: Was 'itemSlow'
+      drawItem(document.getElementById('recapJetpack'), 'jetpack');
     } catch(e) {
       console.error("Error drawing recap previews:", e);
     }
@@ -1633,16 +1675,16 @@ const callouts=[];
 function addCall(text,x,y){ callouts.push({x,y,vy:-0.35,life:60,text}); }
 function updateCallouts(u){ for(let i=callouts.length-1;i>=0;i--){ const c=callouts[i]; c.y+=c.vy*u; c.life-=u; if(c.life<=0) callouts.splice(i,1);} }
 function drawCallouts(){ ctx.save(); ctx.fillStyle=FG(); ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.font="12px 'Press Start 2P', monospace"; for(const c of callouts){ ctx.globalAlpha=Math.max(0,c.life/60); ctx.fillText(c.text,c.x,c.y); } ctx.restore(); ctx.globalAlpha=1; }
-const tips=["Esc to pause. Close resumes.","Tap ⤒ to jump on mobile.","Collect 💠 for points (× mode).","🛡 protects up to 3 hits.","⏳ gives 3s slow motion."];
+const tips=["Esc to pause. Close resumes.","Tap ⤒ to jump on mobile.","Collect 💠 for points (× mode).","🛡 protects up to 3 hits.","⏳ gives 3s slow motion.", "🚀 Jetpacks let you fly! Hold jump."];
 let tipIdx=0, tipTimer=null;
 function startTips(){ const el=document.getElementById('tipsLine'); clearInterval(tipTimer); el.textContent=tips[tipIdx%tips.length]; tipTimer=setInterval(()=>{tipIdx++; el.textContent=tips[tipIdx%tips.length];}, 2400); }
 function stopTips(){ clearInterval(tipTimer); tipTimer=null; }
-let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:false, drone:false};
+let seenTutorial = {coin:false, shield:false, slow:false, alien:false, spike:false, drone:false, jetpack:false};
 let jumpBuffer=0;
 function start(){
   hideAllUI(); resetWorld(); state='play';
     setPlaying(true);
-  seenTutorial = { coin:false, shield:false, slow:false, alien:false, spike:false, drone:false };
+  seenTutorial = { coin:false, shield:false, slow:false, alien:false, spike:false, drone:false, jetpack:false };
 
   statusEl.textContent=`Speed: ${speedModes[speedMode].name} (×${scoreMul.toFixed(1)})`;
   document.getElementById('menuBtn').style.display='none';
@@ -1652,7 +1694,7 @@ function start(){
 }
 function useShield(){ player.shields=clamp(player.shields-1,0,3); player.auraFlash=180; player.inv=150; addCall('HIT!',player.x+8,player.y-6); beep('hit'); screenShake = 15; }
 function gameOver(){
-  state='over';
+  state='gameover_transition'; // NEW: Intermediate state to prevent key mashing
   setPlaying(false);
   beep('game_over'); // NEW: Play sound
   screenShake = 15;
@@ -1670,6 +1712,7 @@ function gameOver(){
     document.getElementById('recapChipScore').textContent = coinsPicked;
     document.getElementById('recapShieldScore').textContent = shieldsPicked;
     document.getElementById('recapSlowScore').textContent = slowUsed;
+    document.getElementById('recapJetpackScore').textContent = jetpacksUsed;
     drawRecapPreviews(); // Redraw icons just in case
 
     const saved=(localStorage.getItem('moon_name')||'').trim();
@@ -1689,6 +1732,7 @@ function gameOver(){
       document.getElementById('submitMsg').style.display='none';
     }
     showUI('over',true); 
+    state = 'over'; // NEW: Now allow restart from 'over' state
     document.getElementById('menuBtn').style.display='';
   }, 750); // 750ms delay
 }
@@ -1710,18 +1754,38 @@ const GRAV_U=GRAV, ACCEL_U=0.7;
 function update(u){
   timeMs += (u / TARGET_FPS) * 1000;
   const {worldScroll}=getDiff(); const m=u;
-
+  const frame=(performance.now()/120|0); // Get frame for particles
   const left=keys['ArrowLeft']||keys['a']||keys['A'];
   const right=keys['ArrowRight']||keys['d']||keys['D'];
   const jump =keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
   if(left)  player.vx -= ACCEL_U*m;
   if(right) player.vx += ACCEL_U*m;
   player.vx *= Math.pow(FRICTION,m);
-  player.vy += GRAV_U*m;
+  
+  // --- NEW: Jetpack Physics ---
+  if (player.jetpack > 0 && jump) {
+      // JETPACK THRUST
+      player.vy -= (GRAV_U + 0.3) * m; // 0.3 is the "thrust" power
+      player.vy = Math.max(player.vy, -JUMP * 0.6); // Clamp max upward speed
+      player.on = false;
+  } else {
+      // NORMAL GRAVITY
+      player.vy += GRAV_U * m;
+  }
 
-  const now=performance.now();
-  if(player.on) jumpBuffer=now+JUMP_BUFFER_MS;
-  if(jump && now<=jumpBuffer){ player.vy=-JUMP; player.on=false; jumpBuffer=0; beep('jump'); }
+  // NORMAL JUMP
+  const now = performance.now();
+  if (player.on) jumpBuffer = now + JUMP_BUFFER_MS;
+  // Allow normal jump even *with* jetpack (to get off the ground), but don't play sound if thrusting
+  if (jump && now <= jumpBuffer) {
+      if (!(player.jetpack > 0 && jump)) { // Don't beep if thrusting
+          beep('jump');
+      }
+      player.vy = -JUMP;
+      player.on = false;
+      jumpBuffer = 0;
+  }
+  // --- END: Jetpack Physics ---
 
   const prevX=player.x, prevY=player.y;
   player.x += player.vx*m; player.y += player.vy*m; scroll += worldScroll*m;
@@ -1796,6 +1860,7 @@ function update(u){
     if(!seenTutorial.coin   && it.kind==='chip'   && it.x - scroll < W-20){ showCaption('Collect chips','Score +200 × mode'); seenTutorial.coin=true; }
     if(!seenTutorial.shield && it.kind==='shield' && it.x - scroll < W-20){ showCaption('Shield','Protects up to 3 hits'); seenTutorial.shield=true; }
     if(!seenTutorial.slow   && it.kind==='slow'   && it.x - scroll < W-20){ showCaption('Slow field','3s slow motion'); seenTutorial.slow=true; }
+    if(!seenTutorial.jetpack && it.kind==='jetpack' && it.x - scroll < W-20){ showCaption('Jetpack!','Hold jump to fly! 🚀'); seenTutorial.jetpack=true; }
 
     if(AABB({x:wx,y:player.y,w:player.w,h:player.h},{x:rect.x,y:rect.y,w:rect.w,h:rect.h})){
       if(it.kind==='chip'){ 
@@ -1817,6 +1882,12 @@ function update(u){
           addCall('Slow-mo!',player.x+8,player.y-6); beep('slow'); 
           spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 12);
       }
+      if(it.kind==='jetpack'){ // NEW: Collect Jetpack
+          player.jetpack = 375; // 5 seconds @ 75fps
+          jetpacksUsed++; 
+          addCall('Jetpack!',player.x+8,player.y-6); beep('jetpack_get'); 
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 15);
+      }
       items.splice(k,1);
     }else{ it._drawY=rect.y; }
   }
@@ -1829,6 +1900,12 @@ function update(u){
   } else if (wasSlowed) { // player.slow is 0, but wasSlowed is true
     wasSlowed = false; // Reset the flag
     beep('slow_off'); // Play the sound
+  }
+  if(player.jetpack > 0) { // NEW: Deplete jetpack fuel
+    player.jetpack = Math.max(0, player.jetpack - m);
+    if (player.jetpack === 0 && player.slow === 0) { // Only play if slow isn't *also* ending
+        beep('slow_off'); // Reuse "powerup over" sound
+    }
   }
   if(player.inv>0)       player.inv=Math.max(0,player.inv-m);
 
@@ -2066,10 +2143,32 @@ function draw(){
       const scan=((timeMs/120+(it.phase||0))%10)|0; 
       FILL(x+1,y+1,10,1,GR());
     }
+    if(it.kind==='jetpack'){ // NEW: Draw Jetpack item
+      const pulse=(Math.sin((timeMs/500)+(it.phase||0))*0.5+0.5)|0;
+      const c1 = pulse ? f : a; // Use Accent color
+      const c2 = pulse ? a : f; // Use Accent color
+      FILL(x + 3, y, 6, 12, c1); // Main tank
+      FILL(x + 4, y + 1, 4, 10, c2); // Highlight
+      FILL(x + 2, y + 2, 2, 6, GR()); // Handle
+      FILL(x + 8, y + 2, 2, 6, GR()); // Handle
+      FILL(x + 4, y + 10, 4, 2, c1); // Nozzle base
+    }
   }
 
   // Draw Player
   const frame=(performance.now()/120|0);
+  
+  // NEW: Draw Jetpack thrust particles (drawn behind player)
+  const jump = keys['ArrowUp']||keys['w']||keys['W']||keys[' '];
+  if(state === 'play' && player.jetpack > 0 && jump){
+      const pColor = (frame % 2 === 0) ? a : f; // Use Accent and FG
+      ctx.fillStyle = pColor;
+      for(let k=0; k<3; k++){
+          // Spawn particles from player's bottom-center
+          FILL(player.x + 4 + RND()*8, player.y + player.h + RND()*6, 3, 3, pColor);
+      }
+  }
+  
   const pose=player.on ? (frame%2?'run1':'run2') : (player.vy<0?'jump':'idle');
   if(player.shields>0 || player.slow > 0){
     const isFlashing = (player.auraFlash>0) && (frame % 2 === 0);
@@ -2119,7 +2218,8 @@ function draw(){
   ctx.textAlign='right';
   const dots=['○','○','○']; for(let k=0;k<player.shields;k++) dots[k]='●';
   const slowText = player.slow > 0 ? `⏳ ${Math.ceil(player.slow/TARGET_FPS)}s` : '';
-  ctx.fillText(`${slowText} 🛡 ${dots.join(' ')}`, W-10, 18);
+  const jetText = player.jetpack > 0 ? `🚀 ${Math.ceil(player.jetpack/TARGET_FPS)}s` : '';
+  ctx.fillText(`${jetText} ${slowText} 🛡 ${dots.join(' ')}`, W-10, 18);
   ctx.textAlign='left';
 
   // Menu Screen Drawing (Simplified, less text background)
@@ -2223,3 +2323,4 @@ boot();
 </script>
 </body>
 </html>
+
