@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <!-- TITLE UPDATED -->
-<title>MkhkAsg : MoonRunner — v3.8 "Re-balance"</title>
+<title>MkhkAsg : MoonRunner — v3.9.7 "Lunar Eclipse"</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   /* --- BASE COLORS (Dynamically set via JS/Themes) --- */
@@ -127,7 +127,25 @@
   .btn.active{outline:2px solid var(--fg-neon); color:var(--fg-neon);}
 
   /* Overlays (Menus) */
-  .ui{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10; backdrop-filter: blur(2px);}
+  /* === MODIFICATION: UI TRANSITIONS === */
+  .ui{
+    position:fixed;inset:0;
+    display:flex; /* MODIFIED: Was 'none' */
+    align-items:center;justify-content:center;
+    z-index:10; backdrop-filter: blur(2px);
+    
+    /* NEW: Transition properties */
+    opacity: 0;
+    pointer-events: none; /* Start non-interactive */
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  /* NEW: Rule to show the UI */
+  .ui.visible {
+      opacity: 1;
+      pointer-events: auto; /* Make interactive when visible */
+  }
+  /* === END MODIFICATION === */
   
   /* Menu Card Styling (FIX: Reduced max-width) */
   .ui .card{
@@ -138,6 +156,15 @@
     box-shadow:0 0 20px 5px var(--fg-neon) inset, 0 0 30px var(--fg-neon);
     border-radius: 4px;
     font-size: 12px; /* Increased base font size for readability */
+    
+    /* NEW: Add a transform for a "pop-in" effect */
+    transform: scale(0.95);
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  /* NEW: Rule to scale card when UI is visible */
+  .ui.visible .card {
+      transform: scale(1);
   }
   
   .ui h1, .ui h2, .ui h3{font-family:'Press Start 2P',monospace;margin:0 0 16px 0; text-align: center;}
@@ -147,7 +174,7 @@
   
   .row{display:flex;gap:12px;flex-wrap:wrap; justify-content: center;}
   .ghost{opacity:.75}
-  .mt6{margin-top:6px;} .mt8{margin-top:8px;} .mt12{margin-top:12px;}
+  .mt6{margin-top:6px;} .mt8{margin-top:8px;} .mt12{margin-top:12px;} .mt16{margin-top:16px;}
   
   input[type=text]{
     background:rgba(0,0,0,0.4);
@@ -236,8 +263,8 @@
   }
   body.invert #caption .title{color:var(--bg-dark)} body.invert #caption .sub{color:var(--fg-neon)}
 
-  /* Safety: any hidden UI should not catch clicks */
-  .ui[style*="display: none"]{pointer-events:none !important}
+  /* Safety: any hidden UI should not catch clicks (REMOVED) */
+  /* .ui[style*="display: none"]{pointer-events:none !important} */
   
   
 /* Hafiy mobile pad adjust (FROM v2.2.0) */
@@ -347,12 +374,14 @@ body.playing .mobile .jump{ width:108px; height:108px; }
   <div id="caption"><div class="title"></div><div class="sub"></div></div>
 </div>
 
-<!-- Main Menu (UPDATED BUTTONS) -->
-<div id="menu" class="ui" style="display:flex">
+<!-- === MAIN MENU: Reverted to v3.8 style === -->
+<div id="menu" class="ui visible">
   <div class="card">
     <h1>M O O N R U N N E R</h1>
-    <h2><span class="ghost">MKHKASG • V3.0</span></h2>
-    <div class="ghost mt6">The Infinite Run Protocol is ready.</div>
+    <!-- Updated version in subtitle -->
+    <h2><span class="ghost">MKHKASG • V3.9.7</span></h2>
+    <!-- === NEW: Updated and Centered Text === -->
+    <div class="ghost mt6" style="text-align: center;">An endless protocol. A glitch in the system. Run.</div>
     
     <div class="row mt12" style="justify-content:center;">
       <div id="playBtn" class="btn">▶ START RUN</div>
@@ -372,9 +401,12 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       <div id="settingsBtn" class="btn">☼ SETTINGS</div>
       <div id="creditsBtn" class="btn">ℹ CREDITS</div>
     </div>
-    <div class="ghost mt12" id="versionText">v3.8 “Re-balance” • WASD/Arrows + Space</div>
+    <!-- Updated version text -->
+    <div class="ghost mt12" id="versionText">v3.9.7 “Lunar Eclipse” • WASD/Arrows + Space</div>
   </div>
 </div>
+<!-- === END MAIN MENU === -->
+
 
 <!-- Pause -->
 <div id="pause" class="ui">
@@ -448,8 +480,8 @@ body.playing .mobile .jump{ width:108px; height:108px; }
   </div>
 </div>
 
-<!-- Avatars (5 CHARACTERS) -->
-<div id="avatars" class="ui" style="display:none">
+<!-- Avatars (6 CHARACTERS) -->
+<div id="avatars" class="ui">
   <div class="card">
     <h2>SELECT RUNNER</h2>
     <div class="grid">
@@ -473,13 +505,18 @@ body.playing .mobile .jump{ width:108px; height:108px; }
         <canvas id="pvRobot" width="32" height="44"></canvas>
         <div class="btn" data-skin="robot">CYBER-DRONE</div>
       </div>
+      <!-- NEW GHOST CHARACTER -->
+      <div class="preview">
+        <canvas id="pvGhost" width="32" height="44"></canvas>
+        <div class="btn" data-skin="ghost">GHOST</div>
+      </div>
     </div>
     <div class="row mt12"><div id="avatarsClose" class="btn">BACK</div></div>
   </div>
 </div>
 
 <!-- Themes Menu (UPDATED WITH NEW THEME) -->
-<div id="themes" class="ui" style="display:none">
+<div id="themes" class="ui">
   <div class="card">
     <h2>SELECT AESTHETIC</h2>
     <div class="grid">
@@ -494,6 +531,18 @@ body.playing .mobile .jump{ width:108px; height:108px; }
       </div>
       <div class="preview">
         <div class="btn" data-theme="sunset">DIGITAL SUNSET (New!)</div>
+      </div>
+      <!-- NEW GALAXY THEME BUTTON -->
+      <div class="preview">
+        <div class="btn" data-theme="galaxy">GALAXY HOLE (New!)</div>
+      </div>
+      <!-- NEW LUNAR ECLIPSE THEME BUTTON -->
+      <div class="preview">
+        <div class="btn" data-theme="lunar">LUNAR ECLIPSE (New!)</div>
+      </div>
+      <!-- NEW RUMAHANTU THEME BUTTON -->
+      <div class="preview">
+        <div class="btn" data-theme="rumahantu">RUMAHANTU (New!)</div>
       </div>
     </div>
     <div class="row mt12"><div id="themesClose" class="btn">BACK</div></div>
@@ -569,7 +618,7 @@ body.playing .mobile .jump{ width:108px; height:108px; }
 
 <script>
 /* ===== Config (UPDATED VERSION) ===== */
-const GAME_VERSION='3.8.0-Re-balance'; // Updated version
+const GAME_VERSION='3.9.7-LunarEclipse'; // Updated version
 const API_URL="https://script.google.com/macros/s/AKfycbxtctW6_9dE0r414CeEY4mR5KTJIsx-x3w4jRViA_GPayWcdwBXdTsv4mqim3Ypf2ve/exec";
 const STAGE = document.getElementById('stage');
 const CV=document.getElementById('cv');
@@ -620,6 +669,40 @@ const THEMES = {
     al: '#00FFFF', // Cyan
     earth: false,
     city: false,
+  },
+  // NEW GALAXY THEME
+  galaxy: {
+    name: "Galaxy Hole",
+    bg: '#000010', // Deep Space Blue
+    fg: '#FF00FF', // Magenta
+    gr: '#00FFFF', // Cyan
+    ac: '#FFFF00', // Yellow (Stars)
+    al: '#FF6600', // Orange (Nebula)
+    earth: false,
+    city: false,
+  },
+  // NEW LUNAR ECLIPSE THEME
+  lunar: {
+    name: "Lunar Eclipse",
+    bg: '#101020', // Ghostly dark blue/grey
+    fg: '#E0FFFF', // Pale cyan/white
+    gr: '#808090', // Muted grey ground
+    ac: '#404080', // Ethereal glow (dim purple/blue)
+    al: '#C0B0C0', // Pale purple
+    earth: false,
+    city: false,
+  },
+  // NEW RUMAHANTU THEME (UPDATED FOR CONTRAST)
+  rumahantu: {
+    name: "Rumahantu",
+    bg: '#0a0a1a', // Dark spooky blue
+    fg: '#f0f0f0', // Ghost white
+    gr: '#ff6600', // Pumpkin Orange (Was dark brown, fixes text/item contrast)
+    ac: '#ffcc00', // Brighter Orange/Yellow (Was pumpkin orange)
+    al: '#cc00ff', // Bright Purple (Was dark purple, for alien)
+    earth: false,
+    city: false,
+    customBg: true // Signal for custom draw function
   }
 };
 let currentTheme = localStorage.getItem('moon_theme') || 'cyber';
@@ -641,7 +724,7 @@ function applyTheme(themeKey) {
   
   // Update UI text (if needed)
   // VERSION TEXT UPDATED
-  document.getElementById('versionText').textContent = `v3.8 “Re-balance” - ${theme.name}`;
+  document.getElementById('versionText').textContent = `v3.9.7 “Lunar Eclipse” - ${theme.name}`;
   // Redraw item previews immediately when theme changes
   drawHowToPreviews(); // Redraw item icons for 'How to Play'
   drawRecapPreviews(); // NEW: Redraw item icons for Game Over
@@ -932,7 +1015,13 @@ addEventListener('keydown',e=>{
     else if(state==='paused'){ hideUI('pause'); state='play'; document.getElementById('menuBtn').style.display='none'; }
   }
   if(state==='menu' && (e.key===' '||e.key==='Enter'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')) start();
-  if(state==='over' && (e.key===' '||e.key==='Enter')) { hideUI('over'); start(); }
+  
+  // === BUGFIX: Added ArrowUp, w, W to restart keys ===
+  if(state==='over' && (e.key===' '||e.key==='Enter'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')) { 
+      hideUI('over'); 
+      start(); 
+  }
+  // === END BUGFIX ===
 });
 addEventListener('keyup',e=>{ if (document.activeElement && document.activeElement.tagName==='INPUT') return; keys[e.key]=false; });
 function bindTouch(id,on,off){ const el=document.getElementById(id);
@@ -982,8 +1071,19 @@ async function goLandscape(){
     }
   }
 }
-function showUI(id,lock=false){ document.getElementById(id).style.display='flex'; if(lock&&state==='play') state='paused'; }
-function hideUI(id){ document.getElementById(id).style.display='none'; }
+
+// === MODIFIED FOR UI TRANSITIONS ===
+function showUI(id,lock=false){ 
+  document.getElementById(id).classList.add('visible'); 
+  if(lock&&state==='play') state='paused';
+  if(id==='pause'){ startTips(); setPlaying(false); } // Logic moved from wrapper
+}
+function hideUI(id){ 
+  document.getElementById(id).classList.remove('visible'); 
+  if(id==='pause'){ stopTips(); } // Logic moved from wrapper
+}
+// === END MODIFICATION ===
+
 function hideAllUI(){ ['menu','pause','over','settings','how','lb','credits','avatars', 'themes'].forEach(hideUI); }
 function setPlaying(on){ document.body.classList.toggle('playing', !!on); }
 document.getElementById('playBtn').onclick=()=>{ hideUI('menu'); start(); };
@@ -1157,15 +1257,21 @@ let particles = []; // NEW: For collection animations
 let screenShake = 0; // NEW: For screen shake
 let wasSlowed = false; // NEW: For slow-mo sound
 
-// NEW: Particle spawner
-function spawnParticles(x, y, color, count = 10) {
+// NEW: Particle spawner (MODIFIED FOR FADING & SIZE)
+// === PARTICLE FIX: Added scroll to x-coordinate to spawn in WORLD SPACE ===
+function spawnParticles(x, y, color, count = 10, baseSize = 2) { // Added baseSize
     for (let i = 0; i < count; i++) {
+        const life = 20 + RND() * 20; // <-- Store random life
+        const size = baseSize + RND() * (baseSize > 1 ? 2 : 1); // NEW: Add random size
         particles.push({
-            x: x,
+            x: x + scroll, // <-- THE FIX: Add scroll
             y: y,
             vx: (RND() - 0.5) * 4,
             vy: (RND() - 0.5) * 4 - 2,
-            life: 20 + RND() * 20, // frames
+            life: life, // <-- Use it here
+            initial_life: life, // <-- NEW: Store the starting life
+            size: size, // NEW: Store size
+            initial_size: size, // NEW: Store initial size
             color: color
         });
     }
@@ -1475,11 +1581,60 @@ function astroRobot(x,y,pose='idle'){
   }
 }
 
+// NEW: Ghost sprite function (re-written to be a classic ghost)
+function astroGhost(x,y,pose='idle'){ 
+  const f=FG(), b=BG(), g=GR(), a=AC(); // f=ghost body (white), a=pumpkin orange (for fun)
+  x=i(x); y=i(y); 
+  
+  // Main body (FG color)
+  // Top rounded part
+  FILL(x+4, y, 8, 2, f);
+  FILL(x+2, y+2, 12, 4, f);
+  // Main body
+  FILL(x, y+6, 16, 10, f);
+  
+  // Wavy bottom
+  FILL(x, y+16, 4, 2, f);
+  FILL(x+2, y+18, 4, 2, f);
+  FILL(x+6, y+16, 4, 4, f);
+  FILL(x+10, y+18, 4, 2, f);
+  FILL(x+12, y+16, 4, 2, f);
+
+  // Eyes (Background color)
+  FILL(x+4, y+6, 2, 4, b);
+  FILL(x+10, y+6, 2, 4, b);
+
+  // Pose variations for "legs" (wavy bottom animation)
+  if(pose==='run1'){
+    FILL(x+2, y+18, 4, 2, b); // "lift" left leg
+  } else if(pose==='run2'){
+    FILL(x+10, y+18, 4, 2, b); // "lift" right leg
+  } else if(pose==='jump'){
+    // stretch the bottom
+    FILL(x, y+16, 2, 4, f);
+    FILL(x+2, y+18, 2, 4, f);
+    FILL(x+4, y+20, 8, 2, f);
+    FILL(x+12, y+18, 2, 4, f);
+    FILL(x+14, y+16, 2, 4, f);
+  }
+
+  // Arms (not in the reference pic, but part of the original hitbox/design)
+  // Let's make small, spooky arms
+  if (pose === 'run1') {
+    FILL(x-3, y+10, 3, 2, f);
+    FILL(x+16, y+12, 3, 2, f);
+  } else {
+    FILL(x-3, y+12, 3, 2, f);
+    FILL(x+16, y+10, 3, 2, f);
+  }
+}
+
 function astronaut(x,y,pose='idle'){ 
   if(charSkin==='stripe') return astroStripe(x,y,pose); 
   if(charSkin==='alien') return astroAlien(x,y,pose); 
   if(charSkin==='pilot') return astroPilot(x,y,pose);
   if(charSkin==='robot') return astroRobot(x,y,pose);
+  if(charSkin==='ghost') return astroGhost(x,y,pose); // NEW
   return astroClassic(x,y,pose); 
 }
 function enemyAlien(x,y,blink=false){ 
@@ -1610,6 +1765,28 @@ function drawPreviewTo(canvas, kind){
     c.fillStyle=g; c.fillRect(xOffset+2,yOffset+22,3,2); // Leg (run2 pose)
     c.fillStyle=f; c.fillRect(xOffset+11,yOffset+22,3,2); // Leg (run2 pose)
   }
+  // NEW: GHOST PREVIEW (re-written)
+  else if (kind === 'ghost') {
+    const xOffset = 8, yOffset = 10;
+    // Main body (FG color)
+    c.fillStyle=f;
+    c.fillRect(xOffset+4, yOffset, 8, 2);
+    c.fillRect(xOffset+2, yOffset+2, 12, 4);
+    c.fillRect(xOffset, yOffset+6, 16, 10);
+    // Wavy bottom
+    c.fillRect(xOffset, yOffset+16, 4, 2);
+    c.fillRect(xOffset+2, yOffset+18, 4, 2);
+    c.fillRect(xOffset+6, yOffset+16, 4, 4);
+    c.fillRect(xOffset+10, yOffset+18, 4, 2);
+    c.fillRect(xOffset+12, yOffset+16, 4, 2);
+    // Eyes (Background color)
+    c.fillStyle=b;
+    c.fillRect(xOffset+4, yOffset+6, 2, 4);
+    c.fillRect(xOffset+10, yOffset+6, 2, 4);
+    // Arm
+    c.fillStyle=f;
+    c.fillRect(xOffset-3, yOffset+12, 3, 2);
+  }
   
   // Draw selection border
   if (kind === charSkin) {
@@ -1625,6 +1802,7 @@ function drawPreviews(){
   drawPreviewTo(document.getElementById('pvAlien'),'alien'); 
   drawPreviewTo(document.getElementById('pvPilot'),'pilot');
   drawPreviewTo(document.getElementById('pvRobot'),'robot');
+  drawPreviewTo(document.getElementById('pvGhost'),'ghost'); // NEW
 }
 
 
@@ -1715,8 +1893,10 @@ function gameOver(){
   setPlaying(false);
   beep('game_over'); // NEW: Play sound
   screenShake = 15;
-  spawnParticles(player.x + player.w / 2, player.y + player.h / 2, FG(), 30);
-  spawnParticles(player.x + player.w / 2, player.y + player.h / 2, GR(), 20);
+  
+  // === PARTICLE FIX: Added scroll to x-coordinate ===
+  spawnParticles(player.x + player.w / 2, player.y + player.h / 2, FG(), 30, 2); // Bigger size
+  spawnParticles(player.x + player.w / 2, player.y + player.h / 2, GR(), 20, 2); // Bigger size
   
   best=Math.max(best,Math.floor(score)); localStorage.setItem('moon_best',String(best));
   statusEl.textContent='Game Over';
@@ -1750,6 +1930,7 @@ function gameOver(){
     }
     showUI('over',true); 
     document.getElementById('menuBtn').style.display='';
+    state = 'over'; // <-- === BUGFIX: Set state to 'over' so restart keys work ===
   }, 750); // 750ms delay
 }
 document.getElementById('submitBtn').onclick=async()=>{
@@ -1778,12 +1959,50 @@ function update(u){
   if(right) player.vx += ACCEL_U*m;
   player.vx *= Math.pow(FRICTION,m);
   
-  // UPDATED: Gravity (only applies if not using jetpack)
+  // === JETPACK BUGFIX: Combined all logic ===
   if (player.jetpack > 0 && jump) {
-      player.vy = clamp(player.vy - (ACCEL_U * 0.5 * m), -JUMP * 0.7, 10); // Jetpack thrust
+      // 1. Apply thrust
+      player.vy = clamp(player.vy - (ACCEL_U * 0.5 * m), -JUMP * 0.7, 10); 
+      
+      // 2. Deplete fuel
+      player.jetpack = Math.max(0, player.jetpack - m);
+      
+      // 3. Spawn particles
+      const pX = player.x + player.w / 2;
+      const pY = player.y + player.h - 2;
+      for(let i=0; i<2; i++) {
+          const life = 10 + RND() * 10;
+          const size = 2 + RND() * 2; 
+          particles.push({
+              x: pX + (RND() - 0.5) * 8 + scroll, 
+              y: pY,
+              vx: (RND() - 0.5) * 1,
+              vy: RND() * 3 + 2, // Downwards
+              life: life,
+              initial_life: life, 
+              size: size, 
+              initial_size: size, 
+              color: (RND() < 0.5) ? AC() : FG() 
+          });
+      }
+      
+      // 4. Warning sound
+      if (player.jetpack > 0 && player.jetpack < (1.0 * TARGET_FPS) && !player.warnedJetpack) {
+          player.warnedJetpack = true;
+          beep('warn');
+      }
+      if (player.jetpack === 0) {
+          player.warnedJetpack = false; // Reset flag
+          if (player.slow === 0) { beep('slow_off'); }
+      }
   } else {
-      player.vy += GRAV_U*m; // Normal gravity
+      // No Jetpack: apply normal gravity
+      player.vy += GRAV_U*m; 
+      if (player.jetpack > 0) {
+          player.warnedJetpack = false; // Reset warning if they let go
+      }
   }
+  // === END JETPACK BUGFIX ===
 
   const now=performance.now();
   if(player.on) jumpBuffer=now+JUMP_BUFFER_MS;
@@ -1806,7 +2025,23 @@ function update(u){
     if(wx+player.w < s.x-8 || wx > s.x+s.w+8) continue;
     const a={x:wx,y:player.y,w:player.w,h:player.h}, b={x:s.x,y:floorY,w:s.w,h:48};
     if(!(a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y)) continue;
-    if(player.vy>0 && (prevY+player.h)<=floorY){ player.y=floorY-player.h; player.vy=0; player.on=true; continue; }
+    
+    // === MODIFIED: Added Landing Particles ===
+    if(player.vy>0 && (prevY+player.h)<=floorY){ 
+        player.y=floorY-player.h; 
+        
+        // NEW: Spawn landing particles
+        if (player.vy > 4) { // Only puff on a harder landing
+            // === PARTICLE FIX: Added scroll to x-coordinate ===
+            spawnParticles(player.x + player.w / 2, player.y + player.h, GR(), 5, 2); // Bigger size
+        }
+        
+        player.vy=0; 
+        player.on=true; 
+        continue; 
+    }
+    // === END MODIFICATION ===
+    
     if(player.vy<0 && prevY>=floorY+48){ player.y=floorY+48; player.vy=0; continue; }
     if(player.vx>0 && (prevX+player.w+scroll)<=s.x){ player.x=(s.x-scroll)-player.w; player.vx=0; }
     else if(player.vx<0 && (prevX+scroll)>=(s.x+s.w)){ player.x=(s.x+s.w-scroll); player.vx=0; }
@@ -1869,7 +2104,8 @@ function update(u){
       if(it.kind==='chip'){ 
           const add=Math.floor(coinValue*scoreMul); score+=add; coinsPicked++; 
           addCall(`+${add}`,player.x+8,player.y-6); beep('coin'); 
-          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, GR(), 8);
+          // === PARTICLE FIX: Added scroll to x-coordinate ===
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, GR(), 8, 2); // Bigger size
       }
       if(it.kind==='shield'){ 
           if(player.shields<3){ player.shields++; shieldsPicked++; 
@@ -1878,18 +2114,21 @@ function update(u){
               const bonus=Math.floor(coinValue*0.5*scoreMul); score+=bonus; 
               addCall(`+${bonus}`,player.x+8,player.y-6); beep('coin'); 
           } 
-          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, FG(), 12);
+          // === PARTICLE FIX: Added scroll to x-coordinate ===
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, FG(), 12, 2); // Bigger size
       }
       if(it.kind==='slow'){ 
           player.slow=180; slowUsed++; 
           addCall('Slow-mo!',player.x+8,player.y-6); beep('slow'); 
-          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 12);
+          // === PARTICLE FIX: Added scroll to x-coordinate ===
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 12, 2); // Bigger size
       }
       if(it.kind==='jetpack'){ // NEW
           player.jetpack = 5 * TARGET_FPS; // 5 seconds of fuel
           jetpacksUsed++; 
           addCall('Jetpack!',player.x+8,player.y-6); beep('jetpack_get'); 
-          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 20);
+          // === PARTICLE FIX: Added scroll to x-coordinate ===
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, AC(), 20, 3); // Bigger size
       }
       items.splice(k,1);
     }else{ it._drawY=rect.y; }
@@ -1910,21 +2149,9 @@ function update(u){
     player.warnedSlow = false; // Reset flag
     beep('slow_off'); // Play the sound
   }
-  if(player.jetpack > 0) { // NEW: Deplete jetpack fuel
-    player.jetpack = Math.max(0, player.jetpack - m);
-    // NEW: Warning sound
-    if (player.jetpack > 0 && player.jetpack < (1.0 * TARGET_FPS) && !player.warnedJetpack) {
-        player.warnedJetpack = true;
-        beep('warn');
-    }
-    
-    if (player.jetpack === 0) {
-        player.warnedJetpack = false; // Reset flag
-        if (player.slow === 0) { // Only play if slow isn't *also* ending
-            beep('slow_off'); // Reuse "powerup over" sound
-        }
-    }
-  }
+  
+  // === MODIFICATION: Jetpack Particle Spawning (REMOVED, moved to new block) ===
+  
   if(player.inv > 0) {
       player.inv=Math.max(0,player.inv-m);
       // NEW: Warning sound
@@ -1937,25 +2164,45 @@ function update(u){
       }
   }
 
+  // === NEW: Running Particles ===
+  if (player.on && (keys['ArrowLeft']||keys['a']||keys['A']||keys['ArrowRight']||keys['d']||keys['D']) && RND() < 0.3) {
+      const life = 10 + RND() * 10;
+      const size = 1 + RND() * 2; // NEW: Add random size (smaller)
+      particles.push({
+          x: player.x + (player.w / 2) + scroll, // <-- THE FIX: Added scroll
+          y: player.y + player.h - 1,
+          vx: (RND() - 0.5) * 0.5, // Kicked up
+          vy: (RND() - 0.5) * 0.5,
+          life: life,
+          initial_life: life, // For fading
+          size: size, // NEW
+          initial_size: size, // NEW
+          color: GR() // Ground color
+      });
+  }
+  // === END NEW ===
+
   score += (0.069*m + Math.max(0,player.vx)*0.03*m) * scoreMul;
 
-  const targetMilestone = Math.floor(score/5000);
-  if(targetMilestone>milestoneIndex){ milestoneIndex = targetMilestone; triggerFlyby(); }
+  // NEW: Milestone logic
+  const milestones = [1000, 2500, 5000, 7500, 10000, 15000, 20000, 25000, 30000]; // Score targets
+  while (milestoneIndex < milestones.length && score >= milestones[milestoneIndex]) {
+      const ms = milestones[milestoneIndex];
+      if (ms === 1000) showCaption('1000 points!', 'Keep it up!', 1500);
+      else if (ms === 2500) showCaption('2500 points!', 'Warming up!', 1500);
+      else if (ms % 5000 === 0) {
+          showCaption(`Milestone: ${ms} points!`, 'UFO inbound!', 2000);
+          triggerFlyby();
+      } else {
+          showCaption(`${ms} points!`, 'Nice run!', 1500);
+      }
+      milestoneIndex++;
+  }
+  // --- End new milestone logic
+  
   if(flyby){ flyby.t += m; flyby.x += flyby.dir * 6 * m; if(flyby.x < -100 || flyby.x > W+100) flyby=null; }
 
   // NEW: Update particles (MOVED TO LOOP)
-  /*
-  for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.x += p.vx * m;
-      p.y += p.vy * m;
-      p.vy += 0.1 * m; // a little gravity
-      p.life -= m;
-      if (p.life <= 0) {
-          particles.splice(i, 1);
-      }
-  }
-  */
   // updateCallouts(m); // MOVED TO LOOP
 }
 
@@ -1973,10 +2220,148 @@ function draw(){
     ctx.translate(i(shakeX), i(shakeY));
   }
 
-  // --- Background Overhaul ---
-  
-  // 1. Denser, multi-layer parallax stars (Only if NOT sunset)
-  if (theme.name !== 'Digital Sunset') {
+  // --- Background Overhaul (RE-ORDERED) ---
+  ctx.globalAlpha = 1;
+
+  // NEW: Rumahantu custom background
+  if (theme.customBg) {
+      // 1. Draw solid sky (already done by main bg fill)
+      
+      // 2. Draw Moon (Pale White/Yellow)
+      const moonY = H * 0.3;
+      const moonX = W * 0.6;
+      ctx.fillStyle = '#f0e8c0'; // Pale moon color
+      ctx.beginPath(); ctx.arc(moonX, moonY, 60, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = 'rgba(240, 232, 192, 0.2)'; // Faint glow
+      ctx.beginPath(); ctx.arc(moonX, moonY, 70, 0, 2 * Math.PI); ctx.fill();
+
+      // 3. Draw Parallax Trees (Far)
+      ctx.fillStyle = '#100818'; // Very dark silhouette
+      ctx.globalAlpha = 0.7;
+      const treeX1 = i(scroll * 0.15);
+      for(let n=0; n<10; n++){
+          const x = ( ( (n * 200 - treeX1) % (W + 200) ) + (W + 200) ) % (W + 200) - 200;
+          // Draw a simple gnarled tree silhouette
+          FILL(x + 20, H - 200, 10, 150, '#100818'); // trunk
+          FILL(x, H - 200, 50, 20, '#100818'); // canopy
+          FILL(x + 15, H - 220, 20, 20, '#100818'); // canopy
+          FILL(x - 10, H - 180, 20, 10, '#100818'); // branch
+          FILL(x + 40, H - 190, 20, 10, '#100818'); // branch
+      }
+      
+      // 4. Draw Parallax Trees (Near)
+      ctx.fillStyle = '#050208'; // Nearer, darker silhouette
+      ctx.globalAlpha = 1;
+      const treeX2 = i(scroll * 0.3);
+      for(let n=0; n<10; n++){
+          const x = ( ( (n * 300 - treeX2) % (W + 300) ) + (W + 300) ) % (W + 300) - 300;
+          // Draw a simple gnarled tree silhouette
+          FILL(x + 30, H - 150, 15, 120, '#050208'); // trunk
+          FILL(x, H - 150, 75, 30, '#050208'); // canopy
+          FILL(x + 20, H - 170, 35, 20, '#050208'); // canopy
+          FILL(x - 15, H - 130, 30, 15, '#050208'); // branch
+          FILL(x + 60, H - 140, 30, 15, '#050208'); // branch
+      }
+      
+      // 5. Draw Haunted House (stationary, or very slow parallax)
+      const houseX = i(scroll * 0.05);
+      const hx = ( ( (700 - houseX) % (W + 300) ) + (W + 300) ) % (W + 300) - 300;
+      ctx.fillStyle = '#050208';
+      FILL(hx, H - 180, 80, 100, '#050208'); // Main block
+      ctx.beginPath(); // Roof
+      ctx.moveTo(hx - 10, H - 180);
+      ctx.lineTo(hx + 40, H - 230);
+      ctx.lineTo(hx + 90, H - 180);
+      ctx.closePath();
+      ctx.fill();
+      // Window (ACCENT-PALE Color)
+      ctx.fillStyle = AC(); // USE 'ac' (now #ffcc00)
+      FILL(hx + 20, H - 150, 15, 20, AC());
+      FILL(hx + 45, H - 150, 15, 20, AC());
+      
+      // 6. Draw Pumpkins (mid-ground, scroll with near trees)
+      ctx.fillStyle = GR(); // USE 'gr' (now #ff6600)
+      ctx.globalAlpha = 0.9;
+      const pumpX = i(scroll * 0.3); // Same as near trees
+      for(let n=0; n<20; n++){
+          const x = ( ( (n * 150 - pumpX) % (W + 150) ) + (W + 150) ) % (W + 150) - 150;
+          const y = H - 100 + (n%3)*10; // Stagger them
+          FILL(x, y, 15, 12, GR()); // body
+          FILL(x+2, y-2, 3, 3, '#1a0a00'); // stem
+          // Face (dark)
+          ctx.fillStyle = '#1a0a00';
+          FILL(x+3, y+3, 3, 2, '#1a0a00');
+          FILL(x+9, y+3, 3, 2, '#1a0a00');
+          FILL(x+5, y+7, 5, 3, '#1a0a00');
+          ctx.fillStyle = GR(); // Reset fillStyle
+      }
+      
+      ctx.globalAlpha = 1;
+  }
+  // 1. FARTHEST Layer (Sun, Black Hole)
+  else if (theme.name === 'Digital Sunset') { // DIGITAL SUNSET (Sun)
+    const sunY = H * 0.5;
+    // Draw Sun
+    ctx.fillStyle = a; // Lighter Orange
+    ctx.beginPath(); ctx.arc(W/2, sunY, 100, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = f; // Bright Gold
+    ctx.beginPath(); ctx.arc(W/2, sunY, 70, 0, 2 * Math.PI); ctx.fill();
+  }
+  else if (theme.name === 'Galaxy Hole') { // NEW GALAXY THEME
+    const t = timeMs;
+    const cx = W / 2, cy = H * 0.4;
+    
+    // 1. Draw distant static galaxy dust
+    ctx.globalAlpha = 0.2;
+    for(let n=0; n<50; n++){
+      const x1=(n*181)%W, y1=(n*211)%(H*0.7);
+      const size = (n%4) + 1;
+      ctx.fillStyle = (n%2 === 0) ? al : ac; // Orange and Yellow
+      ctx.fillRect(i(x1), i(y1), size, size);
+    }
+    ctx.globalAlpha = 1;
+
+    // 2. Draw Black Hole
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 30, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 3. Draw Accretion Disk (spinning)
+    const angle = (t / 5000) % (2 * Math.PI);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    
+    const diskW = 120;
+    const diskH = 40;
+    
+    // Outer disk (Magenta)
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = f; // Use theme foreground
+    ctx.beginPath();
+    ctx.ellipse(0, 0, diskW, diskH, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Inner disk (Yellow)
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = ac;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, diskW * 0.7, diskH * 0.7, 0, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Inner hole (black again to cover center)
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, diskW * 0.3, diskH * 0.3, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    ctx.restore();
+  }
+
+  // 2. MID Layer (Parallax Stars)
+  // Denser, multi-layer parallax stars (Only if NOT sunset)
+  if (theme.name !== 'Digital Sunset' && !theme.customBg) {
     ctx.globalAlpha = 0.4;
     ctx.fillStyle = a;
     for(let n=0;n<120;n++){ // Slow, dim stars
@@ -1991,50 +2376,8 @@ function draw(){
     }
     ctx.globalAlpha = 1;
   }
-
-  // 2. Distant, static Earth (REMOVED)
-  /*
-  if (theme.earth) { // Only draw if theme allows it
-    const earthX = W * 0.85;
-    const earthY = H * 0.2;
-    
-    if (theme.name === 'Classic Cosmos') {
-        // B&W Earth
-        ctx.fillStyle = f; // White
-        ctx.beginPath();
-        ctx.arc(earthX, earthY, 20, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.fillStyle = b; // Black continents
-        ctx.beginPath();
-        ctx.arc(earthX + 5, earthY - 3, 10, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.globalAlpha = 0.8;
-        ctx.fillStyle = f; // White clouds
-        ctx.beginPath();
-        ctx.arc(earthX - 4, earthY + 4, 8, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-    } else {
-        // Color Earth
-        ctx.fillStyle = '#1E90FF'; // Blue
-        ctx.beginPath();
-        ctx.arc(earthX, earthY, 20, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.fillStyle = '#3CB371'; // Green continents
-        ctx.beginPath();
-        ctx.arc(earthX + 5, earthY - 3, 10, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.fillStyle = (theme.name === 'Pulsar' ? g : '#FFFFFF'); // Clouds/Ice
-        ctx.globalAlpha = 0.8;
-        ctx.beginPath();
-        ctx.arc(earthX - 4, earthY + 4, 8, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-    }
-  }
-  */
-
-  // 3. NEW: Theme-specific background elements
+  
+  // 3. NEW: Theme-specific background elements (REMOVED EARTH)
   ctx.globalAlpha = 1;
   
   if (theme.city) { // CYBER GRID
@@ -2078,20 +2421,14 @@ function draw(){
     }
     ctx.globalAlpha = 1;
   }
-  else if (theme.name === 'Digital Sunset') { // DIGITAL SUNSET
-    const sunY = H * 0.5;
-    // Draw Sun
-    ctx.fillStyle = a; // Lighter Orange
-    ctx.beginPath(); ctx.arc(W/2, sunY, 100, 0, 2 * Math.PI); ctx.fill();
-    ctx.fillStyle = f; // Bright Gold
-    ctx.beginPath(); ctx.arc(W/2, sunY, 70, 0, 2 * Math.PI); ctx.fill();
-    
+  else if (theme.name === 'Digital Sunset') { // DIGITAL SUNSET (Mountains)
     // Draw Far Mountains (dark red)
     ctx.fillStyle = g;
     ctx.globalAlpha = 0.6;
     const mtnX1 = i(scroll * 0.1);
     for(let n=0; n<10; n++){
-        const x = (n * 150 - mtnX1) % (W + 150) - 150;
+        // *** BUGFIX: Apply true modulo ***
+        const x = ( ( (n * 150 - mtnX1) % (W + 150) ) + (W + 150) ) % (W + 150) - 150;
         ctx.beginPath();
         ctx.moveTo(x, H);
         ctx.lineTo(x + 100, H - 200 - (n%3)*30);
@@ -2104,7 +2441,8 @@ function draw(){
     ctx.globalAlpha = 0.8;
     const mtnX2 = i(scroll * 0.15);
     for(let n=0; n<10; n++){
-        const x = (n * 200 - mtnX2) % (W + 200) - 200;
+        // *** BUGFIX: Apply true modulo ***
+        const x = ( ( (n * 200 - mtnX2) % (W + 200) ) + (W + 200) ) % (W + 200) - 200;
         ctx.beginPath();
         ctx.moveTo(x, H);
         ctx.lineTo(x + 120, H - 150 - (n%2)*40);
@@ -2113,6 +2451,23 @@ function draw(){
     }
     ctx.globalAlpha = 1;
   }
+  // NEW: Lunar Eclipse background (just stars, no other elements for a ghostly feel)
+  else if (theme.name === 'Lunar Eclipse') {
+      // It already has stars from the block above, this is perfect.
+      // Maybe a very subtle "nebula"
+      ctx.globalAlpha = 0.05;
+      ctx.fillStyle = al; // Pale purple
+      const nebX = i(scroll * 0.05);
+      for(let n=0; n<5; n++){
+          const x = ( ( (n * 300 - nebX) % (W + 300) ) + (W + 300) ) % (W + 300) - 300;
+          const y = (n * 100) % (H*0.5);
+          ctx.beginPath();
+          ctx.ellipse(x + 150, y + 100, 150, 50, 0, 0, 2 * Math.PI);
+          ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+  }
+
 
   // 3. Large, detailed Moon on horizon (FIX: REMOVED)
   // ... (Code for moon is now gone) ...
@@ -2205,29 +2560,23 @@ function draw(){
   if(!invBlink){ astronaut(player.x,player.y,pose); }
   else{ FILL(player.x,player.y,player.w,1,f); FILL(player.x,player.y+player.h-1,player.w,1,f); FILL(player.x,player.y,1,player.h,f); FILL(player.x+player.w-1,player.y,1,player.h,f); }
 
-  // NEW: Jetpack particles
-  if (player.jetpack > 0 && (keys['ArrowUp']||keys['w']||keys['W']||keys[' '])) {
-      const pX = player.x + player.w / 2;
-      const pY = player.y + player.h - 2;
-      for(let i=0; i<2; i++) {
-          particles.push({
-              x: pX + (RND() - 0.5) * 8,
-              y: pY,
-              vx: (RND() - 0.5) * 1,
-              vy: RND() * 3 + 2, // Downwards
-              life: 10 + RND() * 10,
-              color: (RND() < 0.5) ? a : f // Accent and FG colors
-          });
-      }
-  }
+  // NEW: Jetpack particles (MOVED TO UPDATE)
 
-  // NEW: Draw particles
-  ctx.globalAlpha = 0.8;
+  // === MODIFIED: Draw Particles with Fading & Size ===
   for (const p of particles) {
+      // NEW: Set alpha based on particle's remaining life
+      const lifePercent = (p.life / (p.initial_life || p.life || 1)); 
+      ctx.globalAlpha = Math.max(0, lifePercent * 0.8);
+      
+      // NEW: Calculate size
+      const size = Math.max(1, (p.initial_size || 2) * lifePercent);
+      
       ctx.fillStyle = p.color;
-      FILL(p.x - scroll, p.y, 2, 2, p.color); // Draw particles relative to screen
+      // === PARTICLE FIX: Substract scroll to draw in SCREEN SPACE ===
+      FILL(p.x - scroll - size/2, p.y - size/2, size, size, p.color); // Draw particles relative to screen
   }
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = 1; // Reset alpha
+  // === END MODIFICATION ===
 
   if(flyby){ 
     const yy = flyby.y + Math.sin(flyby.t*0.3)*2; 
@@ -2254,27 +2603,70 @@ function draw(){
   // Menu Screen Drawing (Simplified, less text background)
   if(state==='menu'){
     const t=performance.now(); const cx=i(W/2), cy=i(H*0.30);
-    const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); 
-    // --- SYNTAX ERROR FIX ---
-    // Was: beamScan(cx,cy-4MkhkAsg MoonRunner — v3.0 Aesthetic Apex.html0+hover,t);
-    beamScan(cx,cy-40+hover,t); 
-    // --- END FIX ---
-    const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
     
-    // Title shadow effect
-    ctx.fillStyle = inverted() ? '#AAAAAA' : '#666666'; 
-    ctx.font="26px 'Press Start 2P',monospace"; 
-    const title="M O O N R U N N E R";
-    ctx.fillText(title,i((W-ctx.measureText(title).width)/2) - 2,cy+66);
-    
-    // Title foreground effect
-    ctx.fillStyle = GR();
-    ctx.fillText(title,i((W-ctx.measureText(title).width)/2),cy+64);
+    // NEW: Draw Galaxy Hole animation if it's the current theme
+    if (T().name === 'Galaxy Hole') {
+        const t = timeMs; // Use game timeMs for consistent animation
+        const cx = W / 2, cy = H * 0.4;
+        
+        // 1. Draw distant static galaxy dust
+        ctx.globalAlpha = 0.2;
+        for(let n=0; n<50; n++){
+          const x1=(n*181)%W, y1=(n*211)%(H*0.7);
+          const size = (n%4) + 1;
+          ctx.fillStyle = (n%2 === 0) ? al : ac; // Orange and Yellow
+          ctx.fillRect(i(x1), i(y1), size, size);
+        }
+        ctx.globalAlpha = 1;
 
-    ctx.font="10px 'Press Start 2P',monospace";
-    const sub="— V A P O R W A V E • E N D L E S S • R U N N E R —";
-    ctx.fillStyle = f;
-    ctx.fillText(sub,i((W-ctx.measureText(sub).width)/2),cy+86);
+        // 2. Draw Black Hole
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 30, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 3. Draw Accretion Disk (spinning)
+        const angle = (t / 5000) % (2 * Math.PI);
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        
+        const diskW = 120;
+        const diskH = 40;
+        
+        // Outer disk (Magenta)
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = f; // Use theme foreground
+        ctx.beginPath();
+        ctx.ellipse(0, 0, diskW, diskH, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Inner disk (Yellow)
+        ctx.globalAlpha = 1.0;
+        ctx.fillStyle = ac;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, diskW * 0.7, diskH * 0.7, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Inner hole (black again to cover center)
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, diskW * 0.3, diskH * 0.3, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.restore();
+    } else {
+        // --- ELSE: Draw the default UFO animation ---
+        const hover=Math.sin(t/750)*2; ufo(cx,cy-40+hover); 
+        // --- SYNTAX ERROR FIX (REMOVED) ---
+        beamScan(cx,cy-40+hover,t); 
+        // --- END FIX ---
+        const pull=(Math.sin(t/900+1.2)*3)|0; astronaut(cx-8,cy+18-pull,'idle');
+    }
+    
+    // === REVERTED: Removed canvas-drawn title ===
+    // (The title is now back in the HTML)
+    // === END REVERT ===
   }
   
   ctx.restore(); // NEW: Restore context to undo screen shake
@@ -2287,7 +2679,7 @@ async function boot(){
   // Initialize theme on boot
   applyTheme(localStorage.getItem('moon_theme') || 'cyber');
 
-  // Draw item previews immediately for the How To menu
+  // Draw item previews immediately for the How to menu
   drawHowToPreviews(); 
   
   resetWorld(); setMode(speedMode); state='menu'; statusEl.textContent='Menu — ready';
@@ -2297,7 +2689,9 @@ async function boot(){
   } else {
     document.getElementById('playLandBtn').style.display='none';
   }
-  requestAnimationFrame(loop); showUI('menu');
+  requestAnimationFrame(loop); 
+  // MODIFIED: Show 'menu' using the new class-based system
+  showUI('menu');
 }
 function loop(now){
   const dtSec=(now-last)/1000; last=now;
@@ -2307,7 +2701,7 @@ function loop(now){
   // FIX: Don't update in transition state
   else if (state==='gameover_transition') {
       // Keep updating particles
-      updateCallouts(u);
+      // updateCallouts(u); // This is now handled below
       for (let i = particles.length - 1; i >= 0; i--) {
           const p = particles[i];
           p.x += p.vx * u;
@@ -2348,6 +2742,8 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 
+// === BUGFIX: Removed the broken wrapper functions ===
+/*
 const __showUI = showUI;
 showUI = function(id, lock=false){
   __showUI(id); // Use the original function
@@ -2360,6 +2756,8 @@ hideUI = function(id){
   __hideUI(id); // Use the original function
   if(id==='pause'){ stopTips(); } // Removed setPlaying(true) to fix visual bug
 };
+*/
+// === END BUGFIX ===
 
 drawPreviews();
 drawHowToPreviews();
